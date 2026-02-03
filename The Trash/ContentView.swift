@@ -3,20 +3,20 @@ import Supabase
 import Auth
 
 struct ContentView: View {
-    // @StateObject private var viewModel = TrashViewModel(classifier: RealClassifierService())
+    // 确保使用 .shared 单例以防止内存暴涨
     @StateObject private var viewModel = TrashViewModel(classifier: RealClassifierService.shared)
-    @EnvironmentObject var authVM: AuthViewModel // 🔥 获取用户信息
+    @EnvironmentObject var authVM: AuthViewModel
     
     @State private var showCamera = false
     @State private var capturedImage: UIImage?
-    @State private var showReportSheet = false // 🔥 控制弹窗
+    @State private var showReportSheet = false
     
     var body: some View {
         ZStack {
             Color(.systemGroupedBackground).ignoresSafeArea()
             
             VStack(spacing: 30) {
-                // 顶部栏：增加登出按钮
+                // --- 顶部栏 ---
                 HStack {
                     Text("The Trash")
                         .font(.largeTitle)
@@ -24,6 +24,7 @@ struct ContentView: View {
                     
                     Spacer()
                     
+                    // 登出按钮
                     Button(action: {
                         Task { await authVM.signOut() }
                     }) {
@@ -34,7 +35,7 @@ struct ContentView: View {
                 .padding(.horizontal)
                 .padding(.top, 40)
                 
-                // --- 取景器区域 ---
+                // --- 取景/图片区域 ---
                 ZStack {
                     RoundedRectangle(cornerRadius: 24)
                         .fill(Color(.tertiarySystemFill))
@@ -63,11 +64,13 @@ struct ContentView: View {
                     }
                 }
                 .padding(.horizontal)
+                .onTapGesture {
+                    showCamera = true
+                }
                 
                 // --- 结果卡片 ---
                 if case .finished(let result) = viewModel.appState {
                     ResultCard(result: result, onReport: {
-                        // 🔥 点击报错
                         self.showReportSheet = true
                     })
                     .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -99,13 +102,14 @@ struct ContentView: View {
         .sheet(isPresented: $showCamera) {
             CameraView(selectedImage: $capturedImage)
         }
-        // 监听图片拍摄完成 -> 自动识别
-        .onChange(of: capturedImage) { newImage in
+        // 🔥 修复：使用 iOS 17 新版 onChange 语法
+        // 旧版: .onChange(of: capturedImage) { newImage in ... }
+        // 新版: Closure 接收两个参数 (oldValue, newValue)
+        .onChange(of: capturedImage) { _, newImage in
             if let img = newImage {
                 viewModel.analyzeImage(image: img)
             }
         }
-        // 🔥 报错弹窗
         .sheet(isPresented: $showReportSheet) {
             if case .finished(let result) = viewModel.appState,
                let image = capturedImage {
@@ -120,10 +124,10 @@ struct ContentView: View {
     }
 }
 
-// 修改 ResultCard 支持回调
+// ResultCard 组件保持不变，为了完整性这里也保留
 struct ResultCard: View {
     let result: TrashAnalysisResult
-    var onReport: () -> Void // 🔥 闭包回调
+    var onReport: () -> Void
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -153,7 +157,6 @@ struct ResultCard: View {
             
             Divider()
             
-            // 🔥 报错入口
             Button(action: onReport) {
                 HStack {
                     Image(systemName: "exclamationmark.bubble.fill")

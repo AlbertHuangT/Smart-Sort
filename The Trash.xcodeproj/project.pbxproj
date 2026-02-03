@@ -19,33 +19,9 @@
 		88258C6C2F20E40C0071F13F /* The Trash.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "The Trash.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		88D1B1C82F32B8D4007C44A2 /* Exceptions for "The Trash" folder in "The Trash" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				"UIImage+Extensions.swift",
-			);
-			target = 88258C6B2F20E40C0071F13F /* The Trash */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
-/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
-		88D1B1C92F32B8D4007C44A2 /* Exceptions for "The Trash" folder in "Copy Bundle Resources" phase from "The Trash" target */ = {
-			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
-			buildPhase = 88258C6A2F20E40C0071F13F /* Resources */;
-			membershipExceptions = (
-				"UIImage+Extensions.swift",
-			);
-		};
-/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		88258C6E2F20E40C0071F13F /* The Trash */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				88D1B1C82F32B8D4007C44A2 /* Exceptions for "The Trash" folder in "The Trash" target */,
-				88D1B1C92F32B8D4007C44A2 /* Exceptions for "The Trash" folder in "Copy Bundle Resources" phase from "The Trash" target */,
-			);
 			path = "The Trash";
 			sourceTree = "<group>";
 		};
