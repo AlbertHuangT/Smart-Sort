@@ -19,13 +19,14 @@ struct TrashItem: Decodable {
 }
 
 class RealClassifierService: TrashClassifierService {
+    static let shared = RealClassifierService()
     
     // 视觉模型 (The Eye)
     private let model: VNCoreMLModel?
     // 知识库 (The Brain)
     private var knowledgeBase: [TrashItem] = []
     
-    init() {
+    private init() {
         // ------------------------------------------------------------------
         // A. 加载知识库 (trash_knowledge.json)
         // ------------------------------------------------------------------

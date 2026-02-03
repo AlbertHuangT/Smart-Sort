@@ -1,116 +1,129 @@
-//
-//  ContentView.swift
-//  The Trash
-//
-//  Created by Albert Huang on 1/20/26.
-//
-
 import SwiftUI
+import Supabase
+import Auth
 
 struct ContentView: View {
-    // ⚠️ Key point: Here we want to use RealClassifierService!
-    // This way the app will load the TrashModel you just added
-    @StateObject private var viewModel = TrashViewModel(classifier: RealClassifierService())
+    // @StateObject private var viewModel = TrashViewModel(classifier: RealClassifierService())
+    @StateObject private var viewModel = TrashViewModel(classifier: RealClassifierService.shared)
+    @EnvironmentObject var authVM: AuthViewModel // 🔥 获取用户信息
     
-    // Control the presentation of the camera page
     @State private var showCamera = false
-    // Temporarily store the captured photo
     @State private var capturedImage: UIImage?
+    @State private var showReportSheet = false // 🔥 控制弹窗
     
     var body: some View {
         ZStack {
             Color(.systemGroupedBackground).ignoresSafeArea()
             
             VStack(spacing: 30) {
-                Text("The Trash")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .padding(.top, 40)
-                    .foregroundColor(.primary)
+                // 顶部栏：增加登出按钮
+                HStack {
+                    Text("The Trash")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                    
+                    Spacer()
+                    
+                    Button(action: {
+                        Task { await authVM.signOut() }
+                    }) {
+                        Image(systemName: "rectangle.portrait.and.arrow.right")
+                            .foregroundColor(.red)
+                    }
+                }
+                .padding(.horizontal)
+                .padding(.top, 40)
                 
-                // --- Viewfinder area ---
+                // --- 取景器区域 ---
                 ZStack {
                     RoundedRectangle(cornerRadius: 24)
                         .fill(Color(.tertiarySystemFill))
                         .frame(height: 350)
                         .shadow(radius: 10)
                     
-                    // A. Show spinner if analyzing
                     if viewModel.appState == .analyzing {
                         ProgressView()
                             .scaleEffect(1.5)
-                            .progressViewStyle(CircularProgressViewStyle(tint: .primary))
-                            
-                    // B. Show photo preview if a photo was taken
                     } else if let image = capturedImage {
                         Image(uiImage: image)
                             .resizable()
-                            .scaledToFit()
+                            .scaledToFill()
                             .frame(height: 350)
                             .cornerRadius(24)
-                            
-                    // C. Default state: show camera icon
+                            .clipped()
                     } else {
                         VStack {
                             Image(systemName: "camera.viewfinder")
                                 .font(.system(size: 60))
-                                .foregroundColor(.primary)
-                            Text("Tap below to take a photo")
                                 .foregroundColor(.secondary)
-                                .padding(.top, 10)
+                            Text("Tap Camera to Scan")
+                                .font(.headline)
+                                .foregroundColor(.secondary)
                         }
                     }
                 }
                 .padding(.horizontal)
                 
-                // --- Result card ---
+                // --- 结果卡片 ---
                 if case .finished(let result) = viewModel.appState {
-                    ResultCard(result: result)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                    ResultCard(result: result, onReport: {
+                        // 🔥 点击报错
+                        self.showReportSheet = true
+                    })
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
                 
                 Spacer()
                 
-                // --- Bottom button ---
+                // --- 底部按钮 ---
                 Button(action: {
-                    // Click button -> show camera
                     showCamera = true
                 }) {
                     HStack {
                         Image(systemName: "camera.fill")
-                        Text("Identify by Photo")
+                        Text("Identify Trash")
                     }
                     .font(.title3)
-                    .fontWeight(.semibold)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.blue)
+                    .fontWeight(.bold)
                     .foregroundColor(.white)
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(Color.blue)
                     .cornerRadius(16)
+                    .shadow(radius: 5)
                 }
                 .padding(.horizontal)
-                .padding(.bottom, 20)
+                .padding(.bottom, 30)
             }
         }
-        // --- Sheet logic ---
         .sheet(isPresented: $showCamera) {
-            // When camera is dismissed...
             CameraView(selectedImage: $capturedImage)
         }
-        // --- Listen for photo changes ---
-        // Once capturedImage has a value (a photo was just taken), immediately send it to AI for analysis
-        .onChange(of: capturedImage) { oldValue, newImage in
+        // 监听图片拍摄完成 -> 自动识别
+        .onChange(of: capturedImage) { newImage in
             if let img = newImage {
                 viewModel.analyzeImage(image: img)
+            }
+        }
+        // 🔥 报错弹窗
+        .sheet(isPresented: $showReportSheet) {
+            if case .finished(let result) = viewModel.appState,
+               let image = capturedImage {
+                ReportView(
+                    predictedResult: result,
+                    image: image,
+                    userId: authVM.session?.user.id
+                )
             }
         }
         .animation(.spring(), value: viewModel.appState)
     }
 }
 
-// Result card remains unchanged except for UI strings and colors
+// 修改 ResultCard 支持回调
 struct ResultCard: View {
     let result: TrashAnalysisResult
+    var onReport: () -> Void // 🔥 闭包回调
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -128,17 +141,27 @@ struct ResultCard: View {
             HStack {
                 Text("Item:")
                     .fontWeight(.semibold)
-                    .foregroundColor(.primary)
                 Text(result.itemName)
-                    .foregroundColor(.primary)
             }
             HStack(alignment: .top) {
-                Text("Suggestion:")
+                Text("Tip:")
                     .fontWeight(.semibold)
-                    .foregroundColor(.primary)
                 Text(result.actionTip)
                     .foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
+            }
+            
+            Divider()
+            
+            // 🔥 报错入口
+            Button(action: onReport) {
+                HStack {
+                    Image(systemName: "exclamationmark.bubble.fill")
+                    Text("Report Incorrect Result")
+                }
+                .font(.footnote)
+                .foregroundColor(.red.opacity(0.8))
+                .padding(.top, 4)
             }
         }
         .padding()
@@ -148,9 +171,3 @@ struct ResultCard: View {
         .padding(.horizontal)
     }
 }
-
-
-#Preview {
-    ContentView()
-}
-
