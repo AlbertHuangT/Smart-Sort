@@ -23,40 +23,48 @@ class RealClassifierService: TrashClassifierService {
     
     // 视觉模型 (The Eye)
     private let model: VNCoreMLModel?
-    // 知识库 (The Brain)
+    // 知识库 (The Brain) - 注意线程安全，虽然这里主要是读取
     private var knowledgeBase: [TrashItem] = []
     
     private init() {
         // ------------------------------------------------------------------
-        // A. 加载知识库 (trash_knowledge.json)
-        // ------------------------------------------------------------------
-        if let url = Bundle.main.url(forResource: "trash_knowledge", withExtension: "json") {
-            do {
-                let data = try Data(contentsOf: url)
-                self.knowledgeBase = try JSONDecoder().decode([TrashItem].self, from: data)
-                print("✅ [System] 成功加载知识库: \(self.knowledgeBase.count) 个物体向量")
-            } catch {
-                print("❌ [Error] JSON 解析失败: \(error)")
-            }
-        } else {
-            print("❌ [Error] 严重错误: 找不到 trash_knowledge.json 文件！请确保它在 Copy Bundle Resources 中。")
-        }
-        
-        // ------------------------------------------------------------------
-        // B. 加载视觉模型 (MobileCLIPImage)
+        // A. 加载视觉模型 (MobileCLIPImage) - 这是轻量级操作，可以同步
         // ------------------------------------------------------------------
         do {
             let config = MLModelConfiguration()
             config.computeUnits = .all // 使用 NPU 加速
             
-            // ⚠️ 如果你的模型文件叫 MobileCLIPImage.mlpackage，类名就是 MobileCLIPImage
-            // 如果报错 "Cannot find type..."，请检查你的文件名
             let coreModel = try MobileCLIPImage(configuration: config)
             self.model = try VNCoreMLModel(for: coreModel.model)
             print("✅ [System] MobileCLIP S2 视觉系统就绪")
         } catch {
             print("❌ [Error] 模型加载失败: \(error)")
             self.model = nil
+        }
+        
+        // ------------------------------------------------------------------
+        // B. 异步加载知识库 (避免卡死主线程)
+        // ------------------------------------------------------------------
+        loadKnowledgeBase()
+    }
+    
+    private func loadKnowledgeBase() {
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let url = Bundle.main.url(forResource: "trash_knowledge", withExtension: "json") else {
+                print("❌ [Error] 严重错误: 找不到 trash_knowledge.json 文件！")
+                return
+            }
+            
+            do {
+                let data = try Data(contentsOf: url)
+                let items = try JSONDecoder().decode([TrashItem].self, from: data)
+                
+                // 简单的赋值，实际生产中可加锁，但此处单例初始化后基本只读
+                self?.knowledgeBase = items
+                print("✅ [System] 成功加载知识库: \(items.count) 个物体向量")
+            } catch {
+                print("❌ [Error] JSON 解析失败: \(error)")
+            }
         }
     }
     
@@ -80,24 +88,21 @@ class RealClassifierService: TrashClassifierService {
                 // 2. 将 MultiArray 转为高性能 Float 数组
                 let imageEmbedding = self.convertMultiArray(multiArray)
                 
-                // 🔍 DEBUG: 打印 Top 5 (上帝视角)
-                self.debugTopMatches(imageVector: imageEmbedding)
+                // 3. 计算所有分数并找出最佳匹配 (合并计算逻辑，避免重复运算)
+                let bestMatch = self.findBestMatchAndDebug(imageVector: imageEmbedding)
                 
-                // 3. 寻找最佳匹配
-                if let bestMatch = self.findBestMatch(imageVector: imageEmbedding) {
-                    
+                if let match = bestMatch {
                     let result = TrashAnalysisResult(
-                        itemName: bestMatch.item.label.capitalized,
-                        category: bestMatch.item.category,
-                        confidence: Double(bestMatch.score), // 这里的 score 是余弦相似度
-                        actionTip: self.getTipForCategory(bestMatch.item.category),
-                        color: self.getColorForCategory(bestMatch.item.category)
+                        itemName: match.item.label.capitalized,
+                        category: match.item.category,
+                        confidence: Double(match.score),
+                        actionTip: self.getTipForCategory(match.item.category),
+                        color: self.getColorForCategory(match.item.category)
                     )
                     completion(result)
-                    
                 } else {
                     // 4. 兜底逻辑 (未达到阈值)
-                    print("⚠️ [Result] 没有任何物体超过阈值 (0.15)")
+                    print("⚠️ [Result] 没有任何物体超过阈值 (0.10)")
                     let failResult = TrashAnalysisResult(
                         itemName: "Unknown Object",
                         category: "Try Closer",
@@ -127,37 +132,46 @@ class RealClassifierService: TrashClassifierService {
     
     // MARK: - Math Kernels (Math-CS Core)
     
-    // 寻找余弦相似度最高的物体
-    private func findBestMatch(imageVector: [Float]) -> (item: TrashItem, score: Float)? {
-        var bestScore: Float = -1.0
-        var bestItem: TrashItem?
-        
-        // 1. 归一化图片向量 (Normalize Image Vector)
-        // Cosine Similarity = (A . B) / (|A| * |B|)
-        // 我们的 Text Vector 在 Colab 里已经归一化了 (|B|=1)，所以只要归一化 A，然后算点积即可
+    // 计算分数、打印 Debug 信息并返回最佳结果
+    private func findBestMatchAndDebug(imageVector: [Float]) -> (item: TrashItem, score: Float)? {
+        guard !knowledgeBase.isEmpty else {
+            print("⚠️ 知识库尚未加载完毕")
+            return nil
+        }
+
+        // 1. 归一化图片向量
         let imageNorm = sqrt(imageVector.reduce(0) { $0 + $1 * $1 })
         let normalizedImage = imageVector.map { $0 / imageNorm }
         
+        var allScores: [(item: TrashItem, score: Float)] = []
+        
         // 2. 遍历知识库计算点积
         for item in knowledgeBase {
-            var score: Float = 0.0
-            // vDSP_dotpr 是 Apple 提供的硬件加速点积函数，比 for 循环快 10 倍
-            vDSP_dotpr(normalizedImage, 1, item.embedding, 1, &score, vDSP_Length(normalizedImage.count))
-            
-            if score > bestScore {
-                bestScore = score
-                bestItem = item
+            // 🔥 Crash Fix: 确保维度一致
+            guard item.embedding.count == normalizedImage.count else {
+                continue
             }
+            
+            var score: Float = 0.0
+            vDSP_dotpr(normalizedImage, 1, item.embedding, 1, &score, vDSP_Length(normalizedImage.count))
+            allScores.append((item, score))
         }
         
-        // 3. 阈值判断 (Thresholding)
-        // MobileCLIP 的分数通常在 0.2 - 0.3 之间就算很好了
-        // 如果使用了 Ensemble (多提示词平均)，分数会更稳，但绝对值可能依然不高
-        if bestScore < 0.10 { return nil }
+        // 3. 排序 (Desc)
+        let sortedMatches = allScores.sorted { $0.score > $1.score }
         
-        if let item = bestItem {
-            return (item, bestScore)
+        // 4. 打印 Debug 信息 (Top 5)
+        print("\n-------- 🧠 AI 思考过程 (Top 5) --------")
+        for (index, match) in sortedMatches.prefix(5).enumerated() {
+             print("👉 #\(index + 1) [\(match.item.label)] 得分: \(match.score)")
         }
+        print("---------------------------------------\n")
+        
+        // 5. 返回最佳结果 (阈值过滤)
+        if let best = sortedMatches.first, best.score >= 0.10 {
+            return best
+        }
+        
         return nil
     }
     
@@ -171,32 +185,6 @@ class RealClassifierService: TrashClassifierService {
             array[i] = ptr[i]
         }
         return array
-    }
-    
-    // MARK: - Debugging (上帝视角)
-    
-    private func debugTopMatches(imageVector: [Float]) {
-        print("\n-------- 🧠 AI 思考过程 (Top 5) --------")
-        
-        let imageNorm = sqrt(imageVector.reduce(0) { $0 + $1 * $1 })
-        let normalizedImage = imageVector.map { $0 / imageNorm }
-        
-        var allScores: [(name: String, score: Float)] = []
-        
-        for item in knowledgeBase {
-            var score: Float = 0.0
-            vDSP_dotpr(normalizedImage, 1, item.embedding, 1, &score, vDSP_Length(normalizedImage.count))
-            allScores.append((item.label, score))
-        }
-        
-        // 排序并取前 5
-        let top5 = allScores.sorted { $0.score > $1.score }.prefix(5)
-        
-        for (index, match) in top5.enumerated() {
-            // 打印格式：#1 Label -> Score
-            print("👉 #\(index + 1) [\(match.name)] 得分: \(match.score)")
-        }
-        print("---------------------------------------\n")
     }
     
     // MARK: - UI Logic

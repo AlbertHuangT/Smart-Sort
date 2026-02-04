@@ -102,10 +102,8 @@ struct ContentView: View {
         .sheet(isPresented: $showCamera) {
             CameraView(selectedImage: $capturedImage)
         }
-        // 🔥 修复：使用 iOS 17 新版 onChange 语法
-        // 旧版: .onChange(of: capturedImage) { newImage in ... }
-        // 新版: Closure 接收两个参数 (oldValue, newValue)
-        .onChange(of: capturedImage) { _, newImage in
+        // 🔥 修复：使用通用版 onChange 语法 (兼容 iOS 14/15/16)
+        .onChange(of: capturedImage) { newImage in
             if let img = newImage {
                 viewModel.analyzeImage(image: img)
             }

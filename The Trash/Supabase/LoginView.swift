@@ -5,7 +5,6 @@
 //  Created by Albert Huang on 2/3/26.
 //
 
-
 import SwiftUI
 
 struct LoginView: View {
@@ -72,5 +71,11 @@ struct LoginView: View {
             }
         }
         .padding()
+        // 🔥 新增：注册成功的弹窗提示
+        .alert("Check your Inbox", isPresented: $authVM.showCheckEmailAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("We've sent a confirmation link to \(email). Please click it to verify your account.")
+        }
     }
 }
