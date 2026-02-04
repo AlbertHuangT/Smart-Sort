@@ -1,14 +1,14 @@
-# --- macOS åå¾æä¶ ---
+# --- macOS system files ---
 .DS_Store
 
-# --- Xcode äªäºè¾ç® (äåää ) ---
+# --- Xcode user settings (should not be uploaded) ---
 *.auth
 *.xcuserstate
 *.xccheckout
 xcuserdata/
 *.xcworkspace/xcuserdata/
 
-# --- çèçææä¶ ---
+# --- Build generated files ---
 build/
 DerivedData/
 *.moved-aside
@@ -21,11 +21,18 @@ DerivedData/
 *.perspectivev3
 !default.perspectivev3
 
-# --- æ¸åïå½ç¥å¨å§çæºå¨å¦ä æ¡å ---
+# --- CoreML models (if you don't want to upload source models) ---
 *.mlmodel
 *.mlpackage
 
-# --- åæä æ Swift Package Manager ---
+# --- Swift Package Manager ---
 .build/
+.swiftpm/
 Packages/
 Package.pins
+# Package.resolved is usually kept to lock dependency versions, 
+# but uncomment the next line if you want to ignore it:
+# Package.resolved
+
+# --- Custom Ignore (Sensitive Data) ---
+Secrets.swift

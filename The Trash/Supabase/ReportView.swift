@@ -5,7 +5,6 @@
 //  Created by Albert Huang on 2/3/26.
 //
 
-
 import SwiftUI
 
 struct ReportView: View {
@@ -15,7 +14,7 @@ struct ReportView: View {
     
     @Environment(\.dismiss) var dismiss
     
-    // 对应你 trash_knowledge.json 里的四大类
+    // 对应垃圾桶分类
     let bins = ["Recycle (Blue Bin)", "Compost (Green Bin)", "Landfill (Black Bin)", "Hazardous"]
     
     @State private var selectedBin = "Landfill (Black Bin)"
@@ -78,6 +77,13 @@ struct ReportView: View {
                 Button("OK") { dismiss() }
             } message: {
                 Text("Your feedback helps make The Trash AI smarter.")
+            }
+            // 🔥 UX Fix: 自动预填选项
+            .onAppear {
+                // 如果 AI 的预测结果在我们已知的列表里，就自动选中它，方便用户微调
+                if bins.contains(predictedResult.category) {
+                    selectedBin = predictedResult.category
+                }
             }
         }
     }
