@@ -9,7 +9,7 @@ import Foundation
 import UIKit
 import Supabase
 
-// 数据结构定义
+// Data structure definition
 struct FeedbackRecord: Encodable {
     let user_id: UUID?
     let predicted_label: String
@@ -22,7 +22,7 @@ struct FeedbackRecord: Encodable {
 class FeedbackService {
     static let shared = FeedbackService()
     
-    // 获取客户端实例
+    // Get client instance
     private let client = SupabaseManager.shared.client
     
     private init() {}
@@ -36,18 +36,18 @@ class FeedbackService {
         userId: UUID?
     ) async throws {
         
-        print("🚀 [FeedbackService] 开始提交反馈...")
+        print("🚀 [FeedbackService] Start submitting feedback...")
         
-        // 1. 图片处理
+        // 1. Image processing
         guard let imageData = image.jpegData(compressionQuality: 0.5) else {
             throw NSError(
                 domain: "FeedbackService",
                 code: -1,
-                userInfo: [NSLocalizedDescriptionKey: "图片处理失败"]
+                userInfo: [NSLocalizedDescriptionKey: "Image processing failed"]
             )
         }
         
-        // 2. 生成路径
+        // 2. Generate path
         let fileName = "\(UUID().uuidString).jpg"
         let filePath = "uploads/\(fileName)"
         
@@ -57,20 +57,20 @@ class FeedbackService {
             upsert: false
         )
         
-        // 🔥 修复：upload 方法更新
-        // 旧写法: .upload(path: filePath, file: imageData, ...)
-        // 新写法: .upload(filePath, data: imageData, ...)
+        // Fix: upload method updated
+        // Old usage: .upload(path: filePath, file: imageData, ...)
+        // New usage: .upload(filePath, data: imageData, ...)
         _ = try await client.storage
             .from("feedback_images")
             .upload(
-                filePath,           // 第一个参数是路径，不需要标签
-                data: imageData,    // 第二个参数改名为 data
+                filePath,           // First parameter is path, no label needed
+                data: imageData,    // Second parameter renamed to data
                 options: fileOptions
             )
         
-        print("✅ [FeedbackService] 图片上传成功")
+        print("✅ [FeedbackService] Image uploaded successfully")
         
-        // 3. 写入数据库
+        // 3. Write to database
         let record = FeedbackRecord(
             user_id: userId,
             predicted_label: predictedLabel,
@@ -85,6 +85,7 @@ class FeedbackService {
             .insert(record)
             .execute()
             
-        print("✅ [FeedbackService] 数据库写入成功")
+        print("✅ [FeedbackService] Database write successful")
     }
 }
+

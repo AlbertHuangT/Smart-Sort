@@ -15,42 +15,42 @@ struct The_TrashApp: App {
     var body: some Scene {
         WindowGroup {
             ZStack {
-                // --- 1. 核心页面层 ---
+                // --- 1. Core Page Layer ---
                 Group {
                     if authVM.session != nil {
                         ContentView()
-                            .transition(.opacity) // 淡入淡出效果
+                            .transition(.opacity) // Fade in/out effect
                     } else {
                         LoginView()
                             .transition(.opacity)
                     }
                 }
                 
-                // --- 2. 全局验证状态提示层 (Overlay) ---
-                // 只有当状态不是 idle (空闲) 时才显示
+                // --- 2. Global Authentication Status Overlay ---
+                // Only show when status is not idle
                 if authVM.deepLinkStatus != .idle {
                     DeepLinkOverlay(status: authVM.deepLinkStatus)
                         .transition(.move(edge: .top).combined(with: .opacity))
-                        .zIndex(100) // 确保永远在最上面
+                        .zIndex(100) // Always on top
                 }
             }
             .environmentObject(authVM)
-            // 监听 URL
+            // Observe URL
             .onOpenURL { url in
                 print("🔗 Received Deep Link: \(url)")
                 Task {
-                    // 交给 ViewModel 处理，触发 Overlay 动画
+                    // Pass to ViewModel for Overlay animation
                     await authVM.handleIncomingURL(url)
                 }
             }
-            // 加上动画，让提示框和页面切换更丝滑
+            // Add animation for smoother transitions
             .animation(.easeInOut, value: authVM.session)
             .animation(.spring(), value: authVM.deepLinkStatus)
         }
     }
 }
 
-// --- 3. 提取出来的美观提示框组件 ---
+// --- 3. Extracted Stylish Overlay Component ---
 struct DeepLinkOverlay: View {
     let status: AuthDeepLinkStatus
     
@@ -91,11 +91,12 @@ struct DeepLinkOverlay: View {
             }
             .padding(.vertical, 12)
             .padding(.horizontal, 20)
-            .background(.ultraThinMaterial) // 毛玻璃背景
+            .background(.ultraThinMaterial) // Frosted glass background
             .cornerRadius(30)
             .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: 5)
         }
-        .frame(maxHeight: .infinity, alignment: .top) // 固定在屏幕顶部
-        .padding(.top, 60) // 避开刘海区域
+        .frame(maxHeight: .infinity, alignment: .top) // Fixed at the top of the screen
+        .padding(.top, 60) // Avoid notch area
     }
 }
+

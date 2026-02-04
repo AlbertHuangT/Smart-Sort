@@ -17,25 +17,25 @@ struct LoginView: View {
     @State private var phoneNumber = "+1"
     @State private var otpCode = ""
     
-    // Logo 动画状态
+    // Logo animation state
     @State private var isAnimating = false
     
     var body: some View {
         ZStack {
-            // 1. 背景层：动态渐变
+            // 1. Background layer: Dynamic gradient
             LinearGradient(
                 colors: [Color.blue.opacity(0.3), Color.purple.opacity(0.2)],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
             .ignoresSafeArea()
-            .overlay(Color(.systemBackground).opacity(0.2)) // 混合系统背景色以适配暗色模式
+            .overlay(Color(.systemBackground).opacity(0.2)) // Blend system background for dark mode compatibility
             
-            // 2. 内容层
+            // 2. Content layer
             ScrollView {
                 VStack(spacing: 30) {
                     
-                    // --- 顶部 Logo ---
+                    // --- Top Logo ---
                     VStack(spacing: 16) {
                         ZStack {
                             Circle()
@@ -59,12 +59,12 @@ struct LoginView: View {
                     .padding(.top, 60)
                     .onAppear { isAnimating = true }
                     
-                    // --- 主卡片区域 ---
+                    // --- Main Card Area ---
                     VStack(spacing: 25) {
                         // Segment Control
                         Picker("Method", selection: $loginMethod) {
-                            Text("email address").tag(0)
-                            Text("phone number").tag(1)
+                            Text("Email").tag(0)
+                            Text("Phone").tag(1)
                         }
                         .pickerStyle(.segmented)
                         
@@ -94,10 +94,29 @@ struct LoginView: View {
                         .transition(.move(edge: .leading).combined(with: .opacity))
                     }
                     .padding(30)
-                    .background(.regularMaterial) // iOS 毛玻璃材质，完美适配暗色/浅色
+                    .background(.regularMaterial) // iOS frosted glass effect, adapts to dark/light mode
                     .cornerRadius(24)
                     .shadow(color: Color.black.opacity(0.1), radius: 20, x: 0, y: 10)
                     .padding(.horizontal)
+                    
+                    // --- Guest Access Button ---
+                    Button(action: {
+                        Task { await authVM.signInAnonymously() }
+                    }) {
+                        HStack {
+                            Image(systemName: "person.and.arrow.left.and.arrow.right")
+                            Text("Continue as Guest")
+                        }
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(.secondary)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(Color.secondary.opacity(0.1))
+                        .cornerRadius(14)
+                    }
+                    .padding(.horizontal)
+                    .padding(.top, -10)
                     
                     Spacer()
                 }
@@ -111,16 +130,17 @@ struct LoginView: View {
     var emailFormContent: some View {
         VStack(spacing: 20) {
             VStack(spacing: 16) {
+                // Fixed: CustomTextField is now defined below
                 CustomTextField(
                     icon: "envelope.fill",
-                    placeholder: "email address",
+                    placeholder: "Email Address",
                     text: $email,
                     keyboardType: .emailAddress
                 )
                 
                 CustomTextField(
                     icon: "lock.fill",
-                    placeholder: "password",
+                    placeholder: "Password",
                     text: $password,
                     isSecure: true
                 )
@@ -138,7 +158,7 @@ struct LoginView: View {
                         }
                     }
                 }) {
-                    Text(isSignUp ? "注册" : "登录")
+                    Text(isSignUp ? "Sign Up" : "Login")
                         .fontWeight(.bold)
                         .frame(maxWidth: .infinity)
                         .padding()
@@ -151,9 +171,9 @@ struct LoginView: View {
             
             Button(action: { withAnimation { isSignUp.toggle() } }) {
                 HStack {
-                    Text(isSignUp ? "already has an account?" : "no account?")
+                    Text(isSignUp ? "Already have an account?" : "Don't have an account?")
                         .foregroundColor(.secondary)
-                    Text(isSignUp ? "直接登录" : "立即注册")
+                    Text(isSignUp ? "Login Now" : "Sign Up Now")
                         .fontWeight(.semibold)
                         .foregroundColor(.blue)
                 }
@@ -173,7 +193,7 @@ struct LoginView: View {
                         text: $phoneNumber,
                         keyboardType: .phonePad
                     )
-                    Text("支持注册与登录")
+                    Text("Supports both Sign Up and Login")
                         .font(.caption2)
                         .foregroundColor(.secondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -188,7 +208,7 @@ struct LoginView: View {
                     }) {
                         HStack {
                             Image(systemName: "paperplane.fill")
-                            Text("发送验证码")
+                            Text("Send OTP")
                         }
                         .fontWeight(.bold)
                         .frame(maxWidth: .infinity)
@@ -201,7 +221,7 @@ struct LoginView: View {
                 }
             } else {
                 VStack(spacing: 16) {
-                    Text("验证码已发送至")
+                    Text("OTP has been sent to")
                         .font(.caption)
                         .foregroundColor(.secondary)
                     Text(phoneNumber)
@@ -210,7 +230,7 @@ struct LoginView: View {
                     
                     CustomTextField(
                         icon: "key.fill",
-                        placeholder: "6 位数字验证码",
+                        placeholder: "6-digit OTP Code",
                         text: $otpCode,
                         keyboardType: .numberPad
                     )
@@ -221,7 +241,7 @@ struct LoginView: View {
                         Button(action: {
                             Task { await authVM.verifyOTP(phone: phoneNumber, token: otpCode) }
                         }) {
-                            Text("验证并登录")
+                            Text("Verify and Login")
                                 .fontWeight(.bold)
                                 .frame(maxWidth: .infinity)
                                 .padding()
@@ -231,7 +251,7 @@ struct LoginView: View {
                         }
                     }
                     
-                    Button("号码填错了?") {
+                    Button("Wrong number?") {
                         withAnimation {
                             authVM.showOTPInput = false
                             otpCode = ""
@@ -245,7 +265,8 @@ struct LoginView: View {
     }
 }
 
-// MARK: - Custom TextField (适配暗色模式)
+// MARK: - Reusable Custom TextField
+// This was missing in the previous version!
 struct CustomTextField: View {
     var icon: String
     var placeholder: String
@@ -268,7 +289,6 @@ struct CustomTextField: View {
             }
         }
         .padding()
-        // 使用 secondarySystemBackground 确保在任何模式下都有区分度
         .background(Color(.secondarySystemBackground))
         .cornerRadius(12)
     }

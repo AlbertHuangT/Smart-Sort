@@ -14,48 +14,31 @@ struct ContentView: View {
     
     var body: some View {
         TabView(selection: $selectedTab) {
-            
-            // --- Tab 0: Verify (核心功能) ---
             VerifyView()
-                .tabItem {
-                    Label("Verify", systemImage: "camera.viewfinder")
-                }
+                .tabItem { Label("Verify", systemImage: "camera.viewfinder") }
                 .tag(0)
             
-            // --- Tab 1: Friend (排行榜) ---
             FriendView()
-                .tabItem {
-                    Label("Friends", systemImage: "person.2.fill")
-                }
+                .tabItem { Label("Friends", systemImage: "person.2.fill") }
                 .tag(1)
             
-            // --- Tab 2: Arena (✨ 新增：竞技场/众包) ---
-            // 确保你已经创建了 ArenaView.swift 文件
             ArenaView()
-                .tabItem {
-                    Label("Arena", systemImage: "flame.fill")
-                }
+                .tabItem { Label("Arena", systemImage: "flame.fill") }
                 .tag(2)
             
-            // --- Tab 3: Reward (奖励) ---
             RewardView()
-                .tabItem {
-                    Label("Reward", systemImage: "gift.fill")
-                }
+                .tabItem { Label("Reward", systemImage: "gift.fill") }
                 .tag(3)
             
-            // --- Tab 4: Account (账户) ---
             AccountView()
-                .tabItem {
-                    Label("Account", systemImage: "person.circle.fill")
-                }
+                .tabItem { Label("Account", systemImage: "person.circle.fill") }
                 .tag(4)
         }
         .accentColor(.blue)
     }
 }
 
-// MARK: - 1. Verify View (Fixed & Optimized)
+// MARK: - 1. Verify View (iOS 18 & Tab-Switch Bug Fixed)
 struct VerifyView: View {
     @StateObject private var viewModel = TrashViewModel(classifier: RealClassifierService.shared)
     @StateObject private var cameraManager = CameraManager()
@@ -63,7 +46,6 @@ struct VerifyView: View {
     // UI State
     @State private var cardOffset: CGSize = .zero
     @State private var showingFeedbackForm = false
-    // 控制相机激活状态
     @State private var isCameraActive = false
     
     // Form Data
@@ -71,47 +53,37 @@ struct VerifyView: View {
     @State private var feedbackItemName = ""
     let trashCategories = ["Recyclable", "Hazardous", "Compostable", "General Trash", "Electronic"]
     
-    // Computed Properties
+    // Computed states for cleaner logic
+    var showFeedbackForm: Bool {
+        if case .collectingFeedback = viewModel.appState, showingFeedbackForm { return true }
+        return false
+    }
+    
     var isPreviewState: Bool {
         cameraManager.capturedImage == nil && viewModel.appState == .idle
-    }
-    
-    var showResultCard: Bool {
-        if case .finished = viewModel.appState, cameraManager.capturedImage != nil, !showingFeedbackForm {
-            return true
-        }
-        return false
-    }
-    
-    var showFeedbackForm: Bool {
-        if case .collectingFeedback = viewModel.appState, showingFeedbackForm {
-            return true
-        }
-        return false
     }
 
     var body: some View {
         ZStack {
             Color(.systemGroupedBackground).ignoresSafeArea()
             
-            VStack(spacing: 20) {
+            VStack(spacing: 0) {
                 // Header
                 HStack {
                     Text("The Trash")
                         .font(.largeTitle)
                         .fontWeight(.heavy)
-                        .foregroundColor(.primary)
                     Spacer()
                 }
                 .padding(.horizontal)
-                .padding(.top, 20)
+                .padding(.top, 10)
                 
-                // --- 1. Camera/Image Area ---
+                // --- Camera/Image Area ---
                 GeometryReader { geo in
                     ZStack {
                         RoundedRectangle(cornerRadius: 24)
                             .fill(Color(.secondarySystemGroupedBackground))
-                            .shadow(color: Color.black.opacity(0.15), radius: 15, x: 0, y: 5)
+                            .shadow(color: Color.black.opacity(0.1), radius: 10, y: 5)
                         
                         if let image = cameraManager.capturedImage {
                             Image(uiImage: image)
@@ -120,72 +92,29 @@ struct VerifyView: View {
                                 .frame(width: geo.size.width, height: geo.size.height)
                                 .cornerRadius(24)
                                 .clipped()
-                                .overlay(
-                                    ZStack {
-                                        if viewModel.appState == .analyzing {
-                                            Color.black.opacity(0.5)
-                                            VStack(spacing: 12) {
-                                                ProgressView()
-                                                    .tint(.white)
-                                                    .scaleEffect(1.5)
-                                                Text("Analyzing...")
-                                                    .font(.headline)
-                                                    .foregroundColor(.white)
-                                            }
-                                        }
-                                    }
-                                )
+                        } else if isCameraActive {
+                            CameraPreview(cameraManager: cameraManager)
+                                .clipShape(RoundedRectangle(cornerRadius: 24))
                         } else {
-                            // 相机预览或待机占位
-                            if isCameraActive {
-                                CameraPreview(cameraManager: cameraManager)
-                                    .frame(width: geo.size.width, height: geo.size.height)
-                                    .clipShape(RoundedRectangle(cornerRadius: 24))
-                                    .overlay(
-                                        Group {
-                                            if !cameraManager.permissionGranted {
-                                                Text("Camera access needed")
-                                                    .foregroundColor(.white)
-                                                    .padding()
-                                                    .background(Color.black.opacity(0.6))
-                                                    .cornerRadius(10)
-                                            }
-                                        }
-                                    )
-                            } else {
-                                // 待机状态：显示占位图
-                                VStack(spacing: 16) {
-                                    Image(systemName: "camera.aperture")
-                                        .font(.system(size: 60))
-                                        .foregroundColor(.secondary.opacity(0.5))
-                                    Text("Tap button to scan trash")
-                                        .font(.headline)
-                                        .foregroundColor(.secondary)
-                                }
-                                .frame(width: geo.size.width, height: geo.size.height)
+                            VStack(spacing: 16) {
+                                Image(systemName: "camera.aperture")
+                                    .font(.system(size: 60))
+                                    .foregroundColor(.secondary.opacity(0.4))
+                                Text("Ready to identify").foregroundColor(.secondary)
                             }
-                            
-                            RoundedRectangle(cornerRadius: 24)
-                                .strokeBorder(Color.white.opacity(0.3), lineWidth: 1)
                         }
                     }
                 }
-                .frame(height: 400)
+                .frame(maxHeight: 360) // Reduced height to accommodate iOS 18 TabBar
                 .padding(.horizontal)
-                .offset(y: showFeedbackForm ? -20 : 0)
-                .animation(.spring(response: 0.4, dampingFraction: 0.8), value: showFeedbackForm)
+                .padding(.top, 10)
                 
-                // --- 2. Dynamic Interaction Area ---
+                // --- Dynamic Interaction Area ---
                 ZStack {
-                    if showResultCard, case .finished(let result) = viewModel.appState {
+                    if case .finished(let result) = viewModel.appState, !showingFeedbackForm {
                         SwipeableResultCard(result: result, offset: $cardOffset) { direction in
                             handleSwipe(direction: direction, result: result)
                         }
-                        .zIndex(2)
-                        .transition(AnyTransition.asymmetric(
-                            insertion: AnyTransition.scale.combined(with: AnyTransition.opacity),
-                            removal: AnyTransition.opacity
-                        ))
                     }
                     
                     if showFeedbackForm {
@@ -194,95 +123,72 @@ struct VerifyView: View {
                             itemName: $feedbackItemName,
                             categories: trashCategories
                         )
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                        .zIndex(3)
-                    }
-                    
-                    if isPreviewState && isCameraActive {
-                        Text("Point at trash and snap")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .padding(.top, 10)
                     }
                 }
-                .frame(height: 160)
+                .frame(height: 180)
                 
-                Spacer()
+                Spacer(minLength: 10)
                 
-                // --- 3. Main Action Button ---
+                // --- Main Action Button ---
                 Button(action: handleMainButtonTap) {
                     HStack {
-                        if showFeedbackForm {
-                            Image(systemName: "paperplane.fill")
-                            Text("Submit")
-                        } else if !isCameraActive {
-                            // 相机未激活
-                            Image(systemName: "camera.fill")
-                            Text("Open Camera")
+                        if viewModel.appState == .analyzing {
+                            ProgressView().tint(.white)
                         } else {
-                            // 相机已激活，准备拍照
-                            Image(systemName: "camera.shutter.button.fill")
-                            Text("Identify")
+                            Image(systemName: buttonIcon)
+                            Text(buttonText)
                         }
                     }
-                    .font(.headline)
-                    .fontWeight(.bold)
+                    .font(.headline).fontWeight(.bold)
                     .foregroundColor(.white)
-                    .padding()
                     .frame(maxWidth: .infinity)
                     .frame(height: 56)
-                    .background(
-                        LinearGradient(
-                            colors: showFeedbackForm ? [Color.green, Color.green.opacity(0.8)] : [Color.blue, Color.purple],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
+                    .background(showFeedbackForm ? Color.green : Color.blue)
                     .cornerRadius(28)
-                    .shadow(color: (showFeedbackForm ? Color.green : Color.blue).opacity(0.4), radius: 10, x: 0, y: 5)
+                    .shadow(color: Color.black.opacity(0.15), radius: 8, y: 4)
                 }
                 .padding(.horizontal, 24)
-                .padding(.bottom, 20)
-                .disabled((!isPreviewState && !showFeedbackForm) && isCameraActive)
-                .opacity(((!isPreviewState && !showFeedbackForm) && isCameraActive) ? 0.6 : 1.0)
-                .scaleEffect(((!isPreviewState && !showFeedbackForm) && isCameraActive) ? 0.98 : 1.0)
-                .animation(.easeInOut, value: isPreviewState)
+                .padding(.bottom, 15) // Extra padding for visual breathing room
+                .disabled(viewModel.appState == .analyzing)
             }
         }
-        .onAppear {
-            resetUIState()
+        // Prevents button from being covered by Tab Bar
+        .safeAreaInset(edge: .bottom) {
+            Color.clear.frame(height: 15)
         }
         .onDisappear {
             cameraManager.stop()
-            isCameraActive = false
         }
         .onReceive(cameraManager.$capturedImage) { img in
             if let img = img { viewModel.analyzeImage(image: img) }
         }
     }
     
-    // MARK: - Logic Handlers
+    // Dynamic Icon & Text Logic
+    private var buttonIcon: String {
+        if showFeedbackForm { return "paperplane.fill" }
+        if isCameraActive && !isPreviewState { return "arrow.clockwise" }
+        return isCameraActive ? "camera.shutter.button.fill" : "camera.fill"
+    }
     
+    private var buttonText: String {
+        if showFeedbackForm { return "Submit" }
+        if isCameraActive && !isPreviewState { return "Retake" }
+        return isCameraActive ? "Identify" : "Open Camera"
+    }
+    
+    // MARK: - Handlers
     private func handleSwipe(direction: SwipeDirection, result: TrashAnalysisResult) {
         let generator = UINotificationFeedbackGenerator()
-        
-        // 🔥 修复逻辑：右滑 (Right) = 准确 (Accurate)，左滑 (Left) = 不准确 (Inaccurate)
         if direction == .right {
-            // Right: Accurate -> Green
             generator.notificationOccurred(.success)
             viewModel.handleCorrectFeedback()
-            withAnimation(.easeIn(duration: 0.3)) { cardOffset.width = 500 } // 向右飞出
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                finishFlowAndReset()
-            }
+            withAnimation(.easeIn(duration: 0.3)) { cardOffset.width = 500 }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { finishFlowAndReset() }
         } else {
-            // Left: Inaccurate -> Red
             generator.notificationOccurred(.warning)
-            withAnimation(.easeIn(duration: 0.3)) { cardOffset.width = -500 } // 向左飞出
-            
+            withAnimation(.easeIn(duration: 0.3)) { cardOffset.width = -500 }
             viewModel.prepareForIncorrectFeedback(wrongResult: result)
-            
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 withAnimation(.spring()) {
                     self.showingFeedbackForm = true
@@ -293,9 +199,6 @@ struct VerifyView: View {
     }
     
     private func handleMainButtonTap() {
-        let generator = UIImpactFeedbackGenerator(style: .medium)
-        generator.impactOccurred()
-        
         if showFeedbackForm {
             submitFeedback()
         } else if !isCameraActive {
@@ -303,20 +206,17 @@ struct VerifyView: View {
             cameraManager.start()
         } else if isPreviewState {
             cameraManager.takePhoto()
+        } else {
+            finishFlowAndReset()
+            cameraManager.start()
         }
     }
     
     private func submitFeedback() {
-        guard case .collectingFeedback(let originalResult) = viewModel.appState else { return }
-        guard let currentImage = cameraManager.capturedImage else { return }
-        
+        guard case .collectingFeedback(let originalResult) = viewModel.appState,
+              let currentImage = cameraManager.capturedImage else { return }
         Task {
-            await viewModel.submitCorrection(
-                image: currentImage,
-                originalResult: originalResult,
-                correctedCategory: selectedFeedbackCategory,
-                correctedName: feedbackItemName
-            )
+            await viewModel.submitCorrection(image: currentImage, originalResult: originalResult, correctedCategory: selectedFeedbackCategory, correctedName: feedbackItemName)
             finishFlowAndReset()
         }
     }
@@ -331,121 +231,33 @@ struct VerifyView: View {
         viewModel.reset()
         cameraManager.reset()
     }
-    
-    private func resetUIState() {
-        showingFeedbackForm = false
-        cardOffset = .zero
-    }
 }
 
 // MARK: - 2. Friend View
 struct FriendView: View {
     @StateObject private var friendService = FriendService()
-    
     var body: some View {
         NavigationView {
             ZStack {
                 Color(.systemGroupedBackground).ignoresSafeArea()
-                
                 if friendService.friends.isEmpty {
                     VStack(spacing: 20) {
-                        Image(systemName: "person.2.slash.fill")
-                            .font(.system(size: 60))
-                            .foregroundColor(.secondary)
-                        Text("No friends yet")
-                            .font(.title2)
-                            .bold()
-                            .foregroundColor(.primary)
-                        
-                        if !friendService.isAuthorized {
-                            Text("Sync contacts to compete!")
-                                .font(.body)
-                                .foregroundColor(.secondary)
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal)
-                            
-                            Button(action: {
-                                Task { await friendService.findFriendsFromContacts() }
-                            }) {
-                                Text("Sync Contacts")
-                                    .fontWeight(.bold)
-                                    .padding()
-                                    .frame(maxWidth: .infinity)
-                                    .background(Color.blue)
-                                    .foregroundColor(.white)
-                                    .cornerRadius(12)
-                            }
-                            .padding(.horizontal, 40)
-                        } else {
-                            Text("None of your contacts are playing yet.\nInvite them!")
-                                .multilineTextAlignment(.center)
-                                .foregroundColor(.secondary)
-                        }
+                        Image(systemName: "person.2.slash.fill").font(.system(size: 60)).foregroundColor(.secondary)
+                        Text("No friends yet").font(.title2).bold()
+                        Button("Sync Contacts") { Task { await friendService.findFriendsFromContacts() } }.buttonStyle(.borderedProminent)
                     }
                 } else {
-                    List {
-                        ForEach(friendService.friends) { friend in
-                            HStack(spacing: 16) {
-                                ZStack {
-                                    if friend.rank <= 3 {
-                                        Circle()
-                                            .fill(rankColor(for: friend.rank).opacity(0.2))
-                                            .frame(width: 36, height: 36)
-                                        Image(systemName: "crown.fill")
-                                            .foregroundColor(rankColor(for: friend.rank))
-                                    } else {
-                                        Text("\(friend.rank)")
-                                            .font(.headline)
-                                            .foregroundColor(.secondary)
-                                            .frame(width: 36)
-                                    }
-                                }
-                                
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(friend.username ?? "User \(friend.rank)")
-                                        .font(.headline)
-                                        .foregroundColor(.primary)
-                                    Text("Eco Warrior")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                                
-                                Spacer()
-                                
-                                Text("\(friend.credits)")
-                                    .font(.title3)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.blue)
-                                Text("pts")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                            .padding(.vertical, 8)
-                            .listRowBackground(Color(.secondarySystemGroupedBackground))
+                    List(friendService.friends) { friend in
+                        HStack {
+                            Text("\(friend.rank)").bold().frame(width: 30)
+                            Text(friend.username ?? "Anonymous")
+                            Spacer()
+                            Text("\(friend.credits) pts").foregroundColor(.blue)
                         }
-                    }
-                    .listStyle(.insetGrouped)
+                    }.listStyle(.insetGrouped)
                 }
             }
             .navigationTitle("Leaderboard")
-            .refreshable {
-                await friendService.findFriendsFromContacts()
-            }
-            .onAppear {
-                friendService.checkAuthorizationStatus()
-                if friendService.isAuthorized && friendService.friends.isEmpty {
-                    Task { await friendService.findFriendsFromContacts() }
-                }
-            }
-        }
-    }
-    
-    func rankColor(for rank: Int) -> Color {
-        switch rank {
-        case 1: return .yellow
-        case 2: return .gray
-        case 3: return .orange
-        default: return .primary
         }
     }
 }
@@ -454,46 +266,19 @@ struct FriendView: View {
 struct RewardView: View {
     var body: some View {
         NavigationView {
-            ZStack {
-                Color(.systemGroupedBackground).ignoresSafeArea()
-                VStack(spacing: 24) {
-                    Image(systemName: "gift.circle.fill")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 120, height: 120)
-                        .foregroundStyle(.orange.gradient)
-                        .shadow(radius: 10)
-                    
-                    VStack(spacing: 8) {
-                        Text("Rewards Center")
-                            .font(.title2)
-                            .bold()
-                            .foregroundColor(.primary)
-                        
-                        Text("Use credits to redeem eco-gifts!")
-                            .font(.body)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
-                    
-                    Button("Coming Soon") { }
-                        .buttonStyle(.borderedProminent)
-                        .tint(.gray)
-                        .disabled(true)
-                }
-                .padding()
-            }
-            .navigationTitle("Rewards")
+            VStack {
+                Image(systemName: "gift.fill").font(.system(size: 60)).foregroundColor(.orange)
+                Text("Rewards Coming Soon").font(.headline)
+            }.navigationTitle("Rewards")
         }
     }
 }
 
-// MARK: - 4. Account View
+// MARK: - 4. Account View (Guest Support)
 struct AccountView: View {
     @EnvironmentObject var authVM: AuthViewModel
     @State private var showBindPhoneSheet = false
     @State private var showBindEmailSheet = false
-    
     @State private var inputPhone = "+1"
     @State private var inputEmail = ""
     @State private var inputOTP = ""
@@ -504,89 +289,49 @@ struct AccountView: View {
                 Section {
                     HStack(spacing: 16) {
                         Circle()
-                            .fill(Color.blue.opacity(0.1))
+                            .fill(authVM.isAnonymous ? Color.gray.opacity(0.1) : Color.blue.opacity(0.1))
                             .frame(width: 60, height: 60)
-                            .overlay(
-                                Image(systemName: "person.fill")
-                                    .font(.title)
-                                    .foregroundColor(.blue)
-                            )
+                            .overlay(Image(systemName: "person.fill").foregroundColor(authVM.isAnonymous ? .gray : .blue))
                         
                         VStack(alignment: .leading, spacing: 4) {
-                            if let email = authVM.session?.user.email {
-                                Text(email).font(.headline)
-                            } else if let phone = authVM.session?.user.phone {
-                                Text(phone).font(.headline)
+                            if authVM.isAnonymous {
+                                Text("Guest User").font(.headline)
+                                Text("Link account to save data").font(.caption).foregroundColor(.orange)
                             } else {
-                                Text("Guest").font(.headline)
+                                Text(authVM.session?.user.email ?? authVM.session?.user.phone ?? "Member").font(.headline)
+                                Text("Verified Member").font(.caption).foregroundColor(.green)
                             }
-                            Text("Member")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 2)
-                                .background(Color.green.opacity(0.15))
-                                .cornerRadius(4)
                         }
                     }
                     .padding(.vertical, 8)
-                } header: {
-                    Text("Profile")
-                }
-                .listRowBackground(Color(.secondarySystemGroupedBackground))
+                } header: { Text("Profile") }
                 
                 Section {
                     HStack {
                         Label("Email", systemImage: "envelope.fill")
-                            .foregroundColor(.primary)
                         Spacer()
                         if let email = authVM.session?.user.email, !email.isEmpty {
-                            Text("Linked")
-                                .font(.caption)
-                                .fontWeight(.bold)
-                                .foregroundColor(.green)
-                                .padding(6)
-                                .background(Color.green.opacity(0.1))
-                                .cornerRadius(6)
+                            Text("Linked").font(.caption).bold().foregroundColor(.green)
                         } else {
-                            Button("Link") { showBindEmailSheet = true }
-                                .font(.subheadline)
-                                .foregroundColor(.blue)
+                            Button("Link") { showBindEmailSheet = true }.foregroundColor(.blue)
                         }
                     }
-                    
                     HStack {
                         Label("Phone", systemImage: "phone.fill")
-                            .foregroundColor(.primary)
                         Spacer()
                         if let phone = authVM.session?.user.phone, !phone.isEmpty {
-                            Text("Linked")
-                                .font(.caption)
-                                .fontWeight(.bold)
-                                .foregroundColor(.green)
-                                .padding(6)
-                                .background(Color.green.opacity(0.1))
-                                .cornerRadius(6)
+                            Text("Linked").font(.caption).bold().foregroundColor(.green)
                         } else {
-                            Button("Link") { showBindPhoneSheet = true }
-                                .font(.subheadline)
-                                .foregroundColor(.blue)
+                            Button("Link") { showBindPhoneSheet = true }.foregroundColor(.blue)
                         }
                     }
-                } header: {
-                    Text("Account Binding")
-                }
-                .listRowBackground(Color(.secondarySystemGroupedBackground))
+                } header: { Text("Account Binding") }
                 
                 Section {
-                    Button(action: {
-                        Task { await authVM.signOut() }
-                    }) {
-                        Label("Log Out", systemImage: "rectangle.portrait.and.arrow.right")
-                            .foregroundColor(.red)
+                    Button(action: { Task { await authVM.signOut() } }) {
+                        Label("Log Out", systemImage: "rectangle.portrait.and.arrow.right").foregroundColor(.red)
                     }
                 }
-                .listRowBackground(Color(.secondarySystemGroupedBackground))
             }
             .listStyle(.insetGrouped)
             .navigationTitle("My Account")
@@ -600,7 +345,7 @@ struct AccountView: View {
     }
 }
 
-// Helper Sheets
+// MARK: - Binding Sheets
 struct BindPhoneSheet: View {
     @Binding var inputPhone: String
     @Binding var inputOTP: String
@@ -611,29 +356,23 @@ struct BindPhoneSheet: View {
         NavigationView {
             Form {
                 if !authVM.showOTPInput {
-                    Section(header: Text("Enter Phone")) {
-                        TextField("Phone (+1...)", text: $inputPhone)
-                            .keyboardType(.phonePad)
-                        Button("Send Code") {
-                            Task { await authVM.bindPhone(phone: inputPhone) }
-                        }
+                    Section {
+                        TextField("Phone (+1...)", text: $inputPhone).keyboardType(.phonePad)
+                        Button("Send Code") { Task { await authVM.bindPhone(phone: inputPhone) } }
                     }
                 } else {
-                    Section(header: Text("Enter OTP")) {
-                        TextField("Code", text: $inputOTP)
-                            .keyboardType(.numberPad)
+                    Section {
+                        TextField("Code", text: $inputOTP).keyboardType(.numberPad)
                         Button("Verify & Link") {
                             Task {
                                 await authVM.confirmBindPhone(phone: inputPhone, token: inputOTP)
                                 isPresented = false
-                                authVM.showOTPInput = false
                             }
                         }
                     }
                 }
             }
             .navigationTitle("Bind Phone")
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { isPresented = false } } }
         }
     }
 }
@@ -646,11 +385,9 @@ struct BindEmailSheet: View {
     var body: some View {
         NavigationView {
             Form {
-                Section(header: Text("Enter Email")) {
-                    TextField("Email", text: $inputEmail)
-                        .keyboardType(.emailAddress)
-                        .autocapitalization(.none)
-                    Button("Send Confirmation") {
+                Section {
+                    TextField("Email", text: $inputEmail).keyboardType(.emailAddress).autocapitalization(.none)
+                    Button("Send Link") {
                         Task {
                             await authVM.bindEmail(email: inputEmail)
                             isPresented = false
@@ -659,137 +396,41 @@ struct BindEmailSheet: View {
                 }
             }
             .navigationTitle("Bind Email")
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { isPresented = false } } }
         }
     }
 }
 
-
-// MARK: - Components (Reusable)
+// MARK: - Components
 
 struct SwipeableResultCard: View {
     let result: TrashAnalysisResult
     @Binding var offset: CGSize
     var onSwiped: (SwipeDirection) -> Void
-    
     var body: some View {
-        ZStack {
-            ResultCardContent(result: result)
-            
-            // Swipe Overlay
-            if offset.width > 20 {
-                // Right (Accurate) -> Green Check
-                HStack {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 80))
-                        .foregroundColor(.green)
-                        .padding()
-                    Spacer()
-                }
-                .opacity(min(abs(offset.width)/150.0, 1.0))
-            } else if offset.width < -20 {
-                // Left (Inaccurate) -> Red X
-                HStack {
-                    Spacer()
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 80))
-                        .foregroundColor(.red)
-                        .padding()
-                }
-                .opacity(min(abs(offset.width)/150.0, 1.0))
-            }
-        }
-        .offset(x: offset.width)
-        .rotationEffect(.degrees(Double(offset.width / 15)))
-        .gesture(
-            DragGesture()
-                .onChanged { gesture in
-                    offset = gesture.translation
-                }
-                .onEnded { gesture in
-                    if gesture.translation.width < -100 {
-                        onSwiped(.left)
-                    } else if gesture.translation.width > 100 {
-                        onSwiped(.right)
-                    } else {
-                        withAnimation(.spring()) {
-                            offset = .zero
-                        }
-                    }
-                }
-        )
+        ResultCardContent(result: result)
+            .offset(x: offset.width)
+            .rotationEffect(.degrees(Double(offset.width / 15)))
+            .gesture(DragGesture().onChanged { offset = $0.translation }.onEnded { gesture in
+                if gesture.translation.width < -100 { onSwiped(.left) }
+                else if gesture.translation.width > 100 { onSwiped(.right) }
+                else { withAnimation(.spring()) { offset = .zero } }
+            })
     }
 }
 
 struct ResultCardContent: View {
     let result: TrashAnalysisResult
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            // Header
+        VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text(result.category)
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .foregroundColor(result.color)
+                Text(result.category).font(.headline).foregroundColor(result.color)
                 Spacer()
-                HStack(spacing: 4) {
-                    Image(systemName: "bolt.fill")
-                        .font(.caption)
-                    Text("\(Int(result.confidence * 100))%")
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                }
-                .foregroundColor(.secondary)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Color(.tertiarySystemGroupedBackground))
-                .cornerRadius(8)
+                Text("\(Int(result.confidence * 100))%").font(.caption).bold().padding(4).background(Color.secondary.opacity(0.1)).cornerRadius(4)
             }
-            
-            Divider()
-            
-            // Content
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Detected:")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .textCase(.uppercase)
-                Text(result.itemName)
-                    .font(.title3)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.primary)
-            }
-            
-            // Tips
-            HStack(alignment: .top, spacing: 10) {
-                Image(systemName: "lightbulb.fill")
-                    .foregroundColor(.yellow)
-                Text(result.actionTip)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding()
-            .background(Color(.tertiarySystemGroupedBackground))
-            .cornerRadius(12)
-            
-            // Bottom hints
-            HStack {
-                Image(systemName: "arrow.left")
-                Text("Incorrect") // Left
-                Spacer()
-                Text("Correct")   // Right
-                Image(systemName: "arrow.right")
-            }
-            .font(.caption)
-            .foregroundColor(Color(uiColor: .tertiaryLabel))
-            .padding(.top, 4)
+            Text(result.itemName).font(.title3).bold()
+            Text(result.actionTip).font(.caption).foregroundColor(.secondary)
         }
-        .padding(20)
-        .background(Color(.secondarySystemGroupedBackground))
-        .cornerRadius(20)
-        .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
-        .padding(.horizontal)
+        .padding().background(Color(.secondarySystemGroupedBackground)).cornerRadius(16).padding(.horizontal)
     }
 }
 
@@ -797,56 +438,13 @@ struct FeedbackFormView: View {
     @Binding var selectedCategory: String
     @Binding var itemName: String
     let categories: [String]
-    
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Text("Correction")
-                    .font(.headline)
-                Spacer()
-                Image(systemName: "square.and.pencil")
-                    .foregroundColor(.secondary)
-            }
-            
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Correct Category (Required)")
-                    .font(.caption).foregroundColor(.secondary)
-                
-                Menu {
-                    ForEach(categories, id: \.self) { cat in
-                        Button(action: { selectedCategory = cat }) {
-                            Text(cat)
-                            if selectedCategory == cat { Image(systemName: "checkmark") }
-                        }
-                    }
-                } label: {
-                    HStack {
-                        Text(selectedCategory)
-                            .foregroundColor(.primary)
-                        Spacer()
-                        Image(systemName: "chevron.up.chevron.down")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    .padding()
-                    .background(Color(.tertiarySystemGroupedBackground))
-                    .cornerRadius(10)
-                }
-            }
-            
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Item Name (Optional)")
-                    .font(.caption).foregroundColor(.secondary)
-                TextField("e.g. Starbucks Cup", text: $itemName)
-                    .padding()
-                    .background(Color(.tertiarySystemGroupedBackground))
-                    .cornerRadius(10)
-            }
+        VStack(spacing: 12) {
+            Picker("Category", selection: $selectedCategory) {
+                ForEach(categories, id: \.self) { Text($0) }
+            }.pickerStyle(.menu)
+            TextField("Item Name", text: $itemName).textFieldStyle(.roundedBorder)
         }
-        .padding(20)
-        .background(Color(.secondarySystemGroupedBackground))
-        .cornerRadius(20)
-        .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
-        .padding(.horizontal)
+        .padding().background(Color(.secondarySystemGroupedBackground)).cornerRadius(16).padding(.horizontal)
     }
 }

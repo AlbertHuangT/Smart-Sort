@@ -24,10 +24,10 @@ struct ReportView: View {
     var body: some View {
         NavigationView {
             Form {
-                // AI 结果部分
-                Section(header: Text("AI 预测结果")) {
+                // AI Result Section
+                Section(header: Text("AI Prediction Result")) {
                     HStack {
-                        Text("识别物品")
+                        Text("Recognized Item")
                             .foregroundColor(.secondary)
                         Spacer()
                         Text(predictedResult.itemName)
@@ -35,7 +35,7 @@ struct ReportView: View {
                             .foregroundColor(.primary)
                     }
                     HStack {
-                        Text("分类")
+                        Text("Category")
                             .foregroundColor(.secondary)
                         Spacer()
                         Text(predictedResult.category)
@@ -44,49 +44,49 @@ struct ReportView: View {
                     }
                 }
                 
-                // 人工修正部分
+                // Human Feedback Section
                 Section(header: Text("Human Feedback")) {
-                    Picker("实际分类", selection: $selectedBin) {
+                    Picker("Actual Category", selection: $selectedBin) {
                         ForEach(bins, id: \.self) { bin in
                             Text(bin)
                         }
                     }
                     .pickerStyle(.menu)
                     
-                    TextField("正确物品名称 (optional)", text: $itemName)
+                    TextField("Correct Item Name (optional)", text: $itemName)
                         .autocapitalization(.none)
                 }
                 
-                // 提交按钮
+                // Submit Button
                 Section {
                     if isSubmitting {
                         HStack {
                             Spacer()
-                            ProgressView("正在提交...")
+                            ProgressView("Submitting...")
                             Spacer()
                         }
                     } else {
                         Button(action: submit) {
-                            Text("提交反馈")
+                            Text("Submit Feedback")
                                 .fontWeight(.semibold)
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 4)
                         }
-                        .listRowBackground(Color.blue) // 蓝色按钮背景
+                        .listRowBackground(Color.blue) // Blue button background
                     }
                 }
             }
-            .navigationTitle("报告错误")
+            .navigationTitle("Report Error")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("cancel") { dismiss() }
+                    Button("Cancel") { dismiss() }
                 }
             }
-            .alert("submit success", isPresented: $showSuccess) {
-                Button("好的") { dismiss() }
+            .alert("Submit Success", isPresented: $showSuccess) {
+                Button("OK") { dismiss() }
             } message: {
-                Text("感谢您的反馈，这有助于让 AI 变得更聪明！")
+                Text("Thank you for your feedback. This will help make the AI smarter!")
             }
             .onAppear {
                 if bins.contains(predictedResult.category) {
