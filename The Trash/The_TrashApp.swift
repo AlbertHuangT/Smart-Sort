@@ -12,6 +12,9 @@ import Supabase
 struct The_TrashApp: App {
     @StateObject private var authVM = AuthViewModel()
     
+    // 🔥 新增：在这里初始化真实的 ViewModel，连接 RealClassifierService
+    @StateObject private var trashVM = TrashViewModel(classifier: RealClassifierService.shared)
+    
     var body: some Scene {
         WindowGroup {
             ZStack {
@@ -19,6 +22,7 @@ struct The_TrashApp: App {
                 Group {
                     if authVM.session != nil {
                         ContentView()
+                            .environmentObject(trashVM) // 🔥 注入给 ContentView 及其子视图
                             .transition(.opacity) // Fade in/out effect
                     } else {
                         LoginView()
@@ -99,4 +103,3 @@ struct DeepLinkOverlay: View {
         .padding(.top, 60) // Avoid notch area
     }
 }
-

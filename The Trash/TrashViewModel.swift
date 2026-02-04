@@ -16,36 +16,7 @@ protocol TrashClassifierService {
     func classifyImage(image: UIImage, completion: @escaping (TrashAnalysisResult) -> Void)
 }
 
-// MARK: - 2. Mock Service
-// Explicitly marked as nonisolated implicitly since it's a plain class,
-// but let's make it Sendable-compliant if possible, or just a simple class.
-class MockClassifierService: TrashClassifierService {
-    func classifyImage(image: UIImage, completion: @escaping (TrashAnalysisResult) -> Void) {
-        // Run on global queue to simulate background work
-        DispatchQueue.global().asyncAfter(deadline: .now() + 1.0) {
-            let mockData = [
-                TrashAnalysisResult(
-                    itemName: "Mock-Soda Can",
-                    category: "Recycle (Blue Bin)",
-                    confidence: 0.98,
-                    actionTip: "Empty liquids. Flatten to save space.",
-                    color: .blue
-                ),
-                TrashAnalysisResult(
-                    itemName: "Mock-Banana Peel",
-                    category: "Compost (Green Bin)",
-                    confidence: 0.95,
-                    actionTip: "Organic waste.",
-                    color: .green
-                )
-            ]
-            let result = mockData.randomElement()!
-            completion(result)
-        }
-    }
-}
-
-// MARK: - 3. ViewModel
+// MARK: - 2. ViewModel
 @MainActor
 class TrashViewModel: ObservableObject {
     @Published var appState: AppState = .idle
@@ -53,10 +24,10 @@ class TrashViewModel: ObservableObject {
     private let classifier: TrashClassifierService
     private let client = SupabaseManager.shared.client
     
-    // FIX: Removed default parameter from init to avoid "Main actor-isolated initializer" error
-    // when default argument is evaluated in a non-isolated context.
-    init(classifier: TrashClassifierService? = nil) {
-        self.classifier = classifier ?? MockClassifierService()
+    // 🔥 修改：移除了默认参数 = nil，强制要求传入 classifier
+    // 这样你就永远不会意外用到假服务了
+    init(classifier: TrashClassifierService) {
+        self.classifier = classifier
     }
     
     func analyzeImage(image: UIImage) {

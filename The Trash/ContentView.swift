@@ -29,6 +29,6 @@ struct ContentView: View {
                 .tabItem { Label("Account", systemImage: "person.circle.fill") }
                 .tag(4)
         }
-        .accentColor(.blue)
+        .tint(.blue)
     }
 }
