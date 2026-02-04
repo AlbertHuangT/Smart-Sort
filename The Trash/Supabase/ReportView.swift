@@ -14,7 +14,6 @@ struct ReportView: View {
     
     @Environment(\.dismiss) var dismiss
     
-    // 对应垃圾桶分类
     let bins = ["Recycle (Blue Bin)", "Compost (Green Bin)", "Landfill (Black Bin)", "Hazardous"]
     
     @State private var selectedBin = "Landfill (Black Bin)"
@@ -25,62 +24,71 @@ struct ReportView: View {
     var body: some View {
         NavigationView {
             Form {
-                Section(header: Text("AI Prediction")) {
+                // AI 结果部分
+                Section(header: Text("AI 预测结果")) {
                     HStack {
-                        Text("Identified as:")
+                        Text("识别物品")
+                            .foregroundColor(.secondary)
                         Spacer()
-                        Text(predictedResult.itemName).bold()
+                        Text(predictedResult.itemName)
+                            .bold()
+                            .foregroundColor(.primary)
                     }
                     HStack {
-                        Text("Category:")
+                        Text("分类")
+                            .foregroundColor(.secondary)
                         Spacer()
                         Text(predictedResult.category)
+                            .bold()
                             .foregroundColor(predictedResult.color)
                     }
                 }
                 
-                Section(header: Text("Your Correction (Human Feedback)")) {
-                    Picker("Actually it is:", selection: $selectedBin) {
+                // 人工修正部分
+                Section(header: Text("人工修正 (Human Feedback)")) {
+                    Picker("实际分类", selection: $selectedBin) {
                         ForEach(bins, id: \.self) { bin in
                             Text(bin)
                         }
                     }
                     .pickerStyle(.menu)
                     
-                    TextField("Correct Item Name (Optional)", text: $itemName)
+                    TextField("正确物品名称 (选填)", text: $itemName)
                         .autocapitalization(.none)
                 }
                 
+                // 提交按钮
                 Section {
                     if isSubmitting {
                         HStack {
                             Spacer()
-                            ProgressView("Uploading Data...")
+                            ProgressView("正在提交...")
                             Spacer()
                         }
                     } else {
-                        Button("Submit Feedback") {
-                            submit()
+                        Button(action: submit) {
+                            Text("提交反馈")
+                                .fontWeight(.semibold)
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 4)
                         }
-                        .disabled(isSubmitting)
-                        .foregroundColor(.blue)
+                        .listRowBackground(Color.blue) // 蓝色按钮背景
                     }
                 }
             }
-            .navigationTitle("Report Issue")
+            .navigationTitle("报告错误")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button("取消") { dismiss() }
                 }
             }
-            .alert("Thanks!", isPresented: $showSuccess) {
-                Button("OK") { dismiss() }
+            .alert("提交成功", isPresented: $showSuccess) {
+                Button("好的") { dismiss() }
             } message: {
-                Text("Your feedback helps make The Trash AI smarter.")
+                Text("感谢您的反馈，这有助于让 AI 变得更聪明！")
             }
-            // 🔥 UX Fix: 自动预填选项
             .onAppear {
-                // 如果 AI 的预测结果在我们已知的列表里，就自动选中它，方便用户微调
                 if bins.contains(predictedResult.category) {
                     selectedBin = predictedResult.category
                 }
@@ -100,7 +108,6 @@ struct ReportView: View {
                     comment: itemName,
                     userId: userId
                 )
-                // 成功
                 await MainActor.run {
                     isSubmitting = false
                     showSuccess = true

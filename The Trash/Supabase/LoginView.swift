@@ -10,37 +10,36 @@ import SwiftUI
 struct LoginView: View {
     @EnvironmentObject var authVM: AuthViewModel
     
-    // 模式切换
-    @State private var loginMethod = 0 // 0: Email, 1: Phone
-    
-    // 邮箱表单状态
+    @State private var loginMethod = 0
     @State private var email = ""
     @State private var password = ""
     @State private var isSignUp = false
-    
-    // 手机表单状态
-    @State private var phoneNumber = "+1" // 默认美国区号
+    @State private var phoneNumber = "+1"
     @State private var otpCode = ""
+    
+    // Logo 动画状态
+    @State private var isAnimating = false
     
     var body: some View {
         ZStack {
-            // 1. 背景层：漂亮的渐变色
+            // 1. 背景层：动态渐变
             LinearGradient(
-                colors: [Color.blue.opacity(0.2), Color.purple.opacity(0.1)],
+                colors: [Color.blue.opacity(0.3), Color.purple.opacity(0.2)],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
             .ignoresSafeArea()
+            .overlay(Color(.systemBackground).opacity(0.2)) // 混合系统背景色以适配暗色模式
             
-            // 2. 内容层：使用 ScrollView 防止键盘遮挡
+            // 2. 内容层
             ScrollView {
-                VStack(spacing: 40) {
+                VStack(spacing: 30) {
                     
                     // --- 顶部 Logo ---
                     VStack(spacing: 16) {
                         ZStack {
                             Circle()
-                                .fill(.white)
+                                .fill(Color(.secondarySystemGroupedBackground))
                                 .frame(width: 120, height: 120)
                                 .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
                             
@@ -49,93 +48,86 @@ struct LoginView: View {
                                 .scaledToFit()
                                 .frame(width: 100, height: 100)
                                 .foregroundColor(.blue)
+                                .scaleEffect(isAnimating ? 1.05 : 1.0)
+                                .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: isAnimating)
                         }
                         
                         Text("The Trash")
                             .font(.system(size: 32, weight: .bold, design: .rounded))
                             .foregroundColor(.primary)
                     }
-                    .padding(.top, 40)
+                    .padding(.top, 60)
+                    .onAppear { isAnimating = true }
                     
                     // --- 主卡片区域 ---
                     VStack(spacing: 25) {
-                        
-                        // 切换登录方式
+                        // Segment Control
                         Picker("Method", selection: $loginMethod) {
-                            Text("Email").tag(0)
-                            Text("Phone").tag(1)
+                            Text("邮箱").tag(0)
+                            Text("手机号").tag(1)
                         }
                         .pickerStyle(.segmented)
-                        .padding(.horizontal, 5)
                         
-                        // 错误提示区域
+                        // Error Message
                         if let error = authVM.errorMessage {
                             HStack {
                                 Image(systemName: "exclamationmark.triangle.fill")
                                 Text(error)
                                     .font(.caption)
-                                    .lineLimit(2)
+                                    .multilineTextAlignment(.leading)
                             }
                             .foregroundColor(.red)
-                            .padding(.vertical, 5)
+                            .padding(10)
+                            .background(Color.red.opacity(0.1))
+                            .cornerRadius(8)
                             .transition(.opacity)
                         }
                         
-                        // 表单内容
-                        if loginMethod == 0 {
-                            emailFormContent
-                                .transition(.move(edge: .leading).combined(with: .opacity))
-                        } else {
-                            phoneFormContent
-                                .transition(.move(edge: .trailing).combined(with: .opacity))
+                        // Forms
+                        Group {
+                            if loginMethod == 0 {
+                                emailFormContent
+                            } else {
+                                phoneFormContent
+                            }
                         }
+                        .transition(.move(edge: .leading).combined(with: .opacity))
                     }
-                    .padding(25)
-                    .background(.ultraThinMaterial) // 毛玻璃效果
+                    .padding(30)
+                    .background(.regularMaterial) // iOS 毛玻璃材质，完美适配暗色/浅色
                     .cornerRadius(24)
-                    .shadow(color: .black.opacity(0.05), radius: 15, x: 0, y: 5)
+                    .shadow(color: Color.black.opacity(0.1), radius: 20, x: 0, y: 10)
                     .padding(.horizontal)
                     
                     Spacer()
                 }
             }
         }
-        // 弹窗逻辑保持不变
-        .alert("Check Email", isPresented: $authVM.showCheckEmailAlert) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text("Confirmation link sent to \(email).")
-        }
-        // 添加动画让切换更丝滑
         .animation(.spring(), value: loginMethod)
         .animation(.easeInOut, value: authVM.showOTPInput)
     }
     
-    // MARK: - Email Form Components
-    
+    // MARK: - Email Form
     var emailFormContent: some View {
         VStack(spacing: 20) {
-            // 输入框
-            VStack(spacing: 15) {
+            VStack(spacing: 16) {
                 CustomTextField(
                     icon: "envelope.fill",
-                    placeholder: "UCSD Email",
+                    placeholder: "UCSD 邮箱",
                     text: $email,
                     keyboardType: .emailAddress
                 )
                 
                 CustomTextField(
                     icon: "lock.fill",
-                    placeholder: "Password",
+                    placeholder: "密码",
                     text: $password,
                     isSecure: true
                 )
             }
             
-            // 登录/注册按钮
             if authVM.isLoading {
-                ProgressView()
-                    .padding()
+                ProgressView().padding()
             } else {
                 Button(action: {
                     Task {
@@ -146,25 +138,22 @@ struct LoginView: View {
                         }
                     }
                 }) {
-                    Text(isSignUp ? "Sign Up" : "Log In")
+                    Text(isSignUp ? "注册" : "登录")
                         .fontWeight(.bold)
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(
-                            LinearGradient(colors: [.blue, .blue.opacity(0.8)], startPoint: .leading, endPoint: .trailing)
-                        )
+                        .background(Color.blue)
                         .foregroundColor(.white)
                         .cornerRadius(14)
-                        .shadow(color: .blue.opacity(0.3), radius: 5, x: 0, y: 3)
+                        .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
                 }
             }
             
-            // 切换文案
             Button(action: { withAnimation { isSignUp.toggle() } }) {
                 HStack {
-                    Text(isSignUp ? "Already have an account?" : "Don't have an account?")
+                    Text(isSignUp ? "已有账号?" : "没有账号?")
                         .foregroundColor(.secondary)
-                    Text(isSignUp ? "Log In" : "Sign Up")
+                    Text(isSignUp ? "直接登录" : "立即注册")
                         .fontWeight(.semibold)
                         .foregroundColor(.blue)
                 }
@@ -173,12 +162,10 @@ struct LoginView: View {
         }
     }
     
-    // MARK: - Phone Form Components
-    
+    // MARK: - Phone Form
     var phoneFormContent: some View {
         VStack(spacing: 20) {
             if !authVM.showOTPInput {
-                // 阶段 1: 输入手机号
                 VStack(spacing: 8) {
                     CustomTextField(
                         icon: "phone.fill",
@@ -186,12 +173,11 @@ struct LoginView: View {
                         text: $phoneNumber,
                         keyboardType: .phonePad
                     )
-                    
-                    Text("Supports both Sign Up & Login")
+                    Text("支持注册与登录")
                         .font(.caption2)
                         .foregroundColor(.secondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.leading, 5)
+                        .padding(.leading, 8)
                 }
                 
                 if authVM.isLoading {
@@ -202,7 +188,7 @@ struct LoginView: View {
                     }) {
                         HStack {
                             Image(systemName: "paperplane.fill")
-                            Text("Send Code")
+                            Text("发送验证码")
                         }
                         .fontWeight(.bold)
                         .frame(maxWidth: .infinity)
@@ -210,22 +196,21 @@ struct LoginView: View {
                         .background(Color.green)
                         .foregroundColor(.white)
                         .cornerRadius(14)
-                        .shadow(color: .green.opacity(0.3), radius: 5, x: 0, y: 3)
+                        .shadow(color: .green.opacity(0.3), radius: 8, x: 0, y: 4)
                     }
                 }
-                
             } else {
-                // 阶段 2: 输入验证码
-                VStack(spacing: 15) {
-                    Text("Enter code sent to")
+                VStack(spacing: 16) {
+                    Text("验证码已发送至")
                         .font(.caption)
                         .foregroundColor(.secondary)
                     Text(phoneNumber)
                         .font(.headline)
+                        .foregroundColor(.primary)
                     
                     CustomTextField(
                         icon: "key.fill",
-                        placeholder: "6-digit Code",
+                        placeholder: "6 位数字验证码",
                         text: $otpCode,
                         keyboardType: .numberPad
                     )
@@ -236,7 +221,7 @@ struct LoginView: View {
                         Button(action: {
                             Task { await authVM.verifyOTP(phone: phoneNumber, token: otpCode) }
                         }) {
-                            Text("Verify & Login")
+                            Text("验证并登录")
                                 .fontWeight(.bold)
                                 .frame(maxWidth: .infinity)
                                 .padding()
@@ -246,7 +231,7 @@ struct LoginView: View {
                         }
                     }
                     
-                    Button("Wrong number?") {
+                    Button("号码填错了?") {
                         withAnimation {
                             authVM.showOTPInput = false
                             otpCode = ""
@@ -260,7 +245,7 @@ struct LoginView: View {
     }
 }
 
-// MARK: - 自定义输入框组件
+// MARK: - Custom TextField (适配暗色模式)
 struct CustomTextField: View {
     var icon: String
     var placeholder: String
@@ -279,15 +264,12 @@ struct CustomTextField: View {
             } else {
                 TextField(placeholder, text: $text)
                     .keyboardType(keyboardType)
-                    .autocapitalization(.none) // 邮箱不自动大写
+                    .autocapitalization(.none)
             }
         }
         .padding()
-        .background(Color(.systemBackground)) // 白色或深色模式背景
+        // 使用 secondarySystemBackground 确保在任何模式下都有区分度
+        .background(Color(.secondarySystemBackground))
         .cornerRadius(12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.primary.opacity(0.05), lineWidth: 1)
-        )
     }
 }

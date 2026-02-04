@@ -17,9 +17,12 @@ protocol TrashClassifierService {
 }
 
 // MARK: - 2. Mock Service
+// Explicitly marked as nonisolated implicitly since it's a plain class,
+// but let's make it Sendable-compliant if possible, or just a simple class.
 class MockClassifierService: TrashClassifierService {
     func classifyImage(image: UIImage, completion: @escaping (TrashAnalysisResult) -> Void) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+        // Run on global queue to simulate background work
+        DispatchQueue.global().asyncAfter(deadline: .now() + 1.0) {
             let mockData = [
                 TrashAnalysisResult(
                     itemName: "Mock-Soda Can",
@@ -27,9 +30,17 @@ class MockClassifierService: TrashClassifierService {
                     confidence: 0.98,
                     actionTip: "Empty liquids. Flatten to save space.",
                     color: .blue
+                ),
+                TrashAnalysisResult(
+                    itemName: "Mock-Banana Peel",
+                    category: "Compost (Green Bin)",
+                    confidence: 0.95,
+                    actionTip: "Organic waste.",
+                    color: .green
                 )
             ]
-            completion(mockData.randomElement()!)
+            let result = mockData.randomElement()!
+            completion(result)
         }
     }
 }
@@ -42,20 +53,34 @@ class TrashViewModel: ObservableObject {
     private let classifier: TrashClassifierService
     private let client = SupabaseManager.shared.client
     
-    // 🔥 Fix: 确保 init 也是 MainActor，避免初始化并发问题
-    init(classifier: TrashClassifierService = MockClassifierService()) {
-        self.classifier = classifier
+    // FIX: Removed default parameter from init to avoid "Main actor-isolated initializer" error
+    // when default argument is evaluated in a non-isolated context.
+    init(classifier: TrashClassifierService? = nil) {
+        self.classifier = classifier ?? MockClassifierService()
     }
     
     func analyzeImage(image: UIImage) {
+        guard appState != .analyzing else { return }
+        
         self.appState = .analyzing
+        let startTime = Date()
         
         classifier.classifyImage(image: image) { [weak self] result in
-            DispatchQueue.main.async {
+            // Calculate delay on whatever thread we are on
+            let elapsedTime = Date().timeIntervalSince(startTime)
+            let delay = max(0, 0.5 - elapsedTime)
+            
+            // Explicitly jump back to MainActor to update UI
+            Task { @MainActor [weak self] in
+                // Add artificial delay if needed
+                if delay > 0 {
+                    try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                }
+                
                 self?.appState = .finished(result)
                 
-                if result.confidence > 0.4 {
-                    self?.grantPoints(amount: 20)
+                if result.confidence > 0.8 {
+                    self?.grantPoints(amount: 10)
                 }
             }
         }
@@ -64,7 +89,8 @@ class TrashViewModel: ObservableObject {
     // MARK: - Feedback Logic
     
     func handleCorrectFeedback() {
-        print("User confirmed result was correct.")
+        print("✅ User confirmed result.")
+        grantPoints(amount: 5)
         self.reset()
     }
     
@@ -72,14 +98,13 @@ class TrashViewModel: ObservableObject {
         appState = .collectingFeedback(wrongResult)
     }
 
-    // 🔥 修复：添加入参 image 并真正调用 Service
     func submitCorrection(
         image: UIImage,
         originalResult: TrashAnalysisResult,
         correctedCategory: String,
         correctedName: String?
     ) async {
-        print("--- REPORT SUBMITTING ---")
+        print("--- 📤 SUBMITTING REPORT ---")
         
         do {
             try await FeedbackService.shared.submitFeedback(
@@ -91,6 +116,7 @@ class TrashViewModel: ObservableObject {
                 userId: client.auth.currentUser?.id
             )
             print("✅ Report uploaded successfully")
+            grantPoints(amount: 20)
         } catch {
             print("❌ Upload failed: \(error)")
         }
@@ -107,10 +133,8 @@ class TrashViewModel: ObservableObject {
     func grantPoints(amount: Int) {
         Task {
             do {
-                // 🔥 Fix:
-                // 1. 添加 .execute() 确保请求真正发送
-                // 2. 使用 _ = 消除 "result unused" 警告
                 _ = try await client.rpc("increment_credits", params: ["amount": amount]).execute()
+                print("🎉 Points granted: \(amount)")
             } catch {
                 print("❌ [Gamification] Error: \(error)")
             }
