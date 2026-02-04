@@ -275,8 +275,16 @@ struct VerifyView: View {
     private func submitFeedback() {
         guard case .collectingFeedback(let originalResult) = viewModel.appState else { return }
         
+        // 🔥 修复：获取当前定格的图片
+        guard let currentImage = cameraManager.capturedImage else {
+            print("❌ No image captured to submit")
+            return
+        }
+        
         Task {
+            // 🔥 修复：传递图片
             await viewModel.submitCorrection(
+                image: currentImage,
                 originalResult: originalResult,
                 correctedCategory: selectedFeedbackCategory,
                 correctedName: feedbackItemName

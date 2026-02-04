@@ -72,10 +72,29 @@ class TrashViewModel: ObservableObject {
         appState = .collectingFeedback(wrongResult)
     }
 
-    func submitCorrection(originalResult: TrashAnalysisResult, correctedCategory: String, correctedName: String?) async {
-        print("--- REPORT SUBMITTED ---")
-        print("User corrected to: \(correctedCategory)")
-        try? await Task.sleep(nanoseconds: 500_000_000)
+    // 🔥 修复：添加入参 image 并真正调用 Service
+    func submitCorrection(
+        image: UIImage,
+        originalResult: TrashAnalysisResult,
+        correctedCategory: String,
+        correctedName: String?
+    ) async {
+        print("--- REPORT SUBMITTING ---")
+        
+        do {
+            try await FeedbackService.shared.submitFeedback(
+                image: image,
+                predictedLabel: originalResult.itemName,
+                predictedCategory: originalResult.category,
+                correctCategory: correctedCategory,
+                comment: correctedName ?? "",
+                userId: client.auth.currentUser?.id
+            )
+            print("✅ Report uploaded successfully")
+        } catch {
+            print("❌ Upload failed: \(error)")
+        }
+        
         self.reset()
     }
     
