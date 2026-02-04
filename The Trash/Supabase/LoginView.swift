@@ -63,8 +63,8 @@ struct LoginView: View {
                     VStack(spacing: 25) {
                         // Segment Control
                         Picker("Method", selection: $loginMethod) {
-                            Text("邮箱").tag(0)
-                            Text("手机号").tag(1)
+                            Text("email address").tag(0)
+                            Text("phone number").tag(1)
                         }
                         .pickerStyle(.segmented)
                         
@@ -113,14 +113,14 @@ struct LoginView: View {
             VStack(spacing: 16) {
                 CustomTextField(
                     icon: "envelope.fill",
-                    placeholder: "UCSD 邮箱",
+                    placeholder: "email address",
                     text: $email,
                     keyboardType: .emailAddress
                 )
                 
                 CustomTextField(
                     icon: "lock.fill",
-                    placeholder: "密码",
+                    placeholder: "password",
                     text: $password,
                     isSecure: true
                 )
@@ -151,7 +151,7 @@ struct LoginView: View {
             
             Button(action: { withAnimation { isSignUp.toggle() } }) {
                 HStack {
-                    Text(isSignUp ? "已有账号?" : "没有账号?")
+                    Text(isSignUp ? "already has an account?" : "no account?")
                         .foregroundColor(.secondary)
                     Text(isSignUp ? "直接登录" : "立即注册")
                         .fontWeight(.semibold)

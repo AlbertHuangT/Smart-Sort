@@ -3,7 +3,7 @@ import Supabase
 import Auth
 import Contacts
 
-// MARK: - Enums (Re-added)
+// MARK: - Enums
 enum SwipeDirection {
     case left
     case right
@@ -15,33 +15,41 @@ struct ContentView: View {
     var body: some View {
         TabView(selection: $selectedTab) {
             
-            // --- Tab 1: Verify ---
+            // --- Tab 0: Verify (核心功能) ---
             VerifyView()
                 .tabItem {
                     Label("Verify", systemImage: "camera.viewfinder")
                 }
                 .tag(0)
             
-            // --- Tab 2: Friend ---
+            // --- Tab 1: Friend (排行榜) ---
             FriendView()
                 .tabItem {
                     Label("Friends", systemImage: "person.2.fill")
                 }
                 .tag(1)
             
-            // --- Tab 3: Reward ---
+            // --- Tab 2: Arena (✨ 新增：竞技场/众包) ---
+            // 确保你已经创建了 ArenaView.swift 文件
+            ArenaView()
+                .tabItem {
+                    Label("Arena", systemImage: "flame.fill")
+                }
+                .tag(2)
+            
+            // --- Tab 3: Reward (奖励) ---
             RewardView()
                 .tabItem {
                     Label("Reward", systemImage: "gift.fill")
                 }
-                .tag(2)
+                .tag(3)
             
-            // --- Tab 4: Account ---
+            // --- Tab 4: Account (账户) ---
             AccountView()
                 .tabItem {
                     Label("Account", systemImage: "person.circle.fill")
                 }
-                .tag(3)
+                .tag(4)
         }
         .accentColor(.blue)
     }
@@ -330,7 +338,7 @@ struct VerifyView: View {
     }
 }
 
-// MARK: - 2. Friend View (Unchanged)
+// MARK: - 2. Friend View
 struct FriendView: View {
     @StateObject private var friendService = FriendService()
     
@@ -657,7 +665,7 @@ struct BindEmailSheet: View {
 }
 
 
-// MARK: - Components (Fixed)
+// MARK: - Components (Reusable)
 
 struct SwipeableResultCard: View {
     let result: TrashAnalysisResult
@@ -670,8 +678,7 @@ struct SwipeableResultCard: View {
             
             // Swipe Overlay
             if offset.width > 20 {
-                // 🔥 修复：右滑 (Right) 显示绿色 Checkmark (Accurate)
-                // 图标显示在左侧，跟随卡片向右移动
+                // Right (Accurate) -> Green Check
                 HStack {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 80))
@@ -681,8 +688,7 @@ struct SwipeableResultCard: View {
                 }
                 .opacity(min(abs(offset.width)/150.0, 1.0))
             } else if offset.width < -20 {
-                // 🔥 修复：左滑 (Left) 显示红色 Xmark (Inaccurate)
-                // 图标显示在右侧，跟随卡片向左移动
+                // Left (Inaccurate) -> Red X
                 HStack {
                     Spacer()
                     Image(systemName: "xmark.circle.fill")
@@ -702,9 +708,9 @@ struct SwipeableResultCard: View {
                 }
                 .onEnded { gesture in
                     if gesture.translation.width < -100 {
-                        onSwiped(.left) // 触发左滑
+                        onSwiped(.left)
                     } else if gesture.translation.width > 100 {
-                        onSwiped(.right) // 触发右滑
+                        onSwiped(.right)
                     } else {
                         withAnimation(.spring()) {
                             offset = .zero
@@ -768,12 +774,11 @@ struct ResultCardContent: View {
             .cornerRadius(12)
             
             // Bottom hints
-            // 🔥 修复：底部提示文字对调，左=不准，右=准
             HStack {
                 Image(systemName: "arrow.left")
-                Text("Accurate") // 左边：不准确
+                Text("Incorrect") // Left
                 Spacer()
-                Text("Inaccurate")   // 右边：准确
+                Text("Correct")   // Right
                 Image(systemName: "arrow.right")
             }
             .font(.caption)

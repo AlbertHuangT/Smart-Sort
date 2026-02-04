@@ -45,7 +45,7 @@ struct ReportView: View {
                 }
                 
                 // 人工修正部分
-                Section(header: Text("人工修正 (Human Feedback)")) {
+                Section(header: Text("Human Feedback")) {
                     Picker("实际分类", selection: $selectedBin) {
                         ForEach(bins, id: \.self) { bin in
                             Text(bin)
@@ -53,7 +53,7 @@ struct ReportView: View {
                     }
                     .pickerStyle(.menu)
                     
-                    TextField("正确物品名称 (选填)", text: $itemName)
+                    TextField("正确物品名称 (optional)", text: $itemName)
                         .autocapitalization(.none)
                 }
                 
@@ -80,10 +80,10 @@ struct ReportView: View {
             .navigationTitle("报告错误")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("取消") { dismiss() }
+                    Button("cancel") { dismiss() }
                 }
             }
-            .alert("提交成功", isPresented: $showSuccess) {
+            .alert("submit success", isPresented: $showSuccess) {
                 Button("好的") { dismiss() }
             } message: {
                 Text("感谢您的反馈，这有助于让 AI 变得更聪明！")
