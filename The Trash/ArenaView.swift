@@ -29,8 +29,11 @@ class ArenaViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var totalCredits = 0
     @Published var showPointAnimation = false
-    
     @Published var imageCache: [UUID: UIImage] = [:]
+    
+    // ✨ 新增：用于显示错误信息（如账号被封禁）
+    @Published var errorMessage: String?
+    @Published var showErrorAlert = false
     
     private let client = SupabaseManager.shared.client
     
@@ -57,7 +60,35 @@ class ArenaViewModel: ObservableObject {
     
     func fetchTasks() async {
         isLoading = true
+        errorMessage = nil // 重置错误
+        
         do {
+            // ✨ 1. 检查用户状态 (Check User Status)
+            if let userId = client.auth.currentUser?.id {
+                // 定义用于解码状态的临时结构体
+                struct UserStatus: Decodable {
+                    let status: String?
+                }
+                
+                // 查询 profiles 表
+                let profile: UserStatus = try await client
+                    .from("profiles")
+                    .select("status")
+                    .eq("id", value: userId)
+                    .single()
+                    .execute()
+                    .value
+                
+                // 检查是否被封禁
+                if let status = profile.status, (status == "suspended" || status == "banned") {
+                    self.errorMessage = "由于多次恶意投票，您的账户已被暂时冻结。"
+                    self.showErrorAlert = true
+                    self.isLoading = false
+                    return // ⛔️ 停止后续加载
+                }
+            }
+            
+            // ✨ 2. 正常获取任务 (Original Logic)
             let fetchedTasks: [ArenaTask] = try await client
                 .rpc("get_arena_tasks")
                 .execute()
@@ -66,6 +97,7 @@ class ArenaViewModel: ObservableObject {
             self.tasks = fetchedTasks
             await fetchUserCredits()
             await preloadImages()
+            
         } catch {
             print("❌ [Arena] Fetch Error: \(error)")
         }
@@ -172,6 +204,14 @@ struct ArenaView: View {
                 if !isAnon {
                     Task { await viewModel.fetchTasks() }
                 }
+            }
+            // ✨ 新增：错误弹窗 (封禁提示)
+            .alert(isPresented: $viewModel.showErrorAlert) {
+                Alert(
+                    title: Text("Access Denied"),
+                    message: Text(viewModel.errorMessage ?? "An unknown error occurred."),
+                    dismissButton: .default(Text("OK"))
+                )
             }
         }
     }
