@@ -58,7 +58,8 @@ struct EnhancedStatCard: View {
                 .shadow(color: .black.opacity(0.05), radius: 8, y: 4)
         )
         .onAppear {
-            withAnimation(.easeInOut(duration: 1).repeatForever(autoreverses: true)) {
+            // Removed forever-repeating animation to prevent layout instability on iOS 18.6+
+            withAnimation(.easeInOut(duration: 0.6)) {
                 isAnimating = true
             }
         }

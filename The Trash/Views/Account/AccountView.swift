@@ -30,29 +30,25 @@ struct AccountView: View {
         NavigationView {
             VStack(spacing: 0) {
                 // 错误提示
-                ZStack {
-                    if let error = profileVM.errorMessage {
-                        HStack {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .foregroundColor(.orange)
-                            Text(error)
-                                .font(.caption)
-                            Spacer()
-                            Button(action: { profileVM.errorMessage = nil }) {
-                                Image(systemName: "xmark.circle.fill")
-                                    .foregroundColor(.secondary)
-                            }
+                if let error = profileVM.errorMessage {
+                    HStack {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundColor(.orange)
+                        Text(error)
+                            .font(.caption)
+                        Spacer()
+                        Button(action: { profileVM.errorMessage = nil }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.secondary)
                         }
-                        .padding(10)
-                        .background(Color.orange.opacity(0.1))
-                        .cornerRadius(10)
-                        .padding(.horizontal, 16)
-                        .transition(.opacity)
                     }
+                    .padding(10)
+                    .background(Color.orange.opacity(0.1))
+                    .cornerRadius(10)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                    .transition(.move(edge: .top).combined(with: .opacity))
                 }
-                .frame(height: profileVM.errorMessage != nil ? nil : 0)
-                .clipped()
-                .animation(.easeInOut(duration: 0.2), value: profileVM.errorMessage != nil)
 
                 // 1. 头部卡片
                 compactHeaderView
@@ -111,9 +107,7 @@ struct AccountView: View {
             .task {
                 await profileVM.fetchProfile()
             }
-            .animation(.none, value: profileVM.credits)
-            .animation(.none, value: profileVM.username)
-            .animation(.none, value: profileVM.levelName)
+            .animation(.easeInOut(duration: 0.2), value: profileVM.errorMessage != nil)
             .sheet(isPresented: $showBindPhoneSheet) {
                 BindPhoneSheet(inputPhone: $inputPhone, inputOTP: $inputOTP, authVM: authVM, isPresented: $showBindPhoneSheet)
             }
