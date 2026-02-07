@@ -1,6 +1,4 @@
 import SwiftUI
-
-// 确保引入需要的模块
 import Supabase
 import Auth
 
@@ -10,23 +8,33 @@ struct ContentView: View {
     var body: some View {
         TabView(selection: $selectedTab) {
             VerifyView()
-                .tabItem { Label("Verify", systemImage: "camera.viewfinder") }
+                .tabItem {
+                    Label("Verify", systemImage: "camera.viewfinder")
+                }
                 .tag(0)
             
-            FriendView()
-                .tabItem { Label("Friends", systemImage: "person.2.fill") }
+            ArenaView()
+                .tabItem {
+                    Label("Arena", systemImage: "flame.fill")
+                }
                 .tag(1)
             
-            ArenaView()
-                .tabItem { Label("Arena", systemImage: "flame.fill") }
+            LeaderboardView()
+                .tabItem {
+                    Label("Leaderboard", systemImage: "chart.bar.fill")
+                }
                 .tag(2)
             
-            RewardView()
-                .tabItem { Label("Reward", systemImage: "gift.fill") }
+            CommunityTabView()
+                .tabItem {
+                    Label("Community", systemImage: "person.3.fill")
+                }
                 .tag(3)
             
-            AccountView()
-                .tabItem { Label("Account", systemImage: "person.circle.fill") }
+            CommunityView()
+                .tabItem {
+                    Label("Events", systemImage: "calendar.badge.clock")
+                }
                 .tag(4)
         }
         .tint(.blue)

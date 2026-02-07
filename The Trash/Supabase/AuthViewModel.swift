@@ -31,6 +31,9 @@ class AuthViewModel: ObservableObject {
     
     private let client = SupabaseManager.shared.client
     
+    // 🔥 存储任务引用，防止内存泄漏
+    private var authStateTask: Task<Void, Never>?
+    
     // Check if the current user is a guest
     var isAnonymous: Bool {
         guard let user = session?.user else { return false }
@@ -40,11 +43,20 @@ class AuthViewModel: ObservableObject {
     }
     
     init() {
-        Task {
+        authStateTask = Task { [weak self] in
+            guard let client = self?.client else { return }
             for await state in client.auth.authStateChanges {
-                self.session = state.session
+                // 🔥 检查任务是否被取消
+                if Task.isCancelled { break }
+                self?.session = state.session
             }
         }
+    }
+    
+    // 🔥 FIX: deinit 在 @MainActor 类中不在主线程调用，需要使用 nonisolated
+    nonisolated deinit {
+        // 🔥 清理：取消任务以防止内存泄漏
+        authStateTask?.cancel()
     }
     
     // MARK: - Guest Auth
@@ -180,6 +192,9 @@ class AuthViewModel: ObservableObject {
             deepLinkStatus = .idle
         } catch {
             deepLinkStatus = .failure("Link invalid or expired: \(error.localizedDescription)")
+            // 自动在3秒后重置状态，避免错误消息持续显示
+            try? await Task.sleep(nanoseconds: 3 * 1_000_000_000)
+            deepLinkStatus = .idle
         }
     }
 }

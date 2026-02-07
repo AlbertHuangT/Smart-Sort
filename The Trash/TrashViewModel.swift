@@ -75,7 +75,13 @@ class TrashViewModel: ObservableObject {
         correctedCategory: String,
         correctedName: String?
     ) async {
+        // 🔥 FIX: 防止重复提交
+        guard case .collectingFeedback = appState else { return }
+        
         print("--- 📤 SUBMITTING REPORT ---")
+        
+        // 🔥 FIX: 设置中间状态防止重复提交
+        self.appState = .analyzing
         
         do {
             try await FeedbackService.shared.submitFeedback(
@@ -88,8 +94,17 @@ class TrashViewModel: ObservableObject {
             )
             print("✅ Report uploaded successfully")
             grantPoints(amount: 20)
+            // 🔥 FIX: 成功后重置状态
+            self.reset()
         } catch {
+            // 🔥 FIX: 检查是否被取消
+            if Task.isCancelled {
+                self.appState = .collectingFeedback(originalResult)
+                return
+            }
             print("❌ Upload failed: \(error)")
+            // 🔥 设置错误状态让用户知道上传失败
+            self.appState = .error("Failed to submit feedback: \(error.localizedDescription)")
         }
     }
     

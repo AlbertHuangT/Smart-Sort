@@ -14,134 +14,294 @@ enum SwipeDirection {
 }
 
 struct VerifyView: View {
-    @StateObject private var viewModel = TrashViewModel(classifier: RealClassifierService.shared)
+    @EnvironmentObject var viewModel: TrashViewModel
+    @EnvironmentObject var authVM: AuthViewModel
     @StateObject private var cameraManager = CameraManager()
     
     // UI State
     @State private var cardOffset: CGSize = .zero
     @State private var showingFeedbackForm = false
-    @State private var isCameraActive = false // 控制相机 UI 的显示/隐藏
+    @State private var isCameraActive = false
+    @State private var pulseAnimation = false
+    @State private var showAccountSheet = false
     
     // Form Data
-    @State private var selectedFeedbackCategory = "General Trash"
+    @State private var selectedFeedbackCategory = "Landfill"
     @State private var feedbackItemName = ""
-    let trashCategories = ["Recyclable", "Hazardous", "Compostable", "General Trash", "Electronic"]
+    let trashCategories = ["Recyclable", "Hazardous", "Compostable", "Landfill", "Electronic"]
     
-    // Computed states
     var showFeedbackForm: Bool {
         if case .collectingFeedback = viewModel.appState, showingFeedbackForm { return true }
         return false
     }
     
-    // 预览状态：相机开启 且 没有捕获图片 且 处于空闲状态
     var isPreviewState: Bool {
         cameraManager.capturedImage == nil && viewModel.appState == .idle
     }
 
     var body: some View {
         ZStack {
-            Color(.systemGroupedBackground).ignoresSafeArea()
+            // 🎨 渐变背景
+            LinearGradient(
+                colors: [Color(.systemBackground), Color(.systemGray6)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
             
             VStack(spacing: 0) {
-                // Header
-                HStack {
-                    Text("The Trash")
-                        .font(.largeTitle)
-                        .fontWeight(.heavy)
-                    Spacer()
-                }
-                .padding(.horizontal)
-                .padding(.top, 10)
+                // 🎨 App Store 风格头部
+                appStoreHeader(title: "The Trash")
+                
+                // 🎨 AI 状态指示器
+                aiStatusIndicator
                 
                 // --- Camera/Image Area ---
-                GeometryReader { geo in
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 24)
-                            .fill(Color(.secondarySystemGroupedBackground))
-                            .shadow(color: Color.black.opacity(0.1), radius: 10, y: 5)
-                        
-                        if let image = cameraManager.capturedImage {
-                            // 1. 显示拍摄的照片
-                            Image(uiImage: image)
-                                .resizable()
-                                .scaledToFill()
-                                .frame(width: geo.size.width, height: geo.size.height)
-                                .cornerRadius(24)
-                                .clipped()
-                        } else if isCameraActive {
-                            // 2. 显示相机预览 (只有点击 Open Camera 后才显示)
-                            CameraPreview(cameraManager: cameraManager)
-                                .clipShape(RoundedRectangle(cornerRadius: 24))
-                        } else {
-                            // 3. 初始/关闭状态的占位符
-                            VStack(spacing: 16) {
-                                Image(systemName: "camera.aperture")
-                                    .font(.system(size: 60))
-                                    .foregroundColor(.secondary.opacity(0.4))
-                                Text("Tap Button to Open Camera")
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                    }
-                }
-                .frame(maxHeight: 360)
-                .padding(.horizontal)
-                .padding(.top, 10)
+                cameraArea
                 
                 // --- Dynamic Interaction Area ---
-                ZStack {
-                    if case .finished(let result) = viewModel.appState, !showingFeedbackForm {
-                        SwipeableResultCard(result: result, offset: $cardOffset) { direction in
-                            handleSwipe(direction: direction, result: result)
-                        }
-                    }
-                    
-                    if showFeedbackForm {
-                        FeedbackFormView(
-                            selectedCategory: $selectedFeedbackCategory,
-                            itemName: $feedbackItemName,
-                            categories: trashCategories
-                        )
-                    }
-                }
-                .frame(height: 180)
+                interactionArea
                 
                 Spacer(minLength: 10)
                 
                 // --- Main Action Button ---
-                Button(action: handleMainButtonTap) {
-                    HStack {
-                        if viewModel.appState == .analyzing {
-                            ProgressView().tint(.white)
-                        } else {
-                            Image(systemName: buttonIcon)
-                            Text(buttonText)
-                        }
-                    }
-                    .font(.headline).fontWeight(.bold)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
-                    .background(showFeedbackForm ? Color.green : Color.blue)
-                    .cornerRadius(28)
-                    .shadow(color: Color.black.opacity(0.15), radius: 8, y: 4)
-                }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 15)
-                .disabled(viewModel.appState == .analyzing)
+                mainActionButton
+            }
+            
+            // 🎨 分析中的全屏 overlay
+            if viewModel.appState == .analyzing {
+                analyzingOverlay
             }
         }
-        .safeAreaInset(edge: .bottom) {
-            Color.clear.frame(height: 15)
+        // 🎨 景深效果：当账户页面打开时，主页面缩小并后退
+        .scaleEffect(showAccountSheet ? 0.92 : 1.0)
+        .offset(y: showAccountSheet ? -20 : 0)
+        .blur(radius: showAccountSheet ? 2 : 0)
+        .animation(.spring(response: 0.5, dampingFraction: 0.85), value: showAccountSheet)
+        .onAppear {
+            // 如果相机之前是激活状态，重新启动相机会话
+            if isCameraActive && cameraManager.capturedImage == nil {
+                cameraManager.start()
+            }
         }
         .onDisappear {
             cameraManager.stop()
         }
         .onReceive(cameraManager.$capturedImage) { img in
-            if let img = img { viewModel.analyzeImage(image: img) }
+            if let img = img, viewModel.appState == .idle {
+                viewModel.analyzeImage(image: img)
+            }
         }
     }
     
+    // MARK: - 🎨 App Store Style Header
+    private func appStoreHeader(title: String) -> some View {
+        HStack(alignment: .center) {
+            Text(title)
+                .font(.system(size: 34, weight: .bold, design: .default))
+            
+            Spacer()
+            
+            AccountButton(showAccountSheet: $showAccountSheet)
+                .environmentObject(authVM)
+        }
+        .padding(.leading, 16)
+        .padding(.trailing, 20)
+        .padding(.top, 8)
+        .padding(.bottom, 8)
+    }
+    
+    // MARK: - 🎨 AI Status Indicator
+    private var aiStatusIndicator: some View {
+        HStack {
+            Spacer()
+            HStack(spacing: 6) {
+                Circle()
+                    .fill(RealClassifierService.shared.isReady ? Color.green : Color.orange)
+                    .frame(width: 8, height: 8)
+                    .scaleEffect(pulseAnimation ? 1.2 : 1.0)
+                    .animation(.easeInOut(duration: 1).repeatForever(autoreverses: true), value: pulseAnimation)
+                Text(RealClassifierService.shared.isReady ? "Ready" : "Loading")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(Color(.tertiarySystemGroupedBackground))
+            .cornerRadius(20)
+            .onAppear { pulseAnimation = true }
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 8)
+    }
+    
+    // MARK: - 🎨 Camera Area
+    private var cameraArea: some View {
+        GeometryReader { geo in
+            ZStack {
+                // 🎨 美化相机容器
+                RoundedRectangle(cornerRadius: 28)
+                    .fill(Color(.secondarySystemGroupedBackground))
+                    .shadow(color: Color.black.opacity(0.08), radius: 15, y: 8)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 28)
+                            .stroke(Color.white.opacity(0.5), lineWidth: 1)
+                    )
+                
+                if let image = cameraManager.capturedImage {
+                    // 🎨 显示拍摄的照片带动画
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: geo.size.width, height: geo.size.height)
+                        .clipShape(RoundedRectangle(cornerRadius: 28))
+                        .transition(.scale.combined(with: .opacity))
+                        
+                } else if isCameraActive {
+                    // 相机预览
+                    CameraPreview(cameraManager: cameraManager)
+                        .clipShape(RoundedRectangle(cornerRadius: 28))
+                        .overlay(
+                            // 🎨 扫描线动画
+                            ScanLineOverlay()
+                        )
+                } else {
+                    // 🎨 美化占位符
+                    VStack(spacing: 20) {
+                        ZStack {
+                            Circle()
+                                .fill(LinearGradient(colors: [.blue.opacity(0.2), .cyan.opacity(0.1)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                                .frame(width: 100, height: 100)
+                            
+                            Image(systemName: "camera.viewfinder")
+                                .font(.system(size: 44, weight: .light))
+                                .foregroundStyle(
+                                    LinearGradient(colors: [.blue, .cyan], startPoint: .topLeading, endPoint: .bottomTrailing)
+                                )
+                        }
+                        
+                        VStack(spacing: 6) {
+                            Text("Identify Trash")
+                                .font(.headline)
+                                .foregroundColor(.primary)
+                            Text("Point your camera at any item")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+            }
+        }
+        .frame(maxHeight: 340)
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+    }
+    
+    // MARK: - 🎨 Interaction Area
+    private var interactionArea: some View {
+        ZStack {
+            if case .finished(let result) = viewModel.appState, !showingFeedbackForm {
+                EnhancedSwipeableCard(result: result, offset: $cardOffset) { direction in
+                    handleSwipe(direction: direction, result: result)
+                }
+                .transition(.asymmetric(
+                    insertion: .scale(scale: 0.8).combined(with: .opacity),
+                    removal: .opacity
+                ))
+            }
+            
+            if case .error(let message) = viewModel.appState {
+                ErrorCard(message: message) {
+                    finishFlowAndReset(closeCamera: false)
+                    cameraManager.start()
+                }
+                .transition(.scale.combined(with: .opacity))
+            }
+            
+            if showFeedbackForm {
+                EnhancedFeedbackForm(
+                    selectedCategory: $selectedFeedbackCategory,
+                    itemName: $feedbackItemName,
+                    categories: trashCategories
+                )
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .frame(height: 220)
+        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: viewModel.appState)
+    }
+    
+    // MARK: - 🎨 Main Action Button
+    private var mainActionButton: some View {
+        Button(action: handleMainButtonTap) {
+            HStack(spacing: 12) {
+                Image(systemName: buttonIcon)
+                    .font(.system(size: 18, weight: .semibold))
+                Text(buttonText)
+                    .font(.system(size: 17, weight: .bold))
+            }
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .frame(height: 54)
+            .background(
+                LinearGradient(
+                    colors: showFeedbackForm ? [.green, .mint] : [.blue, .cyan],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .clipShape(Capsule())
+            .shadow(color: (showFeedbackForm ? Color.green : Color.blue).opacity(0.4), radius: 12, y: 6)
+        }
+        .padding(.horizontal, 24)
+        .padding(.bottom, 8)
+        .disabled(viewModel.appState == .analyzing)
+    }
+    
+    // MARK: - 🎨 Analyzing Overlay
+    private var analyzingOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.3)
+                .ignoresSafeArea()
+            
+            VStack(spacing: 20) {
+                // 🎨 动态加载动画
+                ZStack {
+                    Circle()
+                        .stroke(Color.white.opacity(0.3), lineWidth: 4)
+                        .frame(width: 80, height: 80)
+                    
+                    Circle()
+                        .trim(from: 0, to: 0.7)
+                        .stroke(
+                            LinearGradient(colors: [.blue, .cyan], startPoint: .leading, endPoint: .trailing),
+                            style: StrokeStyle(lineWidth: 4, lineCap: .round)
+                        )
+                        .frame(width: 80, height: 80)
+                        .rotationEffect(.degrees(pulseAnimation ? 360 : 0))
+                        .animation(.linear(duration: 1).repeatForever(autoreverses: false), value: pulseAnimation)
+                    
+                    Image(systemName: "brain")
+                        .font(.system(size: 30))
+                        .foregroundColor(.white)
+                }
+                
+                Text("Analyzing...")
+                    .font(.headline)
+                    .foregroundColor(.white)
+                
+                Text("AI is identifying the item")
+                    .font(.caption)
+                    .foregroundColor(.white.opacity(0.7))
+            }
+            .padding(40)
+            .background(.ultraThinMaterial)
+            .cornerRadius(24)
+        }
+        .transition(.opacity)
+    }
+    
+    // MARK: - Button State
     private var buttonIcon: String {
         if showFeedbackForm { return "paperplane.fill" }
         if isCameraActive && !isPreviewState { return "arrow.clockwise" }
@@ -149,30 +309,32 @@ struct VerifyView: View {
     }
     
     private var buttonText: String {
-        if showFeedbackForm { return "Submit" }
-        if isCameraActive && !isPreviewState { return "Retake" }
-        return isCameraActive ? "Identify" : "Open Camera"
+        if showFeedbackForm { return "Submit Correction" }
+        if isCameraActive && !isPreviewState { return "Retake Photo" }
+        return isCameraActive ? "Capture & Identify" : "Open Camera"
     }
     
     // MARK: - Handlers
     private func handleSwipe(direction: SwipeDirection, result: TrashAnalysisResult) {
         let generator = UINotificationFeedbackGenerator()
         if direction == .right {
-            // ✅ 正确
             generator.notificationOccurred(.success)
             viewModel.handleCorrectFeedback()
-            withAnimation(.easeIn(duration: 0.3)) { cardOffset.width = 500 }
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                cardOffset.width = 500
+            }
             
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 finishFlowAndReset(closeCamera: true)
             }
         } else {
-            // ❌ 错误
             generator.notificationOccurred(.warning)
-            withAnimation(.easeIn(duration: 0.3)) { cardOffset.width = -500 }
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                cardOffset.width = -500
+            }
             viewModel.prepareForIncorrectFeedback(wrongResult: result)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                withAnimation(.spring()) {
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
                     self.showingFeedbackForm = true
                     self.cardOffset = .zero
                 }
@@ -181,10 +343,15 @@ struct VerifyView: View {
     }
     
     private func handleMainButtonTap() {
+        let impact = UIImpactFeedbackGenerator(style: .medium)
+        impact.impactOccurred()
+        
         if showFeedbackForm {
             submitFeedback()
         } else if !isCameraActive {
-            withAnimation { isCameraActive = true }
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                isCameraActive = true
+            }
             cameraManager.start()
         } else if isPreviewState {
             cameraManager.takePhoto()
@@ -204,15 +371,22 @@ struct VerifyView: View {
                 correctedCategory: selectedFeedbackCategory,
                 correctedName: feedbackItemName
             )
-            finishFlowAndReset(closeCamera: true)
+            if viewModel.appState == .idle {
+                finishFlowAndReset(closeCamera: true)
+            } else if case .error = viewModel.appState {
+                withAnimation {
+                    showingFeedbackForm = false
+                    cardOffset = .zero
+                }
+            }
         }
     }
     
     private func finishFlowAndReset(closeCamera: Bool = true) {
-        withAnimation {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
             showingFeedbackForm = false
             cardOffset = .zero
-            selectedFeedbackCategory = "General Trash"
+            selectedFeedbackCategory = "Landfill"
             feedbackItemName = ""
             if closeCamera {
                 isCameraActive = false
@@ -223,42 +397,59 @@ struct VerifyView: View {
     }
 }
 
-// MARK: - Subcomponents (Internal to VerifyView)
+// MARK: - 🎨 Enhanced Subcomponents
 
-struct SwipeableResultCard: View {
+// 扫描线动画
+struct ScanLineOverlay: View {
+    @State private var offset: CGFloat = -200
+    
+    var body: some View {
+        GeometryReader { geo in
+            Rectangle()
+                .fill(
+                    LinearGradient(
+                        colors: [.clear, .blue.opacity(0.3), .cyan.opacity(0.5), .blue.opacity(0.3), .clear],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .frame(height: 3)
+                .offset(y: offset)
+                .onAppear {
+                    withAnimation(.linear(duration: 2).repeatForever(autoreverses: false)) {
+                        offset = geo.size.height + 200
+                    }
+                }
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 28))
+    }
+}
+
+// 🎨 增强版滑动卡片
+struct EnhancedSwipeableCard: View {
     let result: TrashAnalysisResult
     @Binding var offset: CGSize
     var onSwiped: (SwipeDirection) -> Void
     
     var body: some View {
-        // 🔥 修复关键：直接使用 ResultCardContent 作为主体
-        ResultCardContent(result: result)
-            // 🔥 使用 overlay 将特效层"贴"在卡片表面，强制大小一致
+        EnhancedResultCard(result: result)
             .overlay(
                 ZStack {
                     if offset.width > 0 {
-                        // 向右滑 -> 绿色 (Correct)
-                        CorrectOverlay()
+                        EnhancedCorrectOverlay()
                             .opacity(Double(offset.width / 150))
                     } else if offset.width < 0 {
-                        // 向左滑 -> 红色 (Incorrect)
-                        IncorrectOverlay()
+                        EnhancedIncorrectOverlay()
                             .opacity(Double(-offset.width / 150))
                     }
                 }
-                .allowsHitTesting(false) // 确保 overlay 不拦截触摸事件
+                .allowsHitTesting(false)
             )
-            // 统一裁切圆角 (同时作用于卡片和 Overlay)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .shadow(color: .black.opacity(0.15), radius: 8, y: 4)
-            
-            // 动画和位移
+            .clipShape(RoundedRectangle(cornerRadius: 20))
+            .shadow(color: .black.opacity(0.1), radius: 12, y: 6)
             .offset(x: offset.width)
-            .rotationEffect(.degrees(Double(offset.width / 15)))
-            
-            // 外部边距
-            .padding(.horizontal)
-            
+            .rotationEffect(.degrees(Double(offset.width / 20)))
+            .padding(.horizontal, 16)
             .gesture(DragGesture()
                 .onChanged { gesture in
                     offset = gesture.translation
@@ -266,86 +457,234 @@ struct SwipeableResultCard: View {
                 .onEnded { gesture in
                     if gesture.translation.width < -100 { onSwiped(.left) }
                     else if gesture.translation.width > 100 { onSwiped(.right) }
-                    else { withAnimation(.spring()) { offset = .zero } }
+                    else { withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { offset = .zero } }
                 }
             )
     }
 }
 
-// Overlay 视图
-struct CorrectOverlay: View {
-    var body: some View {
-        ZStack {
-            Color.green.opacity(0.9)
-            VStack(spacing: 8) {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 50))
-                Text("Correct")
-                    .font(.title2.bold())
-            }
-            .foregroundColor(.white)
-        }
-    }
-}
-
-struct IncorrectOverlay: View {
-    var body: some View {
-        ZStack {
-            Color.red.opacity(0.9)
-            VStack(spacing: 8) {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 50))
-                Text("Incorrect")
-                    .font(.title2.bold())
-            }
-            .foregroundColor(.white)
-        }
-    }
-}
-
-struct ResultCardContent: View {
+// 🎨 增强版结果卡片
+struct EnhancedResultCard: View {
     let result: TrashAnalysisResult
+    
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text(result.category)
-                    .font(.headline)
+        HStack(spacing: 16) {
+            // 左侧分类图标
+            ZStack {
+                Circle()
+                    .fill(result.color.opacity(0.15))
+                    .frame(width: 60, height: 60)
+                
+                Image(systemName: iconForCategory(result.category))
+                    .font(.system(size: 26))
                     .foregroundColor(result.color)
-                Spacer()
-                Text("\(Int(result.confidence * 100))%")
-                    .font(.caption)
-                    .bold()
-                    .padding(4)
-                    .background(Color.secondary.opacity(0.1))
-                    .cornerRadius(4)
             }
-            Text(result.itemName)
-                .font(.title3)
-                .bold()
-            Text(result.actionTip)
-                .font(.caption)
-                .foregroundColor(.secondary)
+            
+            // 右侧信息
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text(result.category)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(result.color)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(result.color.opacity(0.1))
+                        .cornerRadius(8)
+                    
+                    Spacer()
+                    
+                    // 置信度指示器
+                    HStack(spacing: 4) {
+                        Image(systemName: "brain.head.profile")
+                            .font(.caption2)
+                        Text("\(Int(result.confidence * 100))%")
+                            .font(.system(size: 12, weight: .bold, design: .monospaced))
+                    }
+                    .foregroundColor(.secondary)
+                }
+                
+                Text(result.itemName)
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(.primary)
+                
+                Text(result.actionTip)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .lineLimit(2)
+            }
+            
+            Spacer(minLength: 0)
         }
-        .padding() // 内部留白
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(20)
+        .frame(minHeight: 150)
         .background(Color(.secondarySystemGroupedBackground))
     }
+    
+    private func iconForCategory(_ category: String) -> String {
+        switch category {
+        case _ where category.contains("Recycl") || category.contains("Blue"): return "arrow.3.trianglepath"
+        case _ where category.contains("Compost") || category.contains("Green"): return "leaf.fill"
+        case _ where category.contains("Hazard"): return "exclamationmark.triangle.fill"
+        case _ where category.contains("Electronic"): return "bolt.fill"
+        default: return "trash.fill"
+        }
+    }
 }
 
-struct FeedbackFormView: View {
+struct EnhancedCorrectOverlay: View {
+    var body: some View {
+        ZStack {
+            LinearGradient(colors: [.green.opacity(0.95), .mint.opacity(0.95)], startPoint: .topLeading, endPoint: .bottomTrailing)
+            VStack(spacing: 8) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 44))
+                Text("Correct!")
+                    .font(.headline.bold())
+                Text("Swipe right to confirm")
+                    .font(.caption2)
+                    .opacity(0.8)
+            }
+            .foregroundColor(.white)
+        }
+    }
+}
+
+struct EnhancedIncorrectOverlay: View {
+    var body: some View {
+        ZStack {
+            LinearGradient(colors: [.red.opacity(0.95), .orange.opacity(0.95)], startPoint: .topLeading, endPoint: .bottomTrailing)
+            VStack(spacing: 8) {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 44))
+                Text("Incorrect?")
+                    .font(.headline.bold())
+                Text("Swipe left to correct")
+                    .font(.caption2)
+                    .opacity(0.8)
+            }
+            .foregroundColor(.white)
+        }
+    }
+}
+
+// 🎨 错误卡片
+struct ErrorCard: View {
+    let message: String
+    let onRetry: () -> Void
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 44))
+                .foregroundStyle(
+                    LinearGradient(colors: [.orange, .red], startPoint: .top, endPoint: .bottom)
+                )
+            
+            Text("Something went wrong")
+                .font(.headline)
+            
+            Text(message)
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+            
+            Button(action: onRetry) {
+                Label("Try Again", systemImage: "arrow.clockwise")
+                    .font(.subheadline.bold())
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 12)
+                    .background(Color.blue)
+                    .cornerRadius(20)
+            }
+        }
+        .padding(24)
+        .background(Color(.secondarySystemGroupedBackground))
+        .cornerRadius(20)
+        .shadow(color: .black.opacity(0.1), radius: 10, y: 5)
+        .padding(.horizontal, 16)
+    }
+}
+
+// 🎨 增强版反馈表单
+struct EnhancedFeedbackForm: View {
     @Binding var selectedCategory: String
     @Binding var itemName: String
     let categories: [String]
+    
     var body: some View {
-        VStack(spacing: 12) {
-            Picker("Category", selection: $selectedCategory) {
-                ForEach(categories, id: \.self) { Text($0) }
-            }.pickerStyle(.menu)
-            TextField("Item Name", text: $itemName).textFieldStyle(.roundedBorder)
+        VStack(spacing: 16) {
+            Text("What's the correct category?")
+                .font(.subheadline.bold())
+                .foregroundColor(.secondary)
+            
+            // 🎨 分类选择器
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    ForEach(categories, id: \.self) { category in
+                        CategoryChip(
+                            title: category,
+                            isSelected: selectedCategory == category,
+                            color: colorForCategory(category)
+                        ) {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                selectedCategory = category
+                            }
+                        }
+                    }
+                }
+                .padding(.horizontal, 4)
+            }
+            
+            // 物品名称输入
+            HStack {
+                Image(systemName: "tag.fill")
+                    .foregroundColor(.secondary)
+                TextField("Item name (optional)", text: $itemName)
+            }
+            .padding(12)
+            .background(Color(.tertiarySystemGroupedBackground))
+            .cornerRadius(12)
         }
-        .padding()
+        .padding(20)
         .background(Color(.secondarySystemGroupedBackground))
-        .cornerRadius(16)
-        .padding(.horizontal)
+        .cornerRadius(20)
+        .shadow(color: .black.opacity(0.08), radius: 10, y: 5)
+        .padding(.horizontal, 16)
+    }
+    
+    private func colorForCategory(_ category: String) -> Color {
+        switch category {
+        case "Recyclable": return .blue
+        case "Compostable": return .green
+        case "Hazardous": return .red
+        case "Electronic": return .purple
+        default: return .gray
+        }
+    }
+}
+
+struct CategoryChip: View {
+    let title: String
+    let isSelected: Bool
+    let color: Color
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.subheadline.bold())
+                .foregroundColor(isSelected ? .white : color)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(isSelected ? color : color.opacity(0.1))
+                .cornerRadius(20)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(color, lineWidth: isSelected ? 0 : 1)
+                )
+        }
+        .buttonStyle(.plain)
     }
 }

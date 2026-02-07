@@ -20,6 +20,9 @@ struct ReportView: View {
     @State private var itemName = ""
     @State private var isSubmitting = false
     @State private var showSuccess = false
+    // 🔥 FIX: 添加错误状态
+    @State private var showError = false
+    @State private var errorMessage = ""
     
     var body: some View {
         NavigationView {
@@ -88,6 +91,12 @@ struct ReportView: View {
             } message: {
                 Text("Thank you for your feedback. This will help make the AI smarter!")
             }
+            // 🔥 FIX: 添加错误提示
+            .alert("Submit Failed", isPresented: $showError) {
+                Button("OK") { }
+            } message: {
+                Text(errorMessage)
+            }
             .onAppear {
                 if bins.contains(predictedResult.category) {
                     selectedBin = predictedResult.category
@@ -116,6 +125,9 @@ struct ReportView: View {
                 print("Feedback Error: \(error)")
                 await MainActor.run {
                     isSubmitting = false
+                    // 🔥 FIX: 显示错误信息给用户
+                    errorMessage = "Failed to submit: \(error.localizedDescription)"
+                    showError = true
                 }
             }
         }

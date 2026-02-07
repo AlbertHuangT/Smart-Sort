@@ -46,12 +46,18 @@ struct HistoryItem: Decodable, Identifiable {
 class TrashHistoryViewModel: ObservableObject {
     @Published var historyItems: [HistoryItem] = []
     @Published var isLoading = false
+    // 🔥 添加错误状态
+    @Published var errorMessage: String?
     
     private let client = SupabaseManager.shared.client
     
     func fetchHistory() async {
-        guard let userId = client.auth.currentUser?.id else { return }
+        guard let userId = client.auth.currentUser?.id else {
+            errorMessage = "Please log in to view history"
+            return
+        }
         isLoading = true
+        errorMessage = nil
         
         do {
             let items: [HistoryItem] = try await client
@@ -66,6 +72,8 @@ class TrashHistoryViewModel: ObservableObject {
             self.historyItems = items
         } catch {
             print("❌ Fetch history error: \(error)")
+            // 🔥 向用户显示错误
+            errorMessage = "Failed to load history"
         }
         
         isLoading = false
