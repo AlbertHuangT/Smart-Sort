@@ -48,6 +48,7 @@ struct AccountView: View {
                     .padding(.horizontal, 16)
                     .padding(.top, 8)
                     .transition(.move(edge: .top).combined(with: .opacity))
+                    .animation(.easeInOut(duration: 0.2), value: profileVM.errorMessage)
                 }
 
                 // 1. 头部卡片
@@ -107,7 +108,6 @@ struct AccountView: View {
             .task {
                 await profileVM.fetchProfile()
             }
-            .animation(.easeInOut(duration: 0.2), value: profileVM.errorMessage != nil)
             .sheet(isPresented: $showBindPhoneSheet) {
                 BindPhoneSheet(inputPhone: $inputPhone, inputOTP: $inputOTP, authVM: authVM, isPresented: $showBindPhoneSheet)
             }
