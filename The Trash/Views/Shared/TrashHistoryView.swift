@@ -86,22 +86,22 @@ struct TrashHistoryView: View {
     
     var body: some View {
         ZStack {
-            Color(.systemGroupedBackground).ignoresSafeArea()
+            Color.neuBackground.ignoresSafeArea()
             
             if viewModel.isLoading && viewModel.historyItems.isEmpty {
                 ProgressView("Loading history...")
             } else if viewModel.historyItems.isEmpty {
                 emptyState
             } else {
-                List {
-                    ForEach(viewModel.historyItems) { item in
-                        HistoryRow(item: item)
-                            .listRowInsets(EdgeInsets()) // 让卡片撑满
-                            .listRowBackground(Color.clear)
-                            .padding(.vertical, 4)
+                ScrollView {
+                    LazyVStack(spacing: 16) {
+                        ForEach(viewModel.historyItems) { item in
+                            HistoryRow(item: item)
+                        }
                     }
+                    .padding(.top, 16)
+                    .padding(.bottom, 20)
                 }
-                .listStyle(.plain)
                 .refreshable {
                     await viewModel.fetchHistory()
                 }
@@ -117,15 +117,24 @@ struct TrashHistoryView: View {
     // 空状态视图
     var emptyState: some View {
         VStack(spacing: 20) {
-            Image(systemName: "clock.arrow.circlepath")
-                .font(.system(size: 60))
-                .foregroundColor(.gray.opacity(0.5))
+            ZStack {
+                Circle()
+                    .fill(Color.neuBackground)
+                    .frame(width: 120, height: 120)
+                    .shadow(color: .neuDarkShadow, radius: 10, x: 5, y: 5)
+                    .shadow(color: .neuLightShadow, radius: 10, x: -5, y: -5)
+                
+                Image(systemName: "clock.arrow.circlepath")
+                    .font(.system(size: 50))
+                    .foregroundColor(.neuSecondaryText)
+            }
+            
             Text("No History Yet")
                 .font(.title3).bold()
-                .foregroundColor(.secondary)
+                .foregroundColor(.neuText)
             Text("Items you identify and correct will appear here.")
                 .font(.caption)
-                .foregroundColor(.secondary)
+                .foregroundColor(.neuSecondaryText)
         }
     }
 }
@@ -135,12 +144,13 @@ struct HistoryRow: View {
     let item: HistoryItem
     
     var body: some View {
+        // Neumorphic Card
         HStack(spacing: 12) {
             // 1. 图片缩略图
             AsyncImage(url: item.publicImageUrl) { phase in
                 switch phase {
                 case .empty:
-                    Rectangle().fill(Color.gray.opacity(0.2))
+                    Rectangle().fill(Color.neuBackground)
                         .overlay(ProgressView())
                 case .success(let image):
                     image.resizable().scaledToFill()
@@ -154,17 +164,25 @@ struct HistoryRow: View {
             .frame(width: 80, height: 80)
             .cornerRadius(12)
             .clipped()
+            // Optional: Inner shadow frame for image
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.neuBackground, lineWidth: 2)
+                    .shadow(color: .neuDarkShadow, radius: 3, x: 2, y: 2)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            )
             
             // 2. 文字信息
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
                     Text(item.predictedLabel.capitalized)
                         .font(.headline)
+                        .foregroundColor(.neuText)
                         .lineLimit(1)
                     Spacer()
                     Text(item.createdAt.formatted(.dateTime.month().day()))
                         .font(.caption2)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.neuSecondaryText)
                 }
                 
                 // 显示用户的修正行为
@@ -175,7 +193,7 @@ struct HistoryRow: View {
                             .foregroundColor(.red.opacity(0.7))
                         Image(systemName: "arrow.right")
                             .font(.caption2)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(.neuSecondaryText)
                         Text(item.userCorrection)
                             .fontWeight(.semibold)
                             .foregroundColor(.green)
@@ -184,28 +202,33 @@ struct HistoryRow: View {
                 } else {
                     Text(item.predictedCategory)
                         .font(.caption)
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.gray.opacity(0.1))
-                        .cornerRadius(4)
+                        .foregroundColor(.neuSecondaryText)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(
+                            Capsule()
+                                .fill(Color.neuBackground)
+                                .shadow(color: .neuLightShadow, radius: 2, x: -1, y: -1)
+                                .shadow(color: .neuDarkShadow, radius: 2, x: 1, y: 1)
+                        )
                 }
                 
                 if let comment = item.userComment, !comment.isEmpty {
                     Text("\"\(comment)\"")
                         .font(.caption2)
                         .italic()
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.neuSecondaryText)
                         .lineLimit(1)
                 }
             }
             
             Spacer()
         }
-        .padding(12)
-        .background(Color(.secondarySystemGroupedBackground))
-        .cornerRadius(16)
-        .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
-        .padding(.horizontal)
+        .padding(16)
+        .background(Color.neuBackground)
+        .cornerRadius(20)
+        .shadow(color: .neuDarkShadow, radius: 8, x: 5, y: 5)
+        .shadow(color: .neuLightShadow, radius: 8, x: -5, y: -5)
+        .padding(.horizontal, 16)
     }
 }

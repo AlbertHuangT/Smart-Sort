@@ -27,14 +27,14 @@ struct LeaderboardView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // 🎨 App Store 风格头部
+            // 🎨 App Store Style Header
             appStoreHeader(title: "Leaderboard")
             
             // 🎨 Segmented Picker for leaderboard type
             leaderboardTypePicker
             
             ZStack(alignment: .bottom) {
-                Color(.systemGroupedBackground).ignoresSafeArea()
+                Color.neuBackground.ignoresSafeArea()
                 
                 // 匿名用户限制
                 if authVM.isAnonymous {
@@ -52,11 +52,16 @@ struct LeaderboardView: View {
                 if selectedType == .friends && !authVM.isAnonymous && friendService.permissionStatus == .authorized,
                    let me = currentUserVM.myProfile {
                     let myRank = calculateMyRank(friends: friendService.friends, myScore: me.credits)
-                    MyRankBar(rank: myRank, username: me.username ?? "You", credits: me.credits)
+                    // Offset to ensure it sits nicely
+                    VStack {
+                        Spacer()
+                        MyRankBar(rank: myRank, username: me.username ?? "You", credits: me.credits)
+                            .padding(.bottom, 0)
+                    }
                 }
             }
         }
-        .background(Color(.systemGroupedBackground))
+        .background(Color.neuBackground)
         .task {
             // 🚀 优化：只在首次加载时请求数据
             loadDataIfNeeded()
@@ -88,6 +93,7 @@ struct LeaderboardView: View {
         HStack(alignment: .center) {
             Text(title)
                 .font(.system(size: 34, weight: .bold, design: .default))
+                .foregroundColor(.neuText)
             
             Spacer()
             
@@ -112,7 +118,9 @@ struct LeaderboardView: View {
         .pickerStyle(.segmented)
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .background(Color(.systemGroupedBackground))
+        .background(Color.neuBackground)
+        // Note: Standard segmented picker looks okay on neuBackground,
+        // but could be improved with custom style later.
     }
     
     // MARK: - Friends Leaderboard Content
@@ -129,26 +137,31 @@ struct LeaderboardView: View {
             } else if friendService.friends.isEmpty {
                 noFriendsState
             } else {
-                List {
-                    let allUsers = mergeCurrentUser(friends: friendService.friends)
-                    
-                    ForEach(Array(allUsers.enumerated()), id: \.element.id) { index, user in
-                        LeaderboardRow(
-                            rank: index + 1,
-                            username: user.username,
-                            credits: user.credits,
-                            isMe: isMe(user.id)
-                        )
+                ScrollView {
+                    LazyVStack(spacing: 16) {
+                        let allUsers = mergeCurrentUser(friends: friendService.friends)
+                        
+                        ForEach(Array(allUsers.enumerated()), id: \.element.id) { index, user in
+                            LeaderboardRow(
+                                rank: index + 1,
+                                username: user.username,
+                                credits: user.credits,
+                                isMe: isMe(user.id)
+                            )
+                            .padding(.horizontal, 16)
+                        }
+                        
+                        // Bottom padding for scroll content to clear the floating bar
+                        Color.clear.frame(height: 100)
                     }
+                    .padding(.top, 16)
                 }
-                .listStyle(.insetGrouped)
                 .refreshable {
                     await friendService.fetchContactsAndSync()
                     await currentUserVM.fetchMyScore()
                 }
             }
         }
-        .padding(.bottom, friendService.permissionStatus == .authorized && currentUserVM.myProfile != nil ? 80 : 0)
     }
     
     // MARK: - Community Leaderboard Content
@@ -177,7 +190,7 @@ struct LeaderboardView: View {
     
     private var communitySelector: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 10) {
+            HStack(spacing: 12) {
                 ForEach(myCommunities) { community in
                     Button {
                         selectedCommunity = community
@@ -190,70 +203,81 @@ struct LeaderboardView: View {
                                 .font(.subheadline)
                                 .fontWeight(.medium)
                         }
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        // Neumorphic Toggle State
                         .background(
                             selectedCommunity?.id == community.id
-                                ? Color.blue
-                                : Color(.tertiarySystemGroupedBackground)
+                            ? AnyView(
+                                Capsule()
+                                    .fill(Color.neuBackground)
+                                    // Pressed (Concave)
+                                    .overlay(
+                                        Capsule()
+                                            .stroke(Color.neuBackground, lineWidth: 2)
+                                            .shadow(color: .neuDarkShadow, radius: 2, x: 2, y: 2)
+                                            .clipShape(Capsule())
+                                            .shadow(color: .neuLightShadow, radius: 2, x: -2, y: -2)
+                                            .clipShape(Capsule())
+                                    )
+                                    .overlay(
+                                        Capsule().stroke(Color.neuAccentBlue.opacity(0.5), lineWidth: 1)
+                                    )
+                            )
+                            : AnyView(
+                                Capsule()
+                                    .fill(Color.neuBackground)
+                                    .shadow(color: .neuDarkShadow, radius: 3, x: 2, y: 2)
+                                    .shadow(color: .neuLightShadow, radius: 3, x: -2, y: -2)
+                            )
                         )
                         .foregroundColor(
                             selectedCommunity?.id == community.id
-                                ? .white
-                                : .primary
+                                ? .neuAccentBlue
+                                : .neuSecondaryText
                         )
-                        .cornerRadius(20)
+                        .scaleEffect(selectedCommunity?.id == community.id ? 0.97 : 1.0)
+                        .animation(.spring(response: 0.3), value: selectedCommunity?.id)
                     }
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 10)
+            .padding(.vertical, 16)
         }
-        .background(Color(.systemGroupedBackground))
+        .background(Color.neuBackground)
     }
     
     private var communityListView: some View {
-        List {
-            if let community = selectedCommunity {
-                Section {
-                    ForEach(Array(communityUsers.enumerated()), id: \.element.id) { index, user in
-                        HStack {
-                            rankView(rank: index + 1)
-                                .frame(width: 35)
-                            
-                            VStack(alignment: .leading, spacing: 2) {
-                                HStack(spacing: 4) {
-                                    Text(user.username)
-                                        .font(.headline)
-                                    
-                                    if let icon = user.achievementIcon {
-                                        Image(systemName: icon)
-                                            .font(.caption)
-                                            .foregroundColor(.purple)
-                                    }
-                                }
-                            }
-                            
-                            Spacer()
-                            
-                            Text("\(user.credits)")
-                                .font(.system(.body, design: .monospaced))
-                                .fontWeight(.bold)
-                                .foregroundColor(.green)
-                            Text("pts")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                } header: {
+        ScrollView {
+            LazyVStack(spacing: 16) {
+                if let community = selectedCommunity {
+                    // Header
                     HStack {
                         Image(systemName: "building.2.fill")
                         Text(community.name)
                     }
+                    .font(.headline)
+                    .foregroundColor(.neuSecondaryText)
+                    .padding(.top, 8)
+                    
+                    ForEach(Array(communityUsers.enumerated()), id: \.element.id) { index, user in
+                        // Using LeaderboardRow for community users too, adapting slightly?
+                        // LeaderboardRow expects username/credits/isMe/rank.
+                        // CommunityLeaderboardUser has username etc.
+                        LeaderboardRow(
+                            rank: index + 1,
+                            username: user.username,
+                            credits: user.credits,
+                            isMe: isMe(user.id)
+                        )
+                        .padding(.horizontal, 16)
+                    }
+                    
+                    Color.clear.frame(height: 50)
                 }
             }
+            .padding(.top, 10)
         }
-        .listStyle(.insetGrouped)
         .refreshable {
             if let community = selectedCommunity {
                 await loadCommunityLeaderboard(communityId: community.id)
@@ -264,15 +288,24 @@ struct LeaderboardView: View {
     private var noCommunityView: some View {
         VStack(spacing: 20) {
             Spacer()
-            Image(systemName: "building.2.crop.circle")
-                .font(.system(size: 60))
-                .foregroundColor(.secondary)
+            ZStack {
+                Circle()
+                    .fill(Color.neuBackground)
+                    .frame(width: 120, height: 120)
+                    .shadow(color: .neuDarkShadow, radius: 10, x: 5, y: 5)
+                    .shadow(color: .neuLightShadow, radius: 10, x: -5, y: -5)
+                
+                Image(systemName: "building.2.crop.circle")
+                    .font(.system(size: 60))
+                    .foregroundColor(.neuSecondaryText)
+            }
             Text("No Communities Joined")
                 .font(.title2).bold()
+                .foregroundColor(.neuText)
             Text("Join a community in the Community tab to see its leaderboard!")
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
-                .foregroundColor(.secondary)
+                .foregroundColor(.neuSecondaryText)
             Spacer()
         }
     }
@@ -280,15 +313,23 @@ struct LeaderboardView: View {
     private var emptyCommunityLeaderboardView: some View {
         VStack(spacing: 20) {
             Spacer()
-            Image(systemName: "chart.bar.xaxis")
-                .font(.system(size: 60))
-                .foregroundColor(.secondary)
+            ZStack {
+                Circle()
+                    .fill(Color.neuBackground)
+                    .frame(width: 120, height: 120)
+                    .shadow(color: .neuDarkShadow, radius: 10, x: 5, y: 5)
+                    .shadow(color: .neuLightShadow, radius: 10, x: -5, y: -5)
+                Image(systemName: "chart.bar.xaxis")
+                    .font(.system(size: 60))
+                    .foregroundColor(.neuSecondaryText)
+            }
             Text("No Data Yet")
                 .font(.title2).bold()
+                .foregroundColor(.neuText)
             Text("Be the first to earn points in this community!")
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
-                .foregroundColor(.secondary)
+                .foregroundColor(.neuSecondaryText)
             Spacer()
         }
     }
@@ -359,18 +400,26 @@ struct LeaderboardView: View {
         VStack(spacing: 24) {
             Spacer()
             
-            Image(systemName: "lock.shield.fill")
-                .font(.system(size: 80))
-                .foregroundStyle(LinearGradient(colors: [.blue, .purple], startPoint: .topLeading, endPoint: .bottomTrailing))
-                .padding(.bottom, 10)
+            ZStack {
+                Circle()
+                    .fill(Color.neuBackground)
+                    .frame(width: 140, height: 140)
+                    .shadow(color: .neuDarkShadow, radius: 10, x: 5, y: 5)
+                    .shadow(color: .neuLightShadow, radius: 10, x: -5, y: -5)
+                
+                Image(systemName: "lock.shield.fill")
+                    .font(.system(size: 80))
+                    .foregroundStyle(LinearGradient(colors: [.blue, .purple], startPoint: .topLeading, endPoint: .bottomTrailing))
+            }
             
             Text("Access Restricted")
                 .font(.title).bold()
+                .foregroundColor(.neuText)
             
             Text("Leaderboard is only available for registered users.\n\nPlease link your Email or Phone in your Account to access this feature.")
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
-                .foregroundColor(.secondary)
+                .foregroundColor(.neuSecondaryText)
             
             Spacer()
         }
@@ -379,17 +428,26 @@ struct LeaderboardView: View {
     var permissionRequestView: some View {
         VStack(spacing: 24) {
             Spacer()
-            Image(systemName: "lock.shield.fill")
-                .font(.system(size: 70))
-                .foregroundColor(.orange)
+            ZStack {
+                Circle()
+                    .fill(Color.neuBackground)
+                    .frame(width: 120, height: 120)
+                    .shadow(color: .neuDarkShadow, radius: 10, x: 5, y: 5)
+                    .shadow(color: .neuLightShadow, radius: 10, x: -5, y: -5)
+                
+                Image(systemName: "lock.shield.fill")
+                    .font(.system(size: 70))
+                    .foregroundColor(.orange)
+            }
             
             Text("See Who's Winning")
                 .font(.title2).bold()
+                .foregroundColor(.neuText)
             
             Text("Sync your contacts to find friends playing The Trash and compete for the top spot!")
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
-                .foregroundColor(.secondary)
+                .foregroundColor(.neuSecondaryText)
             
             Button(action: {
                 Task { await friendService.requestAccessAndFetch() }
@@ -399,8 +457,9 @@ struct LeaderboardView: View {
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color.blue)
+                    .background(Color.neuAccentBlue)
                     .cornerRadius(14)
+                    .shadow(color: .neuAccentBlue.opacity(0.4), radius: 8, y: 4)
                     .padding(.horizontal, 40)
             }
             Spacer()
@@ -410,24 +469,35 @@ struct LeaderboardView: View {
     var noFriendsState: some View {
         VStack(spacing: 20) {
             Spacer()
-            Image(systemName: "hand.wave")
-                .font(.system(size: 60))
-                .foregroundColor(.gray)
+            ZStack {
+                Circle()
+                    .fill(Color.neuBackground)
+                    .frame(width: 120, height: 120)
+                    .shadow(color: .neuDarkShadow, radius: 10, x: 5, y: 5)
+                    .shadow(color: .neuLightShadow, radius: 10, x: -5, y: -5)
+                
+                Image(systemName: "hand.wave")
+                    .font(.system(size: 60))
+                    .foregroundColor(.neuSecondaryText)
+            }
+            
             Text("No Friends Found Yet")
                 .font(.title3).bold()
+                .foregroundColor(.neuText)
             Text("None of your contacts are playing The Trash yet.\nInvite them to join the challenge!")
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
-                .foregroundColor(.secondary)
+                .foregroundColor(.neuSecondaryText)
             
             ShareLink(item: URL(string: "https://yourappurl.com")!, subject: Text("Join me on The Trash!"), message: Text("Come verify trash and earn credits with me!")) {
                 Label("Invite Friends", systemImage: "square.and.arrow.up")
                     .fontWeight(.semibold)
                     .padding(.horizontal, 24)
                     .padding(.vertical, 12)
-                    .background(Color.green)
+                    .background(Color.neuAccentGreen)
                     .foregroundColor(.white)
                     .cornerRadius(20)
+                    .shadow(color: .neuAccentGreen.opacity(0.4), radius: 8, y: 4)
             }
             Spacer()
         }
@@ -439,7 +509,7 @@ struct LeaderboardView: View {
         case 1: Image(systemName: "crown.fill").foregroundColor(.yellow).font(.title2)
         case 2: Image(systemName: "medal.fill").foregroundColor(.gray).font(.title2)
         case 3: Image(systemName: "medal.fill").foregroundColor(.brown).font(.title2)
-        default: Text("\(rank)").font(.headline).foregroundColor(.secondary)
+        default: Text("\(rank)").font(.headline).foregroundColor(.neuSecondaryText)
         }
     }
 }

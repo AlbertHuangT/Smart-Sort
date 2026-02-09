@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-// MARK: - Account Button (App Store Style with Depth Effect)
+// MARK: - Account Button (Neumorphic Style)
 struct AccountButton: View {
     @Binding var showAccountSheet: Bool
     @EnvironmentObject var authVM: AuthViewModel
@@ -18,30 +18,14 @@ struct AccountButton: View {
         } label: {
             ZStack {
                 Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [.blue.opacity(0.3), .purple.opacity(0.3)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 52, height: 52)
-                    .blur(radius: 4)
-
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [.blue, .purple],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
+                    .fill(Color.neuBackground)
                     .frame(width: 45, height: 45)
-                    .shadow(color: .purple.opacity(0.4), radius: 8, x: 0, y: 4)
+                    .shadow(color: .neuDarkShadow, radius: 5, x: 4, y: 4)
+                    .shadow(color: .neuLightShadow, radius: 5, x: -3, y: -3)
 
                 Image(systemName: authVM.isAnonymous ? "person.fill" : "person.crop.circle.fill")
                     .font(.system(size: 22, weight: .medium))
-                    .foregroundColor(.white)
+                    .foregroundColor(.neuAccentBlue)
             }
         }
         .sheet(isPresented: $showAccountSheet) {
@@ -50,7 +34,7 @@ struct AccountButton: View {
                 .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
                 .presentationCornerRadius(32)
-                .presentationBackground(.regularMaterial)
+                .presentationBackground(Color.neuBackground)
                 .presentationBackgroundInteraction(.enabled(upThrough: .large))
         }
     }

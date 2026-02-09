@@ -15,7 +15,7 @@ enum EventSortOption: String, CaseIterable {
     case date = "Date"
     case distance = "Distance"
     case participants = "Popularity"
-    
+
     var icon: String {
         switch self {
         case .date: return "calendar"
@@ -45,13 +45,13 @@ struct CommunityEvent: Identifiable, Hashable, Equatable {
     var distanceKm: Double?
     var isRegistered: Bool = false
     var isPersonal: Bool = false  // 🔥 新增：是否为个人活动
-    
+
     enum EventCategory: String, CaseIterable, Codable {
         case cleanup = "Cleanup"
         case workshop = "Workshop"
         case competition = "Competition"
         case education = "Education"
-        
+
         var color: Color {
             switch self {
             case .cleanup: return .green
@@ -60,7 +60,7 @@ struct CommunityEvent: Identifiable, Hashable, Equatable {
             case .education: return .purple
             }
         }
-        
+
         var icon: String {
             switch self {
             case .cleanup: return "leaf.fill"
@@ -70,35 +70,35 @@ struct CommunityEvent: Identifiable, Hashable, Equatable {
             }
         }
     }
-    
+
     static func == (lhs: CommunityEvent, rhs: CommunityEvent) -> Bool {
         return lhs.id == rhs.id
     }
-    
+
     func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }
-    
+
     // 计算距离（公里）- 优先使用后端计算的距离，其次使用精确GPS，最后使用城市中心
     func distance(from userLocation: UserLocation?, preciseLocation: CLLocation? = nil) -> Double {
         // 1. 优先使用后端返回的距离
         if let distanceKm = distanceKm {
             return distanceKm
         }
-        
+
         // 2. 如果有精确 GPS 位置，使用它计算
         if let precise = preciseLocation {
             let eventLoc = CLLocation(latitude: latitude, longitude: longitude)
             return eventLoc.distance(from: precise) / 1000.0
         }
-        
+
         // 3. 否则使用城市中心坐标
         guard let userLoc = userLocation else { return 0 }
         let eventLoc = CLLocation(latitude: latitude, longitude: longitude)
         let userCLLoc = CLLocation(latitude: userLoc.latitude, longitude: userLoc.longitude)
         return eventLoc.distance(from: userCLLoc) / 1000.0
     }
-    
+
     // 从 API 响应转换
     init(from response: EventResponse) {
         self.id = response.id
@@ -119,7 +119,7 @@ struct CommunityEvent: Identifiable, Hashable, Equatable {
         self.isRegistered = response.isRegistered ?? false
         self.isPersonal = response.isPersonal ?? false  // 🔥 新增
     }
-    
+
     init(id: UUID = UUID(), title: String, organizer: String, description: String, date: Date, location: String, latitude: Double, longitude: Double, imageSystemName: String, category: EventCategory, participantCount: Int, maxParticipants: Int, communityId: String?, communityName: String? = nil, distanceKm: Double? = nil, isRegistered: Bool = false, isPersonal: Bool = false) {
         self.id = id
         self.title = title
@@ -210,7 +210,7 @@ class EventsViewModel: ObservableObject {
             return dist1 < dist2
         }
     }
-    
+
     /// 从后端加载附近活动
     func loadEvents() async {
         // 🚀 优化：取消之前的请求任务
@@ -267,7 +267,7 @@ class EventsViewModel: ObservableObject {
 
         isLoading = false
     }
-    
+
     /// 报名活动
     func registerForEvent(_ event: CommunityEvent) async -> Bool {
         let success = await communityService.registerForEvent(event.id)
@@ -280,7 +280,7 @@ class EventsViewModel: ObservableObject {
         }
         return success
     }
-    
+
     /// 取消报名
     func cancelRegistration(_ event: CommunityEvent) async -> Bool {
         let success = await communityService.cancelEventRegistration(event.id)
@@ -293,7 +293,7 @@ class EventsViewModel: ObservableObject {
         }
         return success
     }
-    
+
     /// 切换报名状态
     func toggleRegistration(for event: CommunityEvent) async {
         if event.isRegistered {
@@ -316,21 +316,21 @@ struct EventsView: View {
     @State private var showCreateEventSheet = false
     @State private var showLocationPicker = false // Added for location picker
     @State private var isMapView = false
-    
+
     var body: some View {
         ZStack {
-            Color(.systemGroupedBackground).ignoresSafeArea()
-            
+            Color.neuBackground.ignoresSafeArea()
+
             VStack(spacing: 0) {
                 // Header is now handled by parent view
-                
+
                 // 顶部控制栏
                 controlBar
 
-                
+
                 // 分类筛选器
                 categoryFilter
-                
+
                 if !viewModel.hasLocation {
                     noLocationView
                 } else if viewModel.isLoading {
@@ -373,7 +373,7 @@ struct EventsView: View {
                     }
                 }
             }
-            
+
             // 🚀 浮动加号按钮 (FAB)
             if !authVM.isAnonymous && viewModel.hasLocation && !isMapView {
                 VStack {
@@ -432,24 +432,24 @@ struct EventsView: View {
             }
         }
     }
-    
+
     // MARK: - Loading View
     private var loadingView: some View {
         VStack(spacing: 16) {
             Spacer()
             ProgressView()
                 .scaleEffect(1.2)
+                .tint(.neuAccentBlue)
             Text("Loading events...")
                 .font(.subheadline)
-                .foregroundColor(.secondary)
+                .foregroundColor(.neuSecondaryText)
             Spacer()
         }
     }
-    
+
     // MARK: - Control Bar
     private var controlBar: some View {
         HStack(spacing: 12) {
-            // 位置显示
             // 位置显示
             if let location = userSettings.selectedLocation {
                 Button(action: { showLocationPicker = true }) {
@@ -459,11 +459,10 @@ struct EventsView: View {
                         Text(location.city)
                             .font(.subheadline.bold())
                     }
-                    .foregroundColor(.blue)
+                    .foregroundColor(.neuAccentBlue)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
-                    .background(Color.blue.opacity(0.1))
-                    .cornerRadius(16)
+                    .neumorphicConcave(cornerRadius: 16)
                 }
             } else {
                 Button(action: { showLocationPicker = true }) {
@@ -473,30 +472,30 @@ struct EventsView: View {
                         Text("Select Location")
                             .font(.subheadline.bold())
                     }
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.neuSecondaryText)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
-                    .background(Color(.secondarySystemGroupedBackground))
+                    .neumorphic(cornerRadius: 16)
                     .cornerRadius(16)
                 }
             }
-            
+
             Spacer()
-            
+
             // Map/List Toggle
             Button(action: {
                 withAnimation {
                     isMapView.toggle()
                 }
             }) {
-                Image(systemName: isMapView ? "map.fill" : "list.bullet") // 🚀 修复：显示当前模式或反转逻辑（根据用户反馈调整）
+                Image(systemName: isMapView ? "map.fill" : "list.bullet")
                     .font(.caption)
                     .foregroundColor(.white)
                     .padding(8)
-                    .background(Color.blue)
+                    .background(Color.neuAccentBlue)
                     .clipShape(Circle())
             }
-            
+
             // 仅显示已加入社区 Toggle
             Button(action: {
                 viewModel.showOnlyJoinedCommunities.toggle()
@@ -507,16 +506,24 @@ struct EventsView: View {
                         .frame(width: 14) // 🚀 固定宽度
                     Text(viewModel.showOnlyJoinedCommunities ? "Joined" : "All")
                         .font(.caption.bold())
-                        .frame(width: 45, alignment: .center) // 🚀 固定宽度并居中，"Joined"大约需45pt
+                        .frame(width: 45, alignment: .center) // 🚀 固定宽度并居中
                 }
-                .foregroundColor(viewModel.showOnlyJoinedCommunities ? .cyan : .secondary)
+                .foregroundColor(viewModel.showOnlyJoinedCommunities ? .cyan : .neuSecondaryText)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
-                .background(viewModel.showOnlyJoinedCommunities ? Color.cyan.opacity(0.1) : Color(.secondarySystemGroupedBackground))
-                .cornerRadius(16)
+                .background(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(Color.neuBackground)
+                        .shadow(color: viewModel.showOnlyJoinedCommunities ? .neuDarkShadow : .neuDarkShadow.opacity(0.5), radius: 3, x: 2, y: 2)
+                        .shadow(color: viewModel.showOnlyJoinedCommunities ? .neuLightShadow : .neuLightShadow.opacity(0.5), radius: 3, x: -2, y: -2)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(viewModel.showOnlyJoinedCommunities ? Color.cyan.opacity(0.3) : Color.clear, lineWidth: 1)
+                )
                 .animation(.easeInOut(duration: 0.2), value: viewModel.showOnlyJoinedCommunities)
             }
-            
+
             // 排序按钮
             Menu {
                 ForEach(EventSortOption.allCases, id: \.self) { option in
@@ -528,7 +535,6 @@ struct EventsView: View {
                             Spacer()
                             if viewModel.sortOption == option {
                                 Image(systemName: "checkmark")
-                                    .foregroundColor(.blue)
                             }
                         }
                     }
@@ -544,20 +550,24 @@ struct EventsView: View {
                     Image(systemName: "chevron.down")
                         .font(.caption2)
                 }
-                .foregroundColor(viewModel.sortOption != .distance ? .white : .secondary)
+                .foregroundColor(viewModel.sortOption != .distance ? .white : .neuSecondaryText)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
-                .background(viewModel.sortOption != .distance ? Color.blue : Color(.secondarySystemGroupedBackground))
-                .cornerRadius(16)
+                .background(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(viewModel.sortOption != .distance ? Color.neuAccentBlue : Color.neuBackground)
+                        .shadow(color: .neuDarkShadow, radius: 3, x: 2, y: 2)
+                        .shadow(color: .neuLightShadow, radius: 3, x: -2, y: -2)
+                )
                 .animation(.none, value: viewModel.sortOption)
             }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
-        .background(Color(.systemBackground))
+        .background(Color.neuBackground)
         .animation(.none, value: viewModel.sortOption) // 🚀 禁用整个控制栏的布局动画
     }
-    
+
     // MARK: - Category Filter
     private var categoryFilter: some View {
         ScrollViewReader { proxy in
@@ -572,7 +582,7 @@ struct EventsView: View {
                         viewModel.selectedCategory = nil
                     }
                     .id("all")
-                    
+
                     ForEach(CommunityEvent.EventCategory.allCases, id: \.self) { category in
                         CategoryPill(
                             title: category.rawValue,
@@ -588,7 +598,7 @@ struct EventsView: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
             }
-            .background(Color(.systemBackground))
+            .background(Color.neuBackground)
             // 🚀 优化：选中时自动滚动到选中项
             .onChange(of: viewModel.selectedCategory) { newValue in
                 withAnimation(.easeInOut(duration: 0.2)) {
@@ -601,74 +611,90 @@ struct EventsView: View {
             }
         }
     }
-    
+
     // MARK: - No Location View
     private var noLocationView: some View {
         VStack(spacing: 20) {
             Spacer()
-            
+
             ZStack {
                 Circle()
-                    .fill(Color.blue.opacity(0.1))
+                    .fill(Color.neuBackground)
                     .frame(width: 120, height: 120)
+                    .shadow(color: .neuDarkShadow, radius: 8, x: 6, y: 6)
+                    .shadow(color: .neuLightShadow, radius: 8, x: -4, y: -4)
                 Image(systemName: "location.slash.fill")
                     .font(.system(size: 50))
-                    .foregroundColor(.blue)
+                    .foregroundColor(.neuAccentBlue)
             }
-            
+
             Text("Set Your Location")
                 .font(.title2.bold())
-            
+                .foregroundColor(.neuText)
+
             Text("Select a location in Account settings\nto see nearby events")
                 .font(.subheadline)
-                .foregroundColor(.secondary)
+                .foregroundColor(.neuSecondaryText)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
-            
-            NavigationLink(destination: AccountView()) {
+
+            Button(action: { showLocationPicker = true }) {
                 HStack {
-                    Image(systemName: "gearshape.fill")
-                    Text("Go to Settings")
+                    Image(systemName: "location.fill")
+                    Text("Select Location")
                 }
                 .font(.subheadline.bold())
                 .foregroundColor(.white)
                 .padding(.horizontal, 24)
                 .padding(.vertical, 12)
-                .background(Color.blue)
+                .background(
+                    LinearGradient(colors: [.neuAccentBlue, .cyan], startPoint: .leading, endPoint: .trailing)
+                )
                 .cornerRadius(20)
+                .shadow(color: .neuAccentBlue.opacity(0.4), radius: 8, y: 4)
             }
-            
+
             Spacer()
         }
     }
-    
+
     // MARK: - Empty State
     private var emptyState: some View {
         VStack(spacing: 16) {
             Spacer()
-            Image(systemName: "calendar.badge.exclamationmark")
-                .font(.system(size: 60))
-                .foregroundColor(.secondary)
+
+            ZStack {
+                Circle()
+                    .fill(Color.neuBackground)
+                    .frame(width: 100, height: 100)
+                    .shadow(color: .neuDarkShadow, radius: 6, x: 4, y: 4)
+                    .shadow(color: .neuLightShadow, radius: 6, x: -3, y: -3)
+                Image(systemName: "calendar.badge.exclamationmark")
+                    .font(.system(size: 40))
+                    .foregroundColor(.neuSecondaryText)
+            }
+
             Text("No Events Found")
                 .font(.headline)
-            
+                .foregroundColor(.neuText)
+
             if viewModel.showOnlyJoinedCommunities {
                 Text("Try showing all events or join more communities")
                     .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.neuSecondaryText)
                     .multilineTextAlignment(.center)
-                
+
                 Button(action: {
                     viewModel.showOnlyJoinedCommunities = false
                 }) {
                     Text("Show All Events")
                         .font(.subheadline.bold())
-                        .foregroundColor(.blue)
+                        .foregroundColor(.neuAccentBlue)
                 }
             } else {
                 Text("Check back later for new events!")
                     .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.neuSecondaryText)
             }
             Spacer()
         }
@@ -683,7 +709,7 @@ struct CategoryPill: View {
     let color: Color
     let isSelected: Bool
     let action: () -> Void
-    
+
     var body: some View {
         Button(action: action) {
             HStack(spacing: 6) {
@@ -695,8 +721,12 @@ struct CategoryPill: View {
             .foregroundColor(isSelected ? .white : color)
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
-            .background(isSelected ? color : color.opacity(0.1))
-            .cornerRadius(20)
+            .background(
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(isSelected ? color : Color.neuBackground)
+                    .shadow(color: isSelected ? .clear : .neuDarkShadow, radius: 3, x: 2, y: 2)
+                    .shadow(color: isSelected ? .clear : .neuLightShadow, radius: 3, x: -2, y: -2)
+            )
             .animation(.easeInOut(duration: 0.15), value: isSelected) // 🚀 轻量快速动画
         }
         .buttonStyle(.plain)
@@ -710,13 +740,13 @@ struct EventCard: View {
     let userLocation: UserLocation?
     let preciseLocation: CLLocation?  // 🚀 新增：精确GPS位置
     let onTap: () -> Void
-    
+
     private var dateFormatter: DateFormatter {
         let formatter = DateFormatter()
         formatter.dateFormat = "MMM d, h:mm a"
         return formatter
     }
-    
+
     private var distanceText: String {
         // 优先使用精确位置计算距离
         let dist = event.distance(from: userLocation, preciseLocation: preciseLocation)
@@ -727,7 +757,7 @@ struct EventCard: View {
             return String(format: "%.1f km", dist)
         }
     }
-    
+
     var body: some View {
         Button(action: onTap) {
             VStack(alignment: .leading, spacing: 12) {
@@ -737,12 +767,12 @@ struct EventCard: View {
                 footerRow
             }
             .padding(16)
-            .background(Color(.secondarySystemGroupedBackground))
+            .neumorphic(cornerRadius: 16)
             .cornerRadius(16)
         }
         .buttonStyle(.plain)
     }
-    
+
     // MARK: - Header Row
     private var headerRow: some View {
         HStack(spacing: 12) {
@@ -752,18 +782,20 @@ struct EventCard: View {
             registeredBadge
         }
     }
-    
+
     private var categoryIcon: some View {
         ZStack {
             Circle()
-                .fill(event.category.color.opacity(0.15))
+                .fill(Color.neuBackground)
                 .frame(width: 50, height: 50)
+                .shadow(color: .neuDarkShadow, radius: 3, x: 2, y: 2)
+                .shadow(color: .neuLightShadow, radius: 3, x: -2, y: -2)
             Image(systemName: event.imageSystemName)
                 .font(.title3)
                 .foregroundColor(event.category.color)
         }
     }
-    
+
     private var titleSection: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
@@ -772,40 +804,39 @@ struct EventCard: View {
                     .foregroundColor(event.category.color)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 2)
-                    .background(event.category.color.opacity(0.1))
-                    .cornerRadius(6)
-                
+                    .neumorphicConcave(cornerRadius: 6)
+
                 if userLocation != nil {
                     Text(distanceText)
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.neuSecondaryText)
                 }
             }
-            
+
             Text(event.title)
                 .font(.headline)
-                .foregroundColor(.primary)
+                .foregroundColor(.neuText)
                 .lineLimit(1)
         }
     }
-    
+
     @ViewBuilder
     private var registeredBadge: some View {
         if event.isRegistered {
             Image(systemName: "checkmark.circle.fill")
-                .foregroundColor(.green)
+                .foregroundColor(.neuAccentGreen)
                 .font(.title2)
         }
     }
-    
+
     // MARK: - Description
     private var descriptionText: some View {
         Text(event.description)
             .font(.subheadline)
-            .foregroundColor(.secondary)
+            .foregroundColor(.neuSecondaryText)
             .lineLimit(2)
     }
-    
+
     // MARK: - Date & Location Row
     private var dateLocationRow: some View {
         HStack(spacing: 16) {
@@ -813,23 +844,23 @@ struct EventCard: View {
             Label(event.location, systemImage: "mappin.circle.fill")
         }
         .font(.caption)
-        .foregroundColor(.secondary)
+        .foregroundColor(.neuSecondaryText)
         .lineLimit(1)
     }
-    
+
     // MARK: - Footer Row
     private var footerRow: some View {
         HStack {
             Text("by \(event.organizer)")
                 .font(.caption)
-                .foregroundColor(.secondary)
-            
+                .foregroundColor(.neuSecondaryText)
+
             Spacer()
-            
+
             participantCount
         }
     }
-    
+
     private var participantCount: some View {
         HStack(spacing: 4) {
             Image(systemName: "person.2.fill")
@@ -837,7 +868,7 @@ struct EventCard: View {
             Text("\(event.participantCount)/\(event.maxParticipants)")
                 .font(.caption.bold())
         }
-        .foregroundColor(event.participantCount >= event.maxParticipants ? .red : .blue)
+        .foregroundColor(event.participantCount >= event.maxParticipants ? .red : .neuAccentBlue)
     }
 }
 
@@ -849,18 +880,18 @@ struct EventDetailSheet: View {
     let userLocation: UserLocation?
     @ObservedObject private var userSettings = UserSettings.shared  // 🚀 新增：获取精确位置
     @Environment(\.dismiss) var dismiss
-    
+
     private var dateFormatter: DateFormatter {
         let formatter = DateFormatter()
         formatter.dateStyle = .full
         formatter.timeStyle = .short
         return formatter
     }
-    
+
     private var currentEvent: CommunityEvent {
         viewModel.events.first(where: { $0.id == event.id }) ?? event
     }
-    
+
     private var distanceText: String {
         let dist = event.distance(from: userLocation, preciseLocation: userSettings.preciseLocation)
         if dist <= 0 { return "Location unknown" }
@@ -870,47 +901,52 @@ struct EventDetailSheet: View {
             return String(format: "%.1f km away", dist)
         }
     }
-    
+
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    // Header Image
+                    // Header — neumorphic concave
                     ZStack {
-                        LinearGradient(
-                            colors: [event.category.color.opacity(0.8), event.category.color],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                        .frame(height: 180)
-                        
+                        Color.neuBackground
+                            .frame(height: 180)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 20)
+                                    .stroke(Color.neuBackground, lineWidth: 3)
+                                    .shadow(color: .neuDarkShadow, radius: 5, x: 4, y: 4)
+                                    .clipShape(RoundedRectangle(cornerRadius: 20))
+                                    .shadow(color: .neuLightShadow, radius: 5, x: -4, y: -4)
+                                    .clipShape(RoundedRectangle(cornerRadius: 20))
+                            )
+
                         VStack(spacing: 12) {
                             Image(systemName: event.imageSystemName)
                                 .font(.system(size: 50))
-                                .foregroundColor(.white)
+                                .foregroundColor(event.category.color)
                             Text(event.category.rawValue)
                                 .font(.headline)
-                                .foregroundColor(.white.opacity(0.9))
+                                .foregroundColor(.neuSecondaryText)
                         }
                     }
                     .cornerRadius(20)
                     .padding(.horizontal)
-                    
+
                     // Title & Organizer
                     VStack(alignment: .leading, spacing: 6) {
                         Text(event.title)
                             .font(.title2.bold())
-                        
+                            .foregroundColor(.neuText)
+
                         HStack {
                             Image(systemName: "building.2.fill")
-                                .foregroundColor(.secondary)
+                                .foregroundColor(.neuSecondaryText)
                             Text(event.organizer)
-                                .foregroundColor(.secondary)
+                                .foregroundColor(.neuSecondaryText)
                         }
                         .font(.subheadline)
                     }
                     .padding(.horizontal)
-                    
+
                     // Info Cards
                     VStack(spacing: 12) {
                         InfoRow(icon: "calendar", title: "Date & Time", value: dateFormatter.string(from: event.date))
@@ -919,21 +955,23 @@ struct EventDetailSheet: View {
                         InfoRow(icon: "person.2.fill", title: "Participants", value: "\(event.participantCount) / \(event.maxParticipants)")
                     }
                     .padding(.horizontal)
-                    
+
                     // Description
                     VStack(alignment: .leading, spacing: 8) {
                         Text("About")
                             .font(.headline)
+                            .foregroundColor(.neuText)
                         Text(event.description)
                             .font(.body)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(.neuSecondaryText)
                     }
                     .padding(.horizontal)
-                    
+
                     Spacer(minLength: 100)
                 }
                 .padding(.top)
             }
+            .background(Color.neuBackground)
             .navigationTitle("Event Details")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -960,7 +998,7 @@ struct EventDetailSheet: View {
                         .padding(.vertical, 16)
                         .background(
                             currentEvent.isRegistered ?
-                            Color.green :
+                            Color.neuAccentGreen :
                             (currentEvent.participantCount >= currentEvent.maxParticipants ? Color.gray : event.category.color)
                         )
                         .cornerRadius(14)
@@ -969,9 +1007,10 @@ struct EventDetailSheet: View {
                     .padding(.horizontal)
                     .padding(.bottom, 8)
                 }
-                .background(.ultraThinMaterial)
+                .background(Color.neuBackground)
             }
         }
+        .presentationBackground(Color.neuBackground)
     }
 }
 
@@ -979,26 +1018,27 @@ struct InfoRow: View {
     let icon: String
     let title: String
     let value: String
-    
+
     var body: some View {
         HStack(spacing: 14) {
             Image(systemName: icon)
                 .font(.title3)
-                .foregroundColor(.blue)
+                .foregroundColor(.neuAccentBlue)
                 .frame(width: 30)
-            
+
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.neuSecondaryText)
                 Text(value)
                     .font(.subheadline)
+                    .foregroundColor(.neuText)
             }
-            
+
             Spacer()
         }
         .padding(12)
-        .background(Color(.secondarySystemGroupedBackground))
+        .neumorphic(cornerRadius: 16)
         .cornerRadius(12)
     }
 }
@@ -1009,7 +1049,7 @@ struct CreateEventFormSheet: View {
     @Binding var isPresented: Bool
     @ObservedObject var userSettings: UserSettings
     var onCreated: () -> Void
-    
+
     @State private var title = ""
     @State private var description = ""
     @State private var eventDate = Date().addingTimeInterval(86400) // 默认明天
@@ -1018,19 +1058,19 @@ struct CreateEventFormSheet: View {
     @State private var maxParticipants = 50
     @State private var isPersonalEvent = true
     @State private var selectedCommunityId: String? = nil
-    
+
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var showSuccessAlert = false
-    
+
     let categories = ["cleanup", "workshop", "competition", "education", "other"]
-    
+
     private var canCreate: Bool {
         !title.trimmingCharacters(in: .whitespaces).isEmpty &&
         !location.trimmingCharacters(in: .whitespaces).isEmpty &&
         eventDate > Date()
     }
-    
+
     var body: some View {
         NavigationView {
             Form {
@@ -1041,7 +1081,7 @@ struct CreateEventFormSheet: View {
                         Text("Community Event").tag(false)
                     }
                     .pickerStyle(.segmented)
-                    
+
                     if !isPersonalEvent {
                         if userSettings.adminCommunities.isEmpty {
                             HStack {
@@ -1065,21 +1105,21 @@ struct CreateEventFormSheet: View {
                 } footer: {
                     Text(isPersonalEvent ? "You will be shown as the organizer" : "Only community admins can create community events")
                 }
-                
+
                 // Event Details
                 Section("Event Details") {
                     TextField("Event Title", text: $title)
                         .textInputAutocapitalization(.words)
-                    
+
                     TextField("Description", text: $description, axis: .vertical)
                         .lineLimit(3...6)
-                    
+
                     DatePicker("Date & Time", selection: $eventDate, in: Date()...)
-                    
+
                     TextField("Location", text: $location)
                         .textInputAutocapitalization(.words)
                 }
-                
+
                 // Settings
                 Section("Settings") {
                     Picker("Category", selection: $category) {
@@ -1088,10 +1128,10 @@ struct CreateEventFormSheet: View {
                                 .tag(cat)
                         }
                     }
-                    
+
                     Stepper("Max Participants: \(maxParticipants)", value: $maxParticipants, in: 5...500, step: 5)
                 }
-                
+
                 // Info Section
                 Section {
                     HStack(spacing: 12) {
@@ -1102,7 +1142,7 @@ struct CreateEventFormSheet: View {
                             .foregroundColor(.secondary)
                     }
                 }
-                
+
                 // Error Message
                 if let error = errorMessage {
                     Section {
@@ -1151,17 +1191,17 @@ struct CreateEventFormSheet: View {
             }
         }
     }
-    
+
     private func createEvent() {
         guard canCreate else { return }
         guard let userLocation = userSettings.selectedLocation else {
             errorMessage = "Please select a location first"
             return
         }
-        
+
         isLoading = true
         errorMessage = nil
-        
+
         Task {
             let result = await CommunityService.shared.createEvent(
                 title: title.trimmingCharacters(in: .whitespaces),
@@ -1175,10 +1215,10 @@ struct CreateEventFormSheet: View {
                 communityId: isPersonalEvent ? nil : selectedCommunityId,
                 iconName: iconForCategory(category)
             )
-            
+
             await MainActor.run {
                 isLoading = false
-                
+
                 if result.success {
                     showSuccessAlert = true
                 } else {
@@ -1187,7 +1227,7 @@ struct CreateEventFormSheet: View {
             }
         }
     }
-    
+
     private func iconForCategory(_ category: String) -> String {
         switch category {
         case "cleanup": return "leaf.fill"

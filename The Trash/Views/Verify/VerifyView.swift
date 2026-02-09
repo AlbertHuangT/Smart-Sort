@@ -33,13 +33,9 @@ struct VerifyView: View {
 
     var body: some View {
         ZStack {
-            // 🎨 渐变背景
-            LinearGradient(
-                colors: [Color(.systemBackground), Color(.systemGray6)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
+            // 🎨 Neumorphic Background
+            Color.neuBackground
+                .ignoresSafeArea()
             
             VStack(spacing: 0) {
                 // 🎨 App Store 风格头部
@@ -91,6 +87,7 @@ struct VerifyView: View {
         HStack(alignment: .center) {
             Text(title)
                 .font(.system(size: 34, weight: .bold, design: .default))
+                .foregroundColor(.neuText) // Dark gray text
             
             Spacer()
             
@@ -109,18 +106,24 @@ struct VerifyView: View {
             Spacer()
             HStack(spacing: 6) {
                 Circle()
-                    .fill(RealClassifierService.shared.isReady ? Color.green : Color.orange)
+                    .fill(RealClassifierService.shared.isReady ? Color.neuAccentGreen : Color.orange)
                     .frame(width: 8, height: 8)
                     .scaleEffect(pulseAnimation ? 1.2 : 1.0)
+                    .shadow(color: RealClassifierService.shared.isReady ? Color.neuAccentGreen.opacity(0.6) : Color.orange.opacity(0.6), radius: 4, x: 0, y: 0) // Glowing effect
                     .animation(.easeInOut(duration: 1).repeatForever(autoreverses: true), value: pulseAnimation)
                 Text(RealClassifierService.shared.isReady ? "Ready" : "Loading")
                     .font(.caption2)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.neuSecondaryText)
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
-            .background(Color(.tertiarySystemGroupedBackground))
-            .cornerRadius(20)
+            // Neumorphic Concave (Pressed looking) for status pill
+            .background(
+                Capsule()
+                    .fill(Color.neuBackground)
+                    .shadow(color: .neuLightShadow, radius: 2, x: -1, y: -1)
+                    .shadow(color: .neuDarkShadow, radius: 2, x: 1, y: 1)
+            )
             .onAppear { pulseAnimation = true }
         }
         .padding(.horizontal, 16)
@@ -131,13 +134,17 @@ struct VerifyView: View {
     private var cameraArea: some View {
         GeometryReader { geo in
             ZStack {
-                // 🎨 美化相机容器
+                // 🎨 Neumorphic Camera Container (Depressed/Concave Look)
                 RoundedRectangle(cornerRadius: 28)
-                    .fill(Color(.secondarySystemGroupedBackground))
-                    .shadow(color: Color.black.opacity(0.08), radius: 15, y: 8)
+                    .fill(Color.neuBackground)
+                    // Inner shadow simulation for "Depressed" look
                     .overlay(
                         RoundedRectangle(cornerRadius: 28)
-                            .stroke(Color.white.opacity(0.5), lineWidth: 1)
+                            .stroke(Color.neuBackground, lineWidth: 4)
+                            .shadow(color: .neuDarkShadow, radius: 4, x: 4, y: 4)
+                            .clipShape(RoundedRectangle(cornerRadius: 28))
+                            .shadow(color: .neuLightShadow, radius: 4, x: -4, y: -4)
+                            .clipShape(RoundedRectangle(cornerRadius: 28))
                     )
                 
                 if let image = cameraManager.capturedImage {
@@ -145,40 +152,44 @@ struct VerifyView: View {
                     Image(uiImage: image)
                         .resizable()
                         .scaledToFill()
-                        .frame(width: geo.size.width, height: geo.size.height)
-                        .clipShape(RoundedRectangle(cornerRadius: 28))
+                        .frame(width: geo.size.width - 16, height: geo.size.height - 16) // Padding for inner look
+                        .clipShape(RoundedRectangle(cornerRadius: 24))
+                        .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2) // Slight shadow for the image itself inside the recess
                         .transition(.scale.combined(with: .opacity))
                         
                 } else if isCameraActive {
                     // 相机预览
                     CameraPreview(cameraManager: cameraManager)
-                        .clipShape(RoundedRectangle(cornerRadius: 28))
+                        .clipShape(RoundedRectangle(cornerRadius: 24))
+                        .padding(8) // Padding for inner look
                         .overlay(
                             // 🎨 扫描线动画
                             ScanLineOverlay()
+                                .padding(8)
                         )
                 } else {
                     // 🎨 美化占位符
                     VStack(spacing: 20) {
                         ZStack {
+                            // Embossed Circle
                             Circle()
-                                .fill(LinearGradient(colors: [.blue.opacity(0.2), .cyan.opacity(0.1)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                                .fill(Color.neuBackground)
                                 .frame(width: 100, height: 100)
+                                .shadow(color: .neuDarkShadow, radius: 6, x: 6, y: 6)
+                                .shadow(color: .neuLightShadow, radius: 6, x: -6, y: -6)
                             
                             Image(systemName: "camera.viewfinder")
-                                .font(.system(size: 44, weight: .light))
-                                .foregroundStyle(
-                                    LinearGradient(colors: [.blue, .cyan], startPoint: .topLeading, endPoint: .bottomTrailing)
-                                )
+                                .font(.system(size: 40, weight: .light))
+                                .foregroundColor(.neuSecondaryText)
                         }
                         
                         VStack(spacing: 6) {
                             Text("Identify Trash")
                                 .font(.headline)
-                                .foregroundColor(.primary)
+                                .foregroundColor(.neuText)
                             Text("Point your camera at any item")
                                 .font(.caption)
-                                .foregroundColor(.secondary)
+                                .foregroundColor(.neuSecondaryText)
                         }
                     }
                 }
@@ -228,18 +239,29 @@ struct VerifyView: View {
                 Text(buttonText)
                     .font(.system(size: 17, weight: .bold))
             }
-            .foregroundColor(.white)
+            .foregroundColor(showFeedbackForm ? .white : .white) // Text color
             .frame(maxWidth: .infinity)
             .frame(height: 54)
             .background(
-                LinearGradient(
-                    colors: showFeedbackForm ? [.green, .mint] : [.blue, .cyan],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
+                // Neumorphic Colored Button (Soft Glow)
+                ZStack {
+                    RoundedRectangle(cornerRadius: 27)
+                        .fill(
+                            LinearGradient(
+                                colors: showFeedbackForm ? [.neuAccentGreen, .mint] : [.neuAccentBlue, .cyan],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                    
+                    // Inner glow/highlight for 3D effect
+                    RoundedRectangle(cornerRadius: 27)
+                        .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                        .padding(1)
+                }
             )
-            .clipShape(Capsule())
-            .shadow(color: (showFeedbackForm ? Color.green : Color.blue).opacity(0.4), radius: 12, y: 6)
+            .shadow(color: (showFeedbackForm ? Color.neuAccentGreen : Color.neuAccentBlue).opacity(0.4), radius: 10, x: 5, y: 5)
+            .shadow(color: .white.opacity(0.2), radius: 10, x: -5, y: -5)
         }
         .padding(.horizontal, 24)
         .padding(.bottom, 8)
@@ -249,20 +271,24 @@ struct VerifyView: View {
     // MARK: - 🎨 Analyzing Overlay
     private var analyzingOverlay: some View {
         ZStack {
-            Color.black.opacity(0.3)
+            Color.black.opacity(0.1) // Lighter overlay
                 .ignoresSafeArea()
+                .background(.ultraThinMaterial)
             
             VStack(spacing: 20) {
                 // 🎨 动态加载动画
                 ZStack {
+                    // Neumorphic Circle Container
                     Circle()
-                        .stroke(Color.white.opacity(0.3), lineWidth: 4)
-                        .frame(width: 80, height: 80)
+                        .fill(Color.neuBackground)
+                        .frame(width: 100, height: 100)
+                        .shadow(color: .neuDarkShadow, radius: 10, x: 5, y: 5)
+                        .shadow(color: .neuLightShadow, radius: 10, x: -5, y: -5)
                     
                     Circle()
                         .trim(from: 0, to: 0.7)
                         .stroke(
-                            LinearGradient(colors: [.blue, .cyan], startPoint: .leading, endPoint: .trailing),
+                            LinearGradient(colors: [.neuAccentBlue, .cyan], startPoint: .leading, endPoint: .trailing),
                             style: StrokeStyle(lineWidth: 4, lineCap: .round)
                         )
                         .frame(width: 80, height: 80)
@@ -271,20 +297,23 @@ struct VerifyView: View {
                     
                     Image(systemName: "brain")
                         .font(.system(size: 30))
-                        .foregroundColor(.white)
+                        .foregroundColor(.neuAccentBlue)
                 }
                 
                 Text("Analyzing...")
                     .font(.headline)
-                    .foregroundColor(.white)
+                    .foregroundColor(.neuText)
                 
                 Text("AI is identifying the item")
                     .font(.caption)
-                    .foregroundColor(.white.opacity(0.7))
+                    .foregroundColor(.neuSecondaryText)
             }
             .padding(40)
-            .background(.ultraThinMaterial)
-            .cornerRadius(24)
+            // Neumorphic Card for Overlay Content
+            .background(Color.neuBackground)
+            .cornerRadius(30)
+            .shadow(color: .neuDarkShadow, radius: 20, x: 10, y: 10)
+            .shadow(color: .neuLightShadow, radius: 20, x: -10, y: -10)
         }
         .transition(.opacity)
     }

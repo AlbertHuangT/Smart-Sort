@@ -21,15 +21,10 @@ struct FloatingActionButton: View {
         }) {
             ZStack {
                 Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [.blue, .cyan],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
+                    .fill(Color.neuAccentBlue)
                     .frame(width: 60, height: 60)
-                    .shadow(color: .blue.opacity(0.4), radius: 10, y: 5)
+                    .shadow(color: .neuAccentBlue.opacity(0.4), radius: 10, x: 5, y: 5)
+                    .shadow(color: .neuLightShadow, radius: 6, x: -3, y: -3)
 
                 Image(systemName: icon)
                     .font(.system(size: 24, weight: .semibold))

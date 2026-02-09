@@ -52,7 +52,7 @@ struct GroupsView: View {
                     }
                 }
             }
-            .background(Color(.systemGroupedBackground))
+            .background(Color.neuBackground)
 
             if !authVM.isAnonymous {
                 VStack {
@@ -97,11 +97,10 @@ struct GroupsView: View {
                         Text(location.city)
                             .font(.subheadline.bold())
                     }
-                    .foregroundColor(.blue)
+                    .foregroundColor(.neuAccentBlue)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
-                    .background(Color.blue.opacity(0.1))
-                    .cornerRadius(16)
+                    .neumorphicConcave(cornerRadius: 16)
                 }
             } else {
                 Button(action: { showLocationPicker = true }) {
@@ -111,16 +110,16 @@ struct GroupsView: View {
                         Text("Select Location")
                             .font(.subheadline.bold())
                     }
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.neuSecondaryText)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
-                    .background(Color(.secondarySystemGroupedBackground))
+                    .neumorphic(cornerRadius: 16)
                     .cornerRadius(16)
                 }
             }
-            
+
             Spacer()
-            
+
             // Toggle Button (Nearby / Joined)
             Button(action: {
                 withAnimation(.easeInOut(duration: 0.2)) {
@@ -139,11 +138,15 @@ struct GroupsView: View {
                         .font(.caption.bold())
                         .frame(width: 50, alignment: .center) // Fixed width for text stability
                 }
-                .foregroundColor(selectedSection == .joined ? .white : .secondary)
+                .foregroundColor(selectedSection == .joined ? .white : .neuSecondaryText)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
-                .background(selectedSection == .joined ? Color.blue : Color(.secondarySystemGroupedBackground))
-                .cornerRadius(16)
+                .background(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(selectedSection == .joined ? Color.neuAccentBlue : Color.neuBackground)
+                        .shadow(color: .neuDarkShadow, radius: 3, x: 2, y: 2)
+                        .shadow(color: .neuLightShadow, radius: 3, x: -2, y: -2)
+                )
             }
         }
         .padding(.horizontal, 16)
@@ -174,14 +177,24 @@ struct GroupsView: View {
     private var noLocationView: some View {
         VStack(spacing: 20) {
             Spacer()
-            Image(systemName: "location.slash.fill")
-                .font(.system(size: 60))
-                .foregroundColor(.secondary)
+
+            ZStack {
+                Circle()
+                    .fill(Color.neuBackground)
+                    .frame(width: 120, height: 120)
+                    .shadow(color: .neuDarkShadow, radius: 8, x: 6, y: 6)
+                    .shadow(color: .neuLightShadow, radius: 8, x: -4, y: -4)
+                Image(systemName: "location.slash.fill")
+                    .font(.system(size: 50))
+                    .foregroundColor(.neuAccentBlue)
+            }
+
             Text("No Location Set")
                 .font(.title2).bold()
+                .foregroundColor(.neuText)
             Text("Select a location to discover\ncommunities near you")
                 .multilineTextAlignment(.center)
-                .foregroundColor(.secondary)
+                .foregroundColor(.neuSecondaryText)
 
             Button(action: { showLocationPicker = true }) {
                 Text("Select Location")
@@ -189,8 +202,11 @@ struct GroupsView: View {
                     .foregroundColor(.white)
                     .padding(.horizontal, 24)
                     .padding(.vertical, 12)
-                    .background(Color.blue)
+                    .background(
+                        LinearGradient(colors: [.neuAccentBlue, .cyan], startPoint: .leading, endPoint: .trailing)
+                    )
                     .cornerRadius(20)
+                    .shadow(color: .neuAccentBlue.opacity(0.4), radius: 8, y: 4)
             }
             Spacer()
         }
@@ -200,9 +216,10 @@ struct GroupsView: View {
         VStack(spacing: 12) {
             Spacer()
             ProgressView()
+                .tint(.neuAccentBlue)
             Text("Loading communities...")
                 .font(.subheadline)
-                .foregroundColor(.secondary)
+                .foregroundColor(.neuSecondaryText)
             Spacer()
         }
     }
@@ -210,14 +227,24 @@ struct GroupsView: View {
     private var emptyNearbyView: some View {
         VStack(spacing: 20) {
             Spacer()
-            Image(systemName: "building.2.crop.circle")
-                .font(.system(size: 60))
-                .foregroundColor(.secondary)
+
+            ZStack {
+                Circle()
+                    .fill(Color.neuBackground)
+                    .frame(width: 100, height: 100)
+                    .shadow(color: .neuDarkShadow, radius: 6, x: 4, y: 4)
+                    .shadow(color: .neuLightShadow, radius: 6, x: -3, y: -3)
+                Image(systemName: "building.2.crop.circle")
+                    .font(.system(size: 40))
+                    .foregroundColor(.neuSecondaryText)
+            }
+
             Text("No Communities Yet")
                 .font(.title2).bold()
+                .foregroundColor(.neuText)
             Text("No communities in this area yet.\nBe the first to start one!")
                 .multilineTextAlignment(.center)
-                .foregroundColor(.secondary)
+                .foregroundColor(.neuSecondaryText)
             Spacer()
         }
     }
@@ -266,14 +293,24 @@ struct GroupsView: View {
     private var emptyJoinedView: some View {
         VStack(spacing: 20) {
             Spacer()
-            Image(systemName: "person.3.fill")
-                .font(.system(size: 60))
-                .foregroundColor(.secondary)
+
+            ZStack {
+                Circle()
+                    .fill(Color.neuBackground)
+                    .frame(width: 100, height: 100)
+                    .shadow(color: .neuDarkShadow, radius: 6, x: 4, y: 4)
+                    .shadow(color: .neuLightShadow, radius: 6, x: -3, y: -3)
+                Image(systemName: "person.3.fill")
+                    .font(.system(size: 40))
+                    .foregroundColor(.neuSecondaryText)
+            }
+
             Text("No Communities Joined")
                 .font(.title2).bold()
+                .foregroundColor(.neuText)
             Text("Join communities to connect with\npeople in your area")
                 .multilineTextAlignment(.center)
-                .foregroundColor(.secondary)
+                .foregroundColor(.neuSecondaryText)
 
             Button(action: { selectedSection = .nearby }) {
                 Text("Browse Nearby")
@@ -281,8 +318,11 @@ struct GroupsView: View {
                     .foregroundColor(.white)
                     .padding(.horizontal, 24)
                     .padding(.vertical, 12)
-                    .background(Color.blue)
+                    .background(
+                        LinearGradient(colors: [.neuAccentBlue, .cyan], startPoint: .leading, endPoint: .trailing)
+                    )
                     .cornerRadius(20)
+                    .shadow(color: .neuAccentBlue.opacity(0.4), radius: 8, y: 4)
             }
             Spacer()
         }
@@ -313,18 +353,29 @@ struct GroupsView: View {
         VStack(spacing: 24) {
             Spacer()
 
-            Image(systemName: "lock.shield.fill")
-                .font(.system(size: 80))
-                .foregroundStyle(LinearGradient(colors: [.blue, .purple], startPoint: .topLeading, endPoint: .bottomTrailing))
-                .padding(.bottom, 10)
+            ZStack {
+                Circle()
+                    .fill(Color.neuBackground)
+                    .frame(width: 120, height: 120)
+                    .shadow(color: .neuDarkShadow, radius: 10, x: 8, y: 8)
+                    .shadow(color: .neuLightShadow, radius: 10, x: -6, y: -6)
+
+                Image(systemName: "lock.shield.fill")
+                    .font(.system(size: 50))
+                    .foregroundStyle(
+                        LinearGradient(colors: [.neuAccentBlue, .cyan], startPoint: .topLeading, endPoint: .bottomTrailing)
+                    )
+            }
+            .padding(.bottom, 10)
 
             Text("Access Restricted")
                 .font(.title).bold()
+                .foregroundColor(.neuText)
 
             Text("Communities are only available for registered users.\n\nPlease link your Email or Phone in your Account to access this feature.")
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
-                .foregroundColor(.secondary)
+                .foregroundColor(.neuSecondaryText)
 
             Spacer()
         }

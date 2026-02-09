@@ -31,7 +31,7 @@ struct CommunitySelectionSheet: View {
                     communitiesView
                 }
             }
-            .background(Color(.systemGroupedBackground))
+            .background(Color.neuBackground)
             .navigationTitle("Location & Communities")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -48,29 +48,30 @@ struct CommunitySelectionSheet: View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
                 Image(systemName: "magnifyingglass")
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.neuSecondaryText)
                 TextField("Search cities...", text: $searchText)
+                    .foregroundColor(.neuText)
                     .autocapitalization(.none)
 
                 if !searchText.isEmpty {
                     Button(action: { searchText = "" }) {
                         Image(systemName: "xmark.circle.fill")
-                            .foregroundColor(.secondary)
+                            .foregroundColor(.neuSecondaryText)
                     }
                 }
             }
             .padding(12)
-            .background(Color(.secondarySystemGroupedBackground))
-            .cornerRadius(12)
+            .neumorphicConcave(cornerRadius: 12)
             .padding(.horizontal, 16)
             .padding(.top, 12)
 
             if let location = userSettings.selectedLocation {
                 HStack {
                     Image(systemName: "location.fill")
-                        .foregroundColor(.blue)
+                        .foregroundColor(.neuAccentBlue)
                     Text("Current: \(location.displayName)")
                         .font(.subheadline)
+                        .foregroundColor(.neuText)
                     Spacer()
                     Button("Change") {
                         Task {
@@ -78,11 +79,11 @@ struct CommunitySelectionSheet: View {
                         }
                     }
                     .font(.caption)
-                    .foregroundColor(.blue)
+                    .foregroundColor(.neuAccentBlue)
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
-                .background(Color.blue.opacity(0.1))
+                .background(Color.neuAccentBlue.opacity(0.1))
 
                 localCommunitiesSection
             } else {
@@ -97,6 +98,8 @@ struct CommunitySelectionSheet: View {
                     }
                 }
                 .listStyle(.plain)
+                .scrollContentBackground(.hidden)
+                .background(Color.neuBackground)
             }
         }
         .onAppear {
@@ -112,6 +115,7 @@ struct CommunitySelectionSheet: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Communities in \(userSettings.selectedLocation?.city ?? "")")
                 .font(.subheadline.bold())
+                .foregroundColor(.neuText)
                 .padding(.horizontal, 16)
                 .padding(.top, 12)
 
@@ -120,7 +124,7 @@ struct CommunitySelectionSheet: View {
                     ProgressView()
                     Text("Loading communities...")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.neuSecondaryText)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 40)
@@ -131,10 +135,10 @@ struct CommunitySelectionSheet: View {
                     VStack(spacing: 12) {
                         Image(systemName: "building.2.crop.circle")
                             .font(.system(size: 40))
-                            .foregroundColor(.secondary)
+                            .foregroundColor(.neuSecondaryText)
                         Text("No communities in this area yet")
                             .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(.neuSecondaryText)
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 40)
@@ -161,7 +165,7 @@ struct CommunitySelectionSheet: View {
                     ProgressView()
                     Text("Loading your communities...")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.neuSecondaryText)
                     Spacer()
                 }
             } else {
@@ -172,12 +176,13 @@ struct CommunitySelectionSheet: View {
                         Spacer()
                         Image(systemName: "person.3.fill")
                             .font(.system(size: 50))
-                            .foregroundColor(.secondary)
+                            .foregroundColor(.neuSecondaryText)
                         Text("No Communities Joined")
                             .font(.headline)
+                            .foregroundColor(.neuText)
                         Text("Select a location first, then join\ncommunities in your area")
                             .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(.neuSecondaryText)
                             .multilineTextAlignment(.center)
 
                         Button(action: { selectedTab = 0 }) {
@@ -186,7 +191,7 @@ struct CommunitySelectionSheet: View {
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 24)
                                 .padding(.vertical, 12)
-                                .background(Color.blue)
+                                .background(Color.neuAccentBlue)
                                 .cornerRadius(20)
                         }
                         Spacer()
@@ -198,6 +203,8 @@ struct CommunitySelectionSheet: View {
                         }
                     }
                     .listStyle(.plain)
+                    .scrollContentBackground(.hidden)
+                    .background(Color.neuBackground)
                 }
             }
         }
@@ -219,27 +226,30 @@ struct LocationRowView: View {
             HStack(spacing: 14) {
                 ZStack {
                     Circle()
-                        .fill(Color.blue.opacity(0.15))
+                        .fill(Color.neuBackground)
                         .frame(width: 40, height: 40)
+                        .shadow(color: .neuDarkShadow, radius: 3, x: 2, y: 2)
+                        .shadow(color: .neuLightShadow, radius: 3, x: -2, y: -2)
+
                     Image(systemName: "mappin.circle.fill")
                         .font(.system(size: 20))
-                        .foregroundColor(.blue)
+                        .foregroundColor(.neuAccentBlue)
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(location.city)
                         .font(.subheadline.bold())
-                        .foregroundColor(.primary)
+                        .foregroundColor(.neuText)
                     Text(location.state)
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.neuSecondaryText)
                 }
 
                 Spacer()
 
                 Image(systemName: "chevron.right")
                     .font(.caption)
-                    .foregroundColor(.gray)
+                    .foregroundColor(.neuSecondaryText)
             }
             .padding(.vertical, 4)
             .contentShape(Rectangle())
@@ -261,7 +271,7 @@ struct CommunityCardView: View {
     var isMember: Bool {
         userSettings.isMember(of: community)
     }
-    
+
     var isAdmin: Bool {
         userSettings.isAdmin(of: community)
     }
@@ -269,48 +279,52 @@ struct CommunityCardView: View {
     var body: some View {
         Button(action: { showDetail = true }) {
             VStack(alignment: .leading, spacing: 0) {
-                // 1. Header Image / Gradient
+                // 1. Header — neumorphic concave instead of gradient
                 ZStack(alignment: .topLeading) {
-                    LinearGradient(
-                        colors: [Color.cyan.opacity(0.8), Color.blue],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                    .frame(height: 120)
-                    .overlay(
-                        Image(systemName: "person.3.fill")
-                            .font(.system(size: 50))
-                            .foregroundColor(.white.opacity(0.3))
-                    )
-                    
+                    Color.neuBackground
+                        .frame(height: 120)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(Color.neuBackground, lineWidth: 3)
+                                .shadow(color: .neuDarkShadow, radius: 4, x: 3, y: 3)
+                                .clipShape(RoundedRectangle(cornerRadius: 16))
+                                .shadow(color: .neuLightShadow, radius: 4, x: -3, y: -3)
+                                .clipShape(RoundedRectangle(cornerRadius: 16))
+                        )
+                        .overlay(
+                            Image(systemName: "person.3.fill")
+                                .font(.system(size: 50))
+                                .foregroundColor(.neuSecondaryText.opacity(0.3))
+                        )
+
                     // Badges
                     HStack {
                         Spacer()
-                        
+
                         if isMember {
                             HStack(spacing: 4) {
                                 Image(systemName: "checkmark.circle.fill")
                                 Text("Joined")
                             }
                             .font(.caption.bold())
-                            .foregroundColor(.green)
+                            .foregroundColor(.neuAccentGreen)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
-                            .background(Color.white)
+                            .background(Color.neuBackground)
                             .cornerRadius(8)
-                            .shadow(radius: 2)
+                            .shadow(color: .neuDarkShadow, radius: 2, x: 1, y: 1)
+                            .shadow(color: .neuLightShadow, radius: 2, x: -1, y: -1)
                         }
-                        
+
                         if isAdmin {
                             Text("Admin")
                                 .font(.caption.bold())
                                 .badgeStyle(background: .orange)
-                                .shadow(radius: 2)
                         }
                     }
                     .padding(12)
                 }
-                
+
                 // 2. Content
                 VStack(alignment: .leading, spacing: 10) {
                     // Title & Member Count
@@ -318,45 +332,44 @@ struct CommunityCardView: View {
                         Text(community.name)
                             .font(.title3.bold())
                             .lineLimit(2)
-                            .foregroundColor(.primary)
-                        
+                            .foregroundColor(.neuText)
+
                         Spacer()
-                        
+
                         HStack(spacing: 4) {
                             Image(systemName: "person.2.fill")
                                 .font(.caption)
                             Text("\(community.memberCount)")
                                 .font(.caption.bold())
                         }
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.neuSecondaryText)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
-                        .background(Color(.tertiarySystemGroupedBackground))
-                        .cornerRadius(6)
+                        .neumorphicConcave(cornerRadius: 6)
                     }
-                    
+
                     // Location
                     HStack(spacing: 6) {
                         Image(systemName: "mappin.and.ellipse")
-                            .foregroundColor(.secondary)
+                            .foregroundColor(.neuSecondaryText)
                         Text(community.fullLocation)
                             .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(.neuSecondaryText)
                     }
-                    
+
                     if !community.description.isEmpty {
                         Text(community.description)
                             .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(.neuSecondaryText)
                             .lineLimit(2)
                             .fixedSize(horizontal: false, vertical: true)
                     }
-                    
-                    // Admin Controls (Footer)
+
+                    // Admin Controls
                     if isAdmin {
-                        Divider()
+                        Color.neuDivider.frame(height: 1)
                             .padding(.vertical, 4)
-                            
+
                         HStack(spacing: 12) {
                             if let onCreateEvent = onCreateEvent {
                                 Button(action: onCreateEvent) {
@@ -368,7 +381,7 @@ struct CommunityCardView: View {
                                     .foregroundColor(.white)
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 8)
-                                    .background(Color.green)
+                                    .background(Color.neuAccentGreen)
                                     .cornerRadius(8)
                                 }
                                 .buttonStyle(.plain)
@@ -391,10 +404,11 @@ struct CommunityCardView: View {
                     }
                 }
                 .padding(16)
-                .background(Color(.secondarySystemGroupedBackground))
+                .background(Color.neuBackground)
             }
             .cornerRadius(16)
-            .shadow(color: .black.opacity(0.08), radius: 8, y: 4)
+            .shadow(color: .neuDarkShadow, radius: 8, x: 5, y: 5)
+            .shadow(color: .neuLightShadow, radius: 8, x: -4, y: -4)
         }
         .buttonStyle(.plain)
         .sheet(isPresented: $showDetail) {

@@ -9,36 +9,36 @@ import SwiftUI
 
 struct LoginView: View {
     @EnvironmentObject var authVM: AuthViewModel
-    
+
     @State private var loginMethod = 0
     @State private var email = ""
     @State private var password = ""
     @State private var isSignUp = false
     @State private var phoneNumber = "+1"
     @State private var otpCode = ""
-    
+
     // Animation states
     @State private var isAnimating = false
     @State private var logoRotation: Double = 0
     @State private var showContent = false
-    
+
     var body: some View {
         ZStack {
-            // 🎨 动态渐变背景
-            AnimatedGradientBackground()
-            
+            // Neumorphic Background
+            Color.neuBackground
+                .ignoresSafeArea()
+
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 24) {
-                    // 🎨 Logo 区域
+                    // Logo
                     logoSection
-                    
-                    // 🎨 主卡片区域
+
+                    // Main card
                     mainCard
-                    
-                    // 🎨 访客入口
+
+                    // Guest entry
                     guestButton
-                    
-                    // 底部留白
+
                     Spacer().frame(height: 50)
                 }
                 .padding(.top, 60)
@@ -53,75 +53,53 @@ struct LoginView: View {
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: loginMethod)
         .animation(.easeInOut(duration: 0.3), value: authVM.showOTPInput)
     }
-    
-    // MARK: - 🎨 Logo Section
+
+    // MARK: - Logo Section
     private var logoSection: some View {
         VStack(spacing: 16) {
-            // 🎨 带光晕效果的 Logo
             ZStack {
-                // 光晕效果
+                // Neumorphic embossed circle
                 Circle()
-                    .fill(
-                        RadialGradient(
-                            colors: [.blue.opacity(0.3), .clear],
-                            center: .center,
-                            startRadius: 40,
-                            endRadius: 100
+                    .fill(Color.neuBackground)
+                    .frame(width: 110, height: 110)
+                    .shadow(color: .neuDarkShadow, radius: 10, x: 8, y: 8)
+                    .shadow(color: .neuLightShadow, radius: 10, x: -6, y: -6)
+
+                Image(systemName: "leaf.arrow.triangle.circlepath")
+                    .font(.system(size: 50, weight: .light))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [.neuAccentBlue, .cyan, .neuAccentGreen],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
                         )
                     )
-                    .frame(width: 160, height: 160)
-                    .scaleEffect(isAnimating ? 1.1 : 0.9)
-                    .animation(.easeInOut(duration: 2).repeatForever(autoreverses: true), value: isAnimating)
-                
-                // 主 Logo
-                ZStack {
-                    Circle()
-                        .fill(.ultraThinMaterial)
-                        .frame(width: 110, height: 110)
-                        .shadow(color: .blue.opacity(0.3), radius: 20, y: 10)
-                    
-                    Image(systemName: "leaf.arrow.triangle.circlepath")
-                        .font(.system(size: 50, weight: .light))
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [.blue, .cyan, .green],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .rotationEffect(.degrees(logoRotation))
-                        .onAppear {
-                            withAnimation(.linear(duration: 20).repeatForever(autoreverses: false)) {
-                                logoRotation = 360
-                            }
+                    .rotationEffect(.degrees(logoRotation))
+                    .onAppear {
+                        withAnimation(.linear(duration: 20).repeatForever(autoreverses: false)) {
+                            logoRotation = 360
                         }
-                }
+                    }
             }
-            
+
             VStack(spacing: 8) {
                 Text("The Trash")
                     .font(.system(size: 36, weight: .heavy, design: .rounded))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [.primary, .primary.opacity(0.7)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                
+                    .foregroundColor(.neuText)
+
                 Text("Smart Waste Sorting")
                     .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.neuSecondaryText)
             }
         }
         .opacity(showContent ? 1 : 0)
         .offset(y: showContent ? 0 : -30)
     }
-    
-    // MARK: - 🎨 Main Card
+
+    // MARK: - Main Card
     private var mainCard: some View {
         VStack(spacing: 24) {
-            // 🎨 分段选择器
+            // Segmented picker
             Picker("Method", selection: $loginMethod) {
                 HStack {
                     Image(systemName: "envelope.fill")
@@ -133,15 +111,15 @@ struct LoginView: View {
                 }.tag(1)
             }
             .pickerStyle(.segmented)
-            
-            // 错误信息
+
+            // Error message
             if let error = authVM.errorMessage {
                 HStack(spacing: 10) {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .foregroundColor(.orange)
                     Text(error)
                         .font(.caption)
-                        .foregroundColor(.primary)
+                        .foregroundColor(.neuText)
                 }
                 .padding(14)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -149,8 +127,8 @@ struct LoginView: View {
                 .cornerRadius(12)
                 .transition(.scale.combined(with: .opacity))
             }
-            
-            // 表单内容
+
+            // Form content
             if loginMethod == 0 {
                 emailFormContent
             } else {
@@ -160,15 +138,16 @@ struct LoginView: View {
         .padding(28)
         .background(
             RoundedRectangle(cornerRadius: 28)
-                .fill(.ultraThinMaterial)
-                .shadow(color: .black.opacity(0.1), radius: 30, y: 15)
+                .fill(Color.neuBackground)
+                .shadow(color: .neuDarkShadow, radius: 15, x: 10, y: 10)
+                .shadow(color: .neuLightShadow, radius: 15, x: -8, y: -8)
         )
         .padding(.horizontal, 20)
         .opacity(showContent ? 1 : 0)
         .offset(y: showContent ? 0 : 50)
     }
-    
-    // MARK: - 🎨 Guest Button
+
+    // MARK: - Guest Button
     private var guestButton: some View {
         Button(action: {
             Task { await authVM.signInAnonymously() }
@@ -179,22 +158,20 @@ struct LoginView: View {
                 Text("Continue as Guest")
                     .fontWeight(.medium)
             }
-            .foregroundColor(.secondary)
+            .foregroundColor(.neuSecondaryText)
             .padding(.vertical, 16)
             .frame(maxWidth: .infinity)
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(.secondarySystemBackground).opacity(0.5))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 16)
-                    .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+                    .fill(Color.neuBackground)
+                    .shadow(color: .neuDarkShadow, radius: 6, x: 4, y: 4)
+                    .shadow(color: .neuLightShadow, radius: 6, x: -3, y: -3)
             )
         }
         .padding(.horizontal, 20)
         .opacity(showContent ? 1 : 0)
     }
-    
+
     // MARK: - Email Form
     private var emailFormContent: some View {
         VStack(spacing: 20) {
@@ -205,7 +182,7 @@ struct LoginView: View {
                     text: $email,
                     keyboardType: .emailAddress
                 )
-                
+
                 EnhancedTextField(
                     icon: "lock.fill",
                     placeholder: "Password",
@@ -213,13 +190,13 @@ struct LoginView: View {
                     isSecure: true
                 )
             }
-            
+
             if authVM.isLoading {
                 LoadingButton()
             } else {
                 GradientButton(
                     title: isSignUp ? "Create Account" : "Sign In",
-                    colors: [.blue, .cyan],
+                    colors: [.neuAccentBlue, .cyan],
                     icon: isSignUp ? "person.badge.plus" : "arrow.right.circle.fill"
                 ) {
                     Task {
@@ -231,21 +208,21 @@ struct LoginView: View {
                     }
                 }
             }
-            
-            // 切换登录/注册
+
+            // Toggle login/signup
             Button(action: { withAnimation { isSignUp.toggle() } }) {
                 HStack(spacing: 4) {
                     Text(isSignUp ? "Already have an account?" : "Don't have an account?")
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.neuSecondaryText)
                     Text(isSignUp ? "Sign In" : "Sign Up")
                         .fontWeight(.semibold)
-                        .foregroundColor(.blue)
+                        .foregroundColor(.neuAccentBlue)
                 }
                 .font(.subheadline)
             }
         }
     }
-    
+
     // MARK: - Phone Form
     private var phoneFormContent: some View {
         VStack(spacing: 20) {
@@ -257,55 +234,56 @@ struct LoginView: View {
                         text: $phoneNumber,
                         keyboardType: .phonePad
                     )
-                    
+
                     Text("Works for both sign up and login")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.neuSecondaryText)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                
+
                 if authVM.isLoading {
                     LoadingButton()
                 } else {
                     GradientButton(
                         title: "Send Verification Code",
-                        colors: [.green, .mint],
+                        colors: [.neuAccentGreen, .mint],
                         icon: "paperplane.fill"
                     ) {
                         Task { await authVM.sendOTP(phone: phoneNumber) }
                     }
                 }
             } else {
-                // OTP 输入界面
+                // OTP input
                 VStack(spacing: 20) {
                     VStack(spacing: 8) {
                         Image(systemName: "ellipsis.message.fill")
                             .font(.system(size: 40))
                             .foregroundStyle(
-                                LinearGradient(colors: [.green, .mint], startPoint: .top, endPoint: .bottom)
+                                LinearGradient(colors: [.neuAccentGreen, .mint], startPoint: .top, endPoint: .bottom)
                             )
-                        
+
                         Text("Verification Code Sent")
                             .font(.headline)
-                        
+                            .foregroundColor(.neuText)
+
                         Text(phoneNumber)
                             .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(.neuSecondaryText)
                     }
-                    
+
                     EnhancedTextField(
                         icon: "key.fill",
                         placeholder: "Enter 6-digit code",
                         text: $otpCode,
                         keyboardType: .numberPad
                     )
-                    
+
                     if authVM.isLoading {
                         LoadingButton()
                     } else {
                         GradientButton(
                             title: "Verify & Continue",
-                            colors: [.blue, .purple],
+                            colors: [.neuAccentBlue, .purple],
                             icon: "checkmark.circle.fill"
                         ) {
                             Task {
@@ -316,7 +294,7 @@ struct LoginView: View {
                             }
                         }
                     }
-                    
+
                     Button("Use a different number") {
                         withAnimation(.spring()) {
                             authVM.showOTPInput = false
@@ -332,76 +310,51 @@ struct LoginView: View {
     }
 }
 
-// MARK: - 🎨 Animated Gradient Background
-struct AnimatedGradientBackground: View {
-    @State private var animateGradient = false
-    
-    var body: some View {
-        LinearGradient(
-            colors: [
-                Color.blue.opacity(0.15),
-                Color.cyan.opacity(0.1),
-                Color.purple.opacity(0.1),
-                Color.blue.opacity(0.15)
-            ],
-            startPoint: animateGradient ? .topLeading : .bottomLeading,
-            endPoint: animateGradient ? .bottomTrailing : .topTrailing
-        )
-        .ignoresSafeArea()
-        .onAppear {
-            withAnimation(.easeInOut(duration: 5).repeatForever(autoreverses: true)) {
-                animateGradient.toggle()
-            }
-        }
-    }
-}
-
-// MARK: - 🎨 Enhanced TextField
+// MARK: - Enhanced TextField (Neumorphic Concave)
 struct EnhancedTextField: View {
     let icon: String
     let placeholder: String
     @Binding var text: String
     var isSecure: Bool = false
     var keyboardType: UIKeyboardType = .default
-    
+
     @FocusState private var isFocused: Bool
-    
+
     var body: some View {
         HStack(spacing: 14) {
             Image(systemName: icon)
                 .font(.system(size: 16, weight: .medium))
-                .foregroundColor(isFocused ? .blue : .secondary)
+                .foregroundColor(isFocused ? .neuAccentBlue : .neuSecondaryText)
                 .frame(width: 24)
-            
+
             if isSecure {
                 SecureField(placeholder, text: $text)
+                    .foregroundColor(.neuText)
             } else {
                 TextField(placeholder, text: $text)
                     .keyboardType(keyboardType)
                     .autocapitalization(.none)
+                    .foregroundColor(.neuText)
             }
         }
         .padding(16)
-        .background(
+        .neumorphicConcave(cornerRadius: 14)
+        .overlay(
             RoundedRectangle(cornerRadius: 14)
-                .fill(Color(.secondarySystemBackground))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14)
-                        .stroke(isFocused ? Color.blue.opacity(0.5) : Color.clear, lineWidth: 2)
-                )
+                .stroke(isFocused ? Color.neuAccentBlue.opacity(0.5) : Color.clear, lineWidth: 2)
         )
         .focused($isFocused)
         .animation(.easeInOut(duration: 0.2), value: isFocused)
     }
 }
 
-// MARK: - 🎨 Gradient Button
+// MARK: - Gradient Button (Accent LED)
 struct GradientButton: View {
     let title: String
     let colors: [Color]
     let icon: String
     let action: () -> Void
-    
+
     var body: some View {
         Button(action: action) {
             HStack(spacing: 10) {
@@ -414,28 +367,33 @@ struct GradientButton: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
             .background(
-                LinearGradient(colors: colors, startPoint: .leading, endPoint: .trailing)
+                ZStack {
+                    LinearGradient(colors: colors, startPoint: .leading, endPoint: .trailing)
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                        .padding(1)
+                }
             )
             .clipShape(RoundedRectangle(cornerRadius: 14))
-            .shadow(color: colors.first?.opacity(0.4) ?? .blue.opacity(0.4), radius: 10, y: 5)
+            .shadow(color: colors.first?.opacity(0.4) ?? .neuAccentBlue.opacity(0.4), radius: 10, x: 5, y: 5)
+            .shadow(color: .neuLightShadow, radius: 6, x: -3, y: -3)
         }
     }
 }
 
-// MARK: - 🎨 Loading Button
+// MARK: - Loading Button (Neumorphic Pressed)
 struct LoadingButton: View {
     var body: some View {
         HStack(spacing: 12) {
             ProgressView()
-                .tint(.white)
+                .tint(.neuSecondaryText)
             Text("Please wait...")
                 .fontWeight(.medium)
         }
-        .foregroundColor(.white)
+        .foregroundColor(.neuSecondaryText)
         .frame(maxWidth: .infinity)
         .padding(.vertical, 16)
-        .background(Color.gray.opacity(0.5))
-        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .neumorphicConcave(cornerRadius: 14)
     }
 }
 
@@ -446,7 +404,7 @@ struct CustomTextField: View {
     @Binding var text: String
     var isSecure: Bool = false
     var keyboardType: UIKeyboardType = .default
-    
+
     var body: some View {
         EnhancedTextField(
             icon: icon,
@@ -455,5 +413,13 @@ struct CustomTextField: View {
             isSecure: isSecure,
             keyboardType: keyboardType
         )
+    }
+}
+
+// Keep AnimatedGradientBackground for backward compatibility
+struct AnimatedGradientBackground: View {
+    var body: some View {
+        Color.neuBackground
+            .ignoresSafeArea()
     }
 }

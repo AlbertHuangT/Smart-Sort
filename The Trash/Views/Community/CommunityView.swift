@@ -33,7 +33,8 @@ struct CommunityView: View {
                     }
                     .pickerStyle(.segmented)
                     .padding(.horizontal, 16)
-                    .padding(.bottom, 8)
+                    .padding(.bottom, 16)
+                    .background(Color.neuBackground)
                     
                     // Main Content Area
                     TabView(selection: $selectedTab) {
@@ -47,7 +48,7 @@ struct CommunityView: View {
                     .ignoresSafeArea(edges: .bottom)
                 }
             }
-            .background(Color(.systemGroupedBackground))
+            .background(Color.neuBackground)
         }
     }
     
@@ -56,6 +57,7 @@ struct CommunityView: View {
         HStack(alignment: .center) {
             Text(title)
                 .font(.system(size: 34, weight: .bold, design: .default))
+                .foregroundColor(.neuText)
             
             Spacer()
             
@@ -66,6 +68,7 @@ struct CommunityView: View {
         .padding(.trailing, 20)
         .padding(.top, 8)
         .padding(.bottom, 8)
+        .background(Color.neuBackground)
     }
 }
 

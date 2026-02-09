@@ -24,7 +24,7 @@ struct ScanLineOverlay: View {
             Rectangle()
                 .fill(
                     LinearGradient(
-                        colors: [.clear, .blue.opacity(0.3), .cyan.opacity(0.5), .blue.opacity(0.3), .clear],
+                        colors: [.clear, .neuAccentBlue.opacity(0.3), .cyan.opacity(0.5), .neuAccentBlue.opacity(0.3), .clear],
                         startPoint: .leading,
                         endPoint: .trailing
                     )
@@ -50,6 +50,11 @@ struct EnhancedSwipeableCard: View {
 
     var body: some View {
         EnhancedResultCard(result: result)
+            .background(Color.neuBackground)
+            // Neumorphic Shadow (Extruded)
+            .cornerRadius(20)
+            .shadow(color: .neuDarkShadow, radius: 10, x: 8, y: 8)
+            .shadow(color: .neuLightShadow, radius: 10, x: -5, y: -5)
             .overlay(
                 ZStack {
                     if offset.width > 0 {
@@ -61,9 +66,8 @@ struct EnhancedSwipeableCard: View {
                     }
                 }
                 .allowsHitTesting(false)
+                .clipShape(RoundedRectangle(cornerRadius: 20))
             )
-            .clipShape(RoundedRectangle(cornerRadius: 20))
-            .shadow(color: .black.opacity(0.1), radius: 12, y: 6)
             .offset(x: offset.width)
             .rotationEffect(.degrees(Double(offset.width / 20)))
             .padding(.horizontal, 16)
@@ -88,9 +92,21 @@ struct EnhancedResultCard: View {
     var body: some View {
         HStack(spacing: 16) {
             ZStack {
+                // Determine icon color based on result or palette?
+                // Using result.color but adapting background
                 Circle()
-                    .fill(result.color.opacity(0.15))
+                    // Neumorphic Concave for Icon Background? Or just flat?
+                    // Let's do a soft concave recess
+                    .fill(Color.neuBackground)
                     .frame(width: 60, height: 60)
+                    .overlay(
+                        Circle()
+                            .stroke(Color.neuBackground, lineWidth: 2)
+                            .shadow(color: .neuDarkShadow, radius: 3, x: 3, y: 3)
+                            .clipShape(Circle())
+                            .shadow(color: .neuLightShadow, radius: 3, x: -3, y: -3)
+                            .clipShape(Circle())
+                    )
 
                 Image(systemName: iconForCategory(result.category))
                     .font(.system(size: 26))
@@ -104,8 +120,10 @@ struct EnhancedResultCard: View {
                         .foregroundColor(result.color)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 4)
-                        .background(result.color.opacity(0.1))
-                        .cornerRadius(8)
+                        // Soft pill background (flat or pressed)
+                        .background(
+                            Capsule().fill(result.color.opacity(0.1))
+                        )
 
                     Spacer()
 
@@ -115,16 +133,16 @@ struct EnhancedResultCard: View {
                         Text("\(Int(result.confidence * 100))%")
                             .font(.system(size: 12, weight: .bold, design: .monospaced))
                     }
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.neuSecondaryText)
                 }
 
                 Text(result.itemName)
                     .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(.primary)
+                    .foregroundColor(.neuText)
 
                 Text(result.actionTip)
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.neuSecondaryText)
                     .lineLimit(2)
             }
 
@@ -132,7 +150,7 @@ struct EnhancedResultCard: View {
         }
         .padding(20)
         .frame(minHeight: 150)
-        .background(Color(.secondarySystemGroupedBackground))
+        // Background handles broadly by parent for shadow purposes
     }
 
     private func iconForCategory(_ category: String) -> String {
@@ -151,7 +169,7 @@ struct EnhancedResultCard: View {
 struct EnhancedCorrectOverlay: View {
     var body: some View {
         ZStack {
-            LinearGradient(colors: [.green.opacity(0.95), .mint.opacity(0.95)], startPoint: .topLeading, endPoint: .bottomTrailing)
+            LinearGradient(colors: [.neuAccentGreen.opacity(0.9), .mint.opacity(0.9)], startPoint: .topLeading, endPoint: .bottomTrailing)
             VStack(spacing: 8) {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: 44))
@@ -171,7 +189,7 @@ struct EnhancedCorrectOverlay: View {
 struct EnhancedIncorrectOverlay: View {
     var body: some View {
         ZStack {
-            LinearGradient(colors: [.red.opacity(0.95), .orange.opacity(0.95)], startPoint: .topLeading, endPoint: .bottomTrailing)
+            LinearGradient(colors: [.red.opacity(0.9), .orange.opacity(0.9)], startPoint: .topLeading, endPoint: .bottomTrailing)
             VStack(spacing: 8) {
                 Image(systemName: "xmark.circle.fill")
                     .font(.system(size: 44))
@@ -202,10 +220,11 @@ struct ErrorCard: View {
 
             Text("Something went wrong")
                 .font(.headline)
+                .foregroundColor(.neuText)
 
             Text(message)
                 .font(.caption)
-                .foregroundColor(.secondary)
+                .foregroundColor(.neuSecondaryText)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
 
@@ -215,14 +234,16 @@ struct ErrorCard: View {
                     .foregroundColor(.white)
                     .padding(.horizontal, 24)
                     .padding(.vertical, 12)
-                    .background(Color.blue)
+                    .background(Color.neuAccentBlue)
                     .cornerRadius(20)
+                    .shadow(color: .neuAccentBlue.opacity(0.4), radius: 5, x: 0, y: 3)
             }
         }
         .padding(24)
-        .background(Color(.secondarySystemGroupedBackground))
+        .background(Color.neuBackground)
         .cornerRadius(20)
-        .shadow(color: .black.opacity(0.1), radius: 10, y: 5)
+        .shadow(color: .neuDarkShadow, radius: 10, x: 5, y: 5)
+        .shadow(color: .neuLightShadow, radius: 10, x: -5, y: -5)
         .padding(.horizontal, 16)
     }
 }
@@ -236,21 +257,34 @@ struct EnhancedFeedbackForm: View {
         VStack(spacing: 16) {
             Text("What is this item?")
                 .font(.subheadline.bold())
-                .foregroundColor(.secondary)
+                .foregroundColor(.neuSecondaryText)
 
             HStack {
                 Image(systemName: "tag.fill")
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.neuSecondaryText)
                 TextField("e.g. Plastic bottle, Battery...", text: $itemName)
+                    .foregroundColor(.neuText)
             }
             .padding(12)
-            .background(Color(.tertiarySystemGroupedBackground))
-            .cornerRadius(12)
+            // Neumorphic Concave (Input field)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.neuBackground)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.neuBackground, lineWidth: 2)
+                            .shadow(color: .neuDarkShadow, radius: 3, x: 3, y: 3)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .shadow(color: .neuLightShadow, radius: 3, x: -3, y: -3)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    )
+            )
         }
         .padding(20)
-        .background(Color(.secondarySystemGroupedBackground))
+        .background(Color.neuBackground)
         .cornerRadius(20)
-        .shadow(color: .black.opacity(0.08), radius: 10, y: 5)
+        .shadow(color: .neuDarkShadow, radius: 10, x: 5, y: 5)
+        .shadow(color: .neuLightShadow, radius: 10, x: -5, y: -5)
         .padding(.horizontal, 16)
     }
 }

@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-// MARK: - Enhanced Stat Card
+// MARK: - Enhanced Stat Card (Neumorphic)
 struct EnhancedStatCard: View {
     let title: String
     let value: String
@@ -39,12 +39,12 @@ struct EnhancedStatCard: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(value)
                     .font(.title3.bold())
-                    .foregroundColor(.primary)
+                    .foregroundColor(.neuText)
                     .frame(minWidth: 50, alignment: .leading)
                     .animation(.none, value: value)
                 Text(title)
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.neuSecondaryText)
             }
 
             Spacer()
@@ -54,11 +54,11 @@ struct EnhancedStatCard: View {
         .frame(height: 72)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color(.secondarySystemGroupedBackground))
-                .shadow(color: .black.opacity(0.05), radius: 8, y: 4)
+                .fill(Color.neuBackground)
+                .shadow(color: .neuDarkShadow, radius: 6, x: 4, y: 4)
+                .shadow(color: .neuLightShadow, radius: 6, x: -3, y: -3)
         )
         .onAppear {
-            // Removed forever-repeating animation to prevent layout instability on iOS 18.6+
             withAnimation(.easeInOut(duration: 0.6)) {
                 isAnimating = true
             }
@@ -66,7 +66,7 @@ struct EnhancedStatCard: View {
     }
 }
 
-// MARK: - Enhanced Account Row
+// MARK: - Enhanced Account Row (Neumorphic)
 struct EnhancedAccountRow: View {
     let icon: String
     let gradient: [Color]
@@ -97,7 +97,7 @@ struct EnhancedAccountRow: View {
 
                 Text(title)
                     .font(.body)
-                    .foregroundColor(.primary)
+                    .foregroundColor(.neuText)
 
                 Spacer()
 
@@ -105,24 +105,21 @@ struct EnhancedAccountRow: View {
                     if isLinked {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.caption)
-                            .foregroundColor(.green)
+                            .foregroundColor(.neuAccentGreen)
                     }
 
                     Text(status)
                         .font(.caption.bold())
-                        .foregroundColor(isLinked ? .green : .blue)
+                        .foregroundColor(isLinked ? .neuAccentGreen : .neuAccentBlue)
                 }
                 .padding(.horizontal, 10)
                 .padding(.vertical, 5)
-                .background(
-                    Capsule()
-                        .fill(isLinked ? Color.green.opacity(0.1) : Color.blue.opacity(0.1))
-                )
+                .neumorphicConcave(cornerRadius: 10)
 
                 if !isLinked {
                     Image(systemName: "chevron.right")
                         .font(.caption.bold())
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.neuSecondaryText)
                 }
             }
             .padding(.horizontal, 16)
@@ -132,7 +129,7 @@ struct EnhancedAccountRow: View {
     }
 }
 
-// MARK: - Enhanced Settings Row
+// MARK: - Enhanced Settings Row (Neumorphic)
 struct EnhancedSettingsRow: View {
     let icon: String
     let gradient: [Color]
@@ -159,13 +156,13 @@ struct EnhancedSettingsRow: View {
 
             Text(title)
                 .font(.body)
-                .foregroundColor(.primary)
+                .foregroundColor(.neuText)
 
             Spacer()
 
             Image(systemName: "chevron.right")
                 .font(.caption.bold())
-                .foregroundColor(.secondary)
+                .foregroundColor(.neuSecondaryText)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
