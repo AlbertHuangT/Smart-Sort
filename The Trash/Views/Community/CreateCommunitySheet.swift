@@ -137,19 +137,18 @@ struct CreateCommunitySheet: View {
         errorMessage = nil
 
         Task {
-            let result = await CommunityService.shared.createCommunity(
-                id: communityId,
-                name: name.trimmingCharacters(in: .whitespaces),
-                city: selectedCity,
-                state: selectedState,
-                description: description.isEmpty ? nil : description,
-                latitude: userSettings.selectedLocation?.latitude,
-                longitude: userSettings.selectedLocation?.longitude
-            )
+            do {
+                let result = try await CommunityService.shared.createCommunity(
+                    id: communityId,
+                    name: name.trimmingCharacters(in: .whitespaces),
+                    city: selectedCity,
+                    state: selectedState,
+                    description: description.isEmpty ? nil : description,
+                    latitude: userSettings.selectedLocation?.latitude,
+                    longitude: userSettings.selectedLocation?.longitude
+                )
 
-            await MainActor.run {
                 isLoading = false
-
                 if result.success {
                     showSuccessAlert = true
                     Task {
@@ -159,6 +158,9 @@ struct CreateCommunitySheet: View {
                 } else {
                     errorMessage = result.message
                 }
+            } catch {
+                isLoading = false
+                errorMessage = "Failed to create community: \(error.localizedDescription)"
             }
         }
     }

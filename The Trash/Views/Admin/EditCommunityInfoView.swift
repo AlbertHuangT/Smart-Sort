@@ -76,11 +76,15 @@ struct EditCommunityInfoView: View {
         .navigationBarTitleDisplayMode(.inline)
         .task {
             isLoadingSettings = true
-            if let settings = await CommunityService.shared.getCommunitySettings(communityId: community.id) {
-                description = settings.description ?? community.description
-                welcomeMessage = settings.welcomeMessage ?? ""
-                rules = settings.rules ?? ""
-                requiresApproval = settings.requiresApproval ?? false
+            do {
+                if let settings = try await CommunityService.shared.getCommunitySettings(communityId: community.id) {
+                    description = settings.description ?? community.description
+                    welcomeMessage = settings.welcomeMessage ?? ""
+                    rules = settings.rules ?? ""
+                    requiresApproval = settings.requiresApproval ?? false
+                }
+            } catch {
+                print("❌ Get community settings error: \(error)")
             }
             isLoadingSettings = false
         }
@@ -92,17 +96,22 @@ struct EditCommunityInfoView: View {
     private func saveChanges() {
         isSaving = true
         Task {
-            let result = await CommunityService.shared.updateCommunityInfo(
-                communityId: community.id,
-                description: description,
-                welcomeMessage: welcomeMessage.isEmpty ? nil : welcomeMessage,
-                rules: rules.isEmpty ? nil : rules,
-                requiresApproval: requiresApproval
-            )
-            
-            isSaving = false
-            if result.success {
-                showSuccessAlert = true
+            do {
+                let result = try await CommunityService.shared.updateCommunityInfo(
+                    communityId: community.id,
+                    description: description,
+                    welcomeMessage: welcomeMessage.isEmpty ? nil : welcomeMessage,
+                    rules: rules.isEmpty ? nil : rules,
+                    requiresApproval: requiresApproval
+                )
+
+                isSaving = false
+                if result.success {
+                    showSuccessAlert = true
+                }
+            } catch {
+                isSaving = false
+                print("❌ Update community error: \(error)")
             }
         }
     }

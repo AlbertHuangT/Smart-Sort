@@ -116,21 +116,33 @@ class AdminDashboardViewModel: ObservableObject {
     
     func loadApplications() async {
         isLoading = true
-        pendingApplications = await service.getPendingApplications(communityId: communityId)
+        do {
+            pendingApplications = try await service.getPendingApplications(communityId: communityId)
+        } catch {
+            print("❌ Get applications error: \(error)")
+        }
         isLoading = false
     }
-    
+
     func approveApplication(_ id: UUID) async {
-        let result = await service.reviewApplication(applicationId: id, approve: true)
-        if result.success {
-            pendingApplications.removeAll { $0.id == id }
+        do {
+            let result = try await service.reviewApplication(applicationId: id, approve: true)
+            if result.success {
+                pendingApplications.removeAll { $0.id == id }
+            }
+        } catch {
+            print("❌ Review application error: \(error)")
         }
     }
-    
+
     func rejectApplication(_ id: UUID, reason: String?) async {
-        let result = await service.reviewApplication(applicationId: id, approve: false, rejectionReason: reason)
-        if result.success {
-            pendingApplications.removeAll { $0.id == id }
+        do {
+            let result = try await service.reviewApplication(applicationId: id, approve: false, rejectionReason: reason)
+            if result.success {
+                pendingApplications.removeAll { $0.id == id }
+            }
+        } catch {
+            print("❌ Review application error: \(error)")
         }
     }
 }

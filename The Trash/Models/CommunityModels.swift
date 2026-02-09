@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import Combine
 
 // MARK: - API Response Models
 
@@ -249,5 +248,231 @@ struct CommunitySettingsResponse: Codable {
         case id, description, rules
         case welcomeMessage = "welcome_message"
         case requiresApproval = "requires_approval"
+    }
+}
+
+// MARK: - RPC Parameter Structs (Sendable for safe cross-actor usage)
+
+struct NearbyEventsParams: Sendable {
+    let p_latitude: Double
+    let p_longitude: Double
+    let p_max_distance_km: Double
+    let p_category: String?
+    let p_only_joined_communities: Bool
+    let p_sort_by: String
+}
+
+extension NearbyEventsParams: Encodable {
+    nonisolated func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(p_latitude, forKey: .p_latitude)
+        try container.encode(p_longitude, forKey: .p_longitude)
+        try container.encode(p_max_distance_km, forKey: .p_max_distance_km)
+        try container.encodeIfPresent(p_category, forKey: .p_category)
+        try container.encode(p_only_joined_communities, forKey: .p_only_joined_communities)
+        try container.encode(p_sort_by, forKey: .p_sort_by)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case p_latitude, p_longitude, p_max_distance_km, p_category, p_only_joined_communities, p_sort_by
+    }
+}
+
+struct CreateCommunityParams: Sendable {
+    let p_id: String
+    let p_name: String
+    let p_city: String
+    let p_state: String
+    let p_description: String?
+    let p_latitude: Double?
+    let p_longitude: Double?
+}
+
+extension CreateCommunityParams: Encodable {
+    nonisolated func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(p_id, forKey: .p_id)
+        try container.encode(p_name, forKey: .p_name)
+        try container.encode(p_city, forKey: .p_city)
+        try container.encode(p_state, forKey: .p_state)
+        try container.encodeIfPresent(p_description, forKey: .p_description)
+        try container.encodeIfPresent(p_latitude, forKey: .p_latitude)
+        try container.encodeIfPresent(p_longitude, forKey: .p_longitude)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case p_id, p_name, p_city, p_state, p_description, p_latitude, p_longitude
+    }
+}
+
+struct CreateEventParams: Sendable {
+    let p_title: String
+    let p_description: String
+    let p_category: String
+    let p_event_date: String
+    let p_location: String
+    let p_latitude: Double
+    let p_longitude: Double
+    let p_max_participants: Int
+    let p_community_id: String?
+    let p_icon_name: String
+}
+
+extension CreateEventParams: Encodable {
+    nonisolated func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(p_title, forKey: .p_title)
+        try container.encode(p_description, forKey: .p_description)
+        try container.encode(p_category, forKey: .p_category)
+        try container.encode(p_event_date, forKey: .p_event_date)
+        try container.encode(p_location, forKey: .p_location)
+        try container.encode(p_latitude, forKey: .p_latitude)
+        try container.encode(p_longitude, forKey: .p_longitude)
+        try container.encode(p_max_participants, forKey: .p_max_participants)
+        try container.encodeIfPresent(p_community_id, forKey: .p_community_id)
+        try container.encode(p_icon_name, forKey: .p_icon_name)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case p_title, p_description, p_category, p_event_date, p_location
+        case p_latitude, p_longitude, p_max_participants, p_community_id, p_icon_name
+    }
+}
+
+struct LocationParams: Sendable {
+    let p_city: String
+    let p_state: String
+    let p_latitude: Double
+    let p_longitude: Double
+}
+
+extension LocationParams: Encodable {
+    nonisolated func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(p_city, forKey: .p_city)
+        try container.encode(p_state, forKey: .p_state)
+        try container.encode(p_latitude, forKey: .p_latitude)
+        try container.encode(p_longitude, forKey: .p_longitude)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case p_city, p_state, p_latitude, p_longitude
+    }
+}
+
+// MARK: - Admin RPC Parameter Structs
+
+struct UpdateCommunityInfoParams: Sendable {
+    let p_community_id: String
+    let p_description: String?
+    let p_welcome_message: String?
+    let p_rules: String?
+    let p_requires_approval: Bool?
+}
+
+extension UpdateCommunityInfoParams: Encodable {
+    nonisolated func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(p_community_id, forKey: .p_community_id)
+        try container.encodeIfPresent(p_description, forKey: .p_description)
+        try container.encodeIfPresent(p_welcome_message, forKey: .p_welcome_message)
+        try container.encodeIfPresent(p_rules, forKey: .p_rules)
+        try container.encodeIfPresent(p_requires_approval, forKey: .p_requires_approval)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case p_community_id, p_description, p_welcome_message, p_rules, p_requires_approval
+    }
+}
+
+struct ReviewApplicationParams: Sendable {
+    let p_application_id: String
+    let p_approve: Bool
+    let p_rejection_reason: String?
+}
+
+extension ReviewApplicationParams: Encodable {
+    nonisolated func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(p_application_id, forKey: .p_application_id)
+        try container.encode(p_approve, forKey: .p_approve)
+        try container.encodeIfPresent(p_rejection_reason, forKey: .p_rejection_reason)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case p_application_id, p_approve, p_rejection_reason
+    }
+}
+
+struct RemoveMemberParams: Sendable {
+    let p_community_id: String
+    let p_user_id: String
+    let p_reason: String?
+}
+
+extension RemoveMemberParams: Encodable {
+    nonisolated func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(p_community_id, forKey: .p_community_id)
+        try container.encode(p_user_id, forKey: .p_user_id)
+        try container.encodeIfPresent(p_reason, forKey: .p_reason)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case p_community_id, p_user_id, p_reason
+    }
+}
+
+struct GrantCreditsParams: Sendable {
+    let p_event_id: String
+    let p_user_ids: [String]
+    let p_credits_per_user: Int
+    let p_reason: String
+}
+
+extension GrantCreditsParams: Encodable {
+    nonisolated func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(p_event_id, forKey: .p_event_id)
+        try container.encode(p_user_ids, forKey: .p_user_ids)
+        try container.encode(p_credits_per_user, forKey: .p_credits_per_user)
+        try container.encode(p_reason, forKey: .p_reason)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case p_event_id, p_user_ids, p_credits_per_user, p_reason
+    }
+}
+
+struct GetAdminLogsParams: Sendable {
+    let p_community_id: String
+    let p_limit: Int
+}
+
+extension GetAdminLogsParams: Encodable {
+    nonisolated func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(p_community_id, forKey: .p_community_id)
+        try container.encode(p_limit, forKey: .p_limit)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case p_community_id, p_limit
+    }
+}
+
+struct SimpleCommunity: Codable, Sendable {
+    let id: String
+    let name: String
+    let city: String
+    let state: String?
+    let description: String?
+    let memberCount: Int
+    let latitude: Double?
+    let longitude: Double?
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, city, state, description, latitude, longitude
+        case memberCount = "member_count"
     }
 }

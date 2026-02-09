@@ -457,33 +457,47 @@ class CommunityDetailViewModel: ObservableObject {
     
     func loadEvents(communityId: String) async {
         isLoading = true
-        let response = await communityService.getCommunityEvents(communityId: communityId)
-        allEvents = response.map { CommunityEvent(from: $0) }
+        do {
+            let response = try await communityService.getCommunityEvents(communityId: communityId)
+            allEvents = response.map { CommunityEvent(from: $0) }
+        } catch {
+            print("❌ Get community events error: \(error)")
+        }
         isLoading = false
     }
-    
+
     /// 报名活动
     func registerForEvent(_ event: CommunityEvent) async -> Bool {
-        let success = await communityService.registerForEvent(event.id)
-        if success {
-            if let index = allEvents.firstIndex(where: { $0.id == event.id }) {
-                allEvents[index].isRegistered = true
-                allEvents[index].participantCount += 1
+        do {
+            let success = try await communityService.registerForEvent(event.id)
+            if success {
+                if let index = allEvents.firstIndex(where: { $0.id == event.id }) {
+                    allEvents[index].isRegistered = true
+                    allEvents[index].participantCount += 1
+                }
             }
+            return success
+        } catch {
+            print("❌ Register for event error: \(error)")
+            return false
         }
-        return success
     }
-    
+
     /// 取消报名
     func cancelRegistration(_ event: CommunityEvent) async -> Bool {
-        let success = await communityService.cancelEventRegistration(event.id)
-        if success {
-            if let index = allEvents.firstIndex(where: { $0.id == event.id }) {
-                allEvents[index].isRegistered = false
-                allEvents[index].participantCount = max(0, allEvents[index].participantCount - 1)
+        do {
+            let success = try await communityService.cancelEventRegistration(event.id)
+            if success {
+                if let index = allEvents.firstIndex(where: { $0.id == event.id }) {
+                    allEvents[index].isRegistered = false
+                    allEvents[index].participantCount = max(0, allEvents[index].participantCount - 1)
+                }
             }
+            return success
+        } catch {
+            print("❌ Cancel registration error: \(error)")
+            return false
         }
-        return success
     }
     
     /// 切换报名状态

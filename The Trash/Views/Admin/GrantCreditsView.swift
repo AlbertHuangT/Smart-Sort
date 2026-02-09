@@ -165,16 +165,25 @@ class GrantCreditsViewModel: ObservableObject {
     
     func loadParticipants() async {
         isLoading = true
-        participants = await service.getEventParticipants(eventId: eventId)
+        do {
+            participants = try await service.getEventParticipants(eventId: eventId)
+        } catch {
+            print("❌ Get event participants error: \(error)")
+        }
         isLoading = false
     }
-    
+
     func grantCredits(userIds: [UUID], amount: Int, reason: String) async -> GrantCreditsResult {
-        return await service.grantEventCredits(
-            eventId: eventId,
-            userIds: userIds,
-            creditsPerUser: amount,
-            reason: reason
-        )
+        do {
+            return try await service.grantEventCredits(
+                eventId: eventId,
+                userIds: userIds,
+                creditsPerUser: amount,
+                reason: reason
+            )
+        } catch {
+            print("❌ Grant credits error: \(error)")
+            return GrantCreditsResult(success: false, message: "Grant failed", grantedCount: 0)
+        }
     }
 }

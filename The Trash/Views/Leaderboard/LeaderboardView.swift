@@ -337,13 +337,17 @@ struct LeaderboardView: View {
     // MARK: - Data Loading
     
     private func loadMyCommunities() async {
-        let communities = await CommunityService.shared.getMyCommunities()
-        await MainActor.run {
-            myCommunities = communities
-            if let first = communities.first, selectedCommunity == nil {
-                selectedCommunity = first
-                Task { await loadCommunityLeaderboard(communityId: first.id) }
+        do {
+            let communities = try await CommunityService.shared.getMyCommunities()
+            await MainActor.run {
+                myCommunities = communities
+                if let first = communities.first, selectedCommunity == nil {
+                    selectedCommunity = first
+                    Task { await loadCommunityLeaderboard(communityId: first.id) }
+                }
             }
+        } catch {
+            print("❌ Failed to load communities: \(error)")
         }
     }
     

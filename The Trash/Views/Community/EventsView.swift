@@ -242,19 +242,25 @@ class EventsViewModel: ObservableObject {
         }
 
         // 🚀 使用精确GPS坐标（如果有）进行后端查询
-        let response = await communityService.getNearbyEvents(
-            latitude: coords.latitude,
-            longitude: coords.longitude,
-            maxDistanceKm: 50,
-            category: categoryParam,
-            onlyJoinedCommunities: showOnlyJoinedCommunities,
-            sortBy: sortByParam
-        )
+        do {
+            let response = try await communityService.getNearbyEvents(
+                latitude: coords.latitude,
+                longitude: coords.longitude,
+                maxDistanceKm: 50,
+                category: categoryParam,
+                onlyJoinedCommunities: showOnlyJoinedCommunities,
+                sortBy: sortByParam
+            )
 
-        // 🚀 优化：检查任务是否被取消
-        guard !Task.isCancelled else { return }
+            // 🚀 优化：检查任务是否被取消
+            guard !Task.isCancelled else { return }
 
-        events = response.map { CommunityEvent(from: $0) }
+            events = response.map { CommunityEvent(from: $0) }
+        } catch {
+            guard !Task.isCancelled else { return }
+            print("❌ Get nearby events error: \(error)")
+            errorMessage = error.localizedDescription
+        }
 
         // 🚀 如果有精确GPS且按距离排序，使用客户端精确排序
         if sortOption == .distance, let precise = userSettings.preciseLocation {
@@ -270,28 +276,36 @@ class EventsViewModel: ObservableObject {
 
     /// 报名活动
     func registerForEvent(_ event: CommunityEvent) async -> Bool {
-        let success = await communityService.registerForEvent(event.id)
-        if success {
-            // 更新本地状态
-            if let index = events.firstIndex(where: { $0.id == event.id }) {
-                events[index].isRegistered = true
-                events[index].participantCount += 1
+        do {
+            let success = try await communityService.registerForEvent(event.id)
+            if success {
+                if let index = events.firstIndex(where: { $0.id == event.id }) {
+                    events[index].isRegistered = true
+                    events[index].participantCount += 1
+                }
             }
+            return success
+        } catch {
+            print("❌ Register for event error: \(error)")
+            return false
         }
-        return success
     }
 
     /// 取消报名
     func cancelRegistration(_ event: CommunityEvent) async -> Bool {
-        let success = await communityService.cancelEventRegistration(event.id)
-        if success {
-            // 更新本地状态
-            if let index = events.firstIndex(where: { $0.id == event.id }) {
-                events[index].isRegistered = false
-                events[index].participantCount = max(0, events[index].participantCount - 1)
+        do {
+            let success = try await communityService.cancelEventRegistration(event.id)
+            if success {
+                if let index = events.firstIndex(where: { $0.id == event.id }) {
+                    events[index].isRegistered = false
+                    events[index].participantCount = max(0, events[index].participantCount - 1)
+                }
             }
+            return success
+        } catch {
+            print("❌ Cancel registration error: \(error)")
+            return false
         }
-        return success
     }
 
     /// 切换报名状态
@@ -1203,27 +1217,29 @@ struct CreateEventFormSheet: View {
         errorMessage = nil
 
         Task {
-            let result = await CommunityService.shared.createEvent(
-                title: title.trimmingCharacters(in: .whitespaces),
-                description: description,
-                category: category,
-                eventDate: eventDate,
-                location: location.trimmingCharacters(in: .whitespaces),
-                latitude: userLocation.latitude,
-                longitude: userLocation.longitude,
-                maxParticipants: maxParticipants,
-                communityId: isPersonalEvent ? nil : selectedCommunityId,
-                iconName: iconForCategory(category)
-            )
+            do {
+                let result = try await CommunityService.shared.createEvent(
+                    title: title.trimmingCharacters(in: .whitespaces),
+                    description: description,
+                    category: category,
+                    eventDate: eventDate,
+                    location: location.trimmingCharacters(in: .whitespaces),
+                    latitude: userLocation.latitude,
+                    longitude: userLocation.longitude,
+                    maxParticipants: maxParticipants,
+                    communityId: isPersonalEvent ? nil : selectedCommunityId,
+                    iconName: iconForCategory(category)
+                )
 
-            await MainActor.run {
                 isLoading = false
-
                 if result.success {
                     showSuccessAlert = true
                 } else {
                     errorMessage = result.message
                 }
+            } catch {
+                isLoading = false
+                errorMessage = "Failed to create event: \(error.localizedDescription)"
             }
         }
     }

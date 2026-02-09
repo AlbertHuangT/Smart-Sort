@@ -69,14 +69,22 @@ class MembersListViewModel: ObservableObject {
     
     func loadMembers() async {
         isLoading = true
-        members = await service.getCommunityMembersAdmin(communityId: communityId)
+        do {
+            members = try await service.getCommunityMembersAdmin(communityId: communityId)
+        } catch {
+            print("❌ Get members error: \(error)")
+        }
         isLoading = false
     }
-    
+
     func removeMember(_ userId: UUID, reason: String?) async {
-        let result = await service.removeMember(communityId: communityId, userId: userId, reason: reason)
-        if result.success {
-            members.removeAll { $0.userId == userId }
+        do {
+            let result = try await service.removeMember(communityId: communityId, userId: userId, reason: reason)
+            if result.success {
+                members.removeAll { $0.userId == userId }
+            }
+        } catch {
+            print("❌ Remove member error: \(error)")
         }
     }
 }

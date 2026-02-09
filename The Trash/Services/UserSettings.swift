@@ -112,7 +112,7 @@ class UserSettings: ObservableObject {
             }
             
             // 同步到后端
-            _ = await communityService.updateUserLocation(
+            _ = try? await communityService.updateUserLocation(
                 city: location.city,
                 state: location.state,
                 latitude: location.latitude,
@@ -139,15 +139,18 @@ class UserSettings: ObservableObject {
     /// 加载指定城市的社区
     func loadCommunitiesForCity(_ city: String) async {
         isLoadingCommunities = true
-        let response = await communityService.getCommunitiesByCity(city)
-        communitiesInCity = response.map { Community(from: $0) }
-        
-        // 更新本地缓存
-        for community in communitiesInCity where community.isMember {
-            joinedCommunityIds.insert(community.id)
+        do {
+            let response = try await communityService.getCommunitiesByCity(city)
+            communitiesInCity = response.map { Community(from: $0) }
+
+            // 更新本地缓存
+            for community in communitiesInCity where community.isMember {
+                joinedCommunityIds.insert(community.id)
+            }
+            saveJoinedCommunities()
+        } catch {
+            print("❌ Get communities error: \(error)")
         }
-        saveJoinedCommunities()
-        
         isLoadingCommunities = false
     }
     
@@ -158,27 +161,31 @@ class UserSettings: ObservableObject {
         if showLoading {
             isLoadingCommunities = true
         }
-        
-        let response = await communityService.getMyCommunities()
-        joinedCommunities = response.map { resp in
-            Community(
-                id: resp.id,
-                name: resp.name,
-                city: resp.city,
-                state: resp.state ?? "",
-                description: resp.description ?? "",
-                memberCount: resp.memberCount,
-                latitude: 0,
-                longitude: 0,
-                isMember: true,
-                isAdmin: resp.isAdmin  // 🚀 设置管理员状态
-            )
+
+        do {
+            let response = try await communityService.getMyCommunities()
+            joinedCommunities = response.map { resp in
+                Community(
+                    id: resp.id,
+                    name: resp.name,
+                    city: resp.city,
+                    state: resp.state ?? "",
+                    description: resp.description ?? "",
+                    memberCount: resp.memberCount,
+                    latitude: 0,
+                    longitude: 0,
+                    isMember: true,
+                    isAdmin: resp.isAdmin
+                )
+            }
+
+            // 更新本地缓存
+            joinedCommunityIds = Set(joinedCommunities.map { $0.id })
+            saveJoinedCommunities()
+        } catch {
+            print("❌ Get my communities error: \(error)")
         }
-        
-        // 更新本地缓存
-        joinedCommunityIds = Set(joinedCommunities.map { $0.id })
-        saveJoinedCommunities()
-        
+
         isLoadingCommunities = false
     }
     
@@ -213,22 +220,30 @@ class UserSettings: ObservableObject {
         joinedCommunities.append(newCommunity)
         
         // 2. Perform Network Request
-        let result = await communityService.joinCommunity(community.id)
-        
-        // 3. Handle Result
-        if result.success && !result.requiresApproval {
-            // Success: Keep optimistic state (maybe update with fresh data if needed, but simple counter is fine)
-            // No action needed
-        } else {
-            // Failure or Approval Required: Revert Optimistic State
-            // If approval is required, user is not yet a member, so revert "isMember" to false.
+        do {
+            let result = try await communityService.joinCommunity(community.id)
+
+            // 3. Handle Result
+            if result.success && !result.requiresApproval {
+                // Success: Keep optimistic state
+            } else {
+                // Failure or Approval Required: Revert Optimistic State
+                joinedCommunityIds = originalIds
+                communitiesInCity = originalCommunities
+                joinedCommunities = originalJoined
+                saveJoinedCommunities()
+            }
+
+            return (result.success, result.requiresApproval)
+        } catch {
+            // Revert on error
+            print("❌ Join community error: \(error)")
             joinedCommunityIds = originalIds
             communitiesInCity = originalCommunities
             joinedCommunities = originalJoined
             saveJoinedCommunities()
+            return (false, false)
         }
-        
-        return (result.success, result.requiresApproval)
     }
     
     /// 离开社区 - Optimistic UI
@@ -249,17 +264,26 @@ class UserSettings: ObservableObject {
         joinedCommunities.removeAll { $0.id == community.id }
         
         // 2. Perform Network Request
-        let success = await communityService.leaveCommunity(community.id)
-        
-        // 3. Revert on Failure
-        if !success {
+        do {
+            let success = try await communityService.leaveCommunity(community.id)
+
+            // 3. Revert on Failure
+            if !success {
+                joinedCommunityIds = originalIds
+                communitiesInCity = originalCommunities
+                joinedCommunities = originalJoined
+                saveJoinedCommunities()
+            }
+
+            return success
+        } catch {
+            print("❌ Leave community error: \(error)")
             joinedCommunityIds = originalIds
             communitiesInCity = originalCommunities
             joinedCommunities = originalJoined
             saveJoinedCommunities()
+            return false
         }
-        
-        return success
     }
     
     /// 检查是否是社区成员

@@ -58,7 +58,11 @@ class AdminLogsViewModel: ObservableObject {
     
     func loadLogs() async {
         isLoading = true
-        logs = await service.getAdminLogs(communityId: communityId)
+        do {
+            logs = try await service.getAdminLogs(communityId: communityId)
+        } catch {
+            print("❌ Get admin logs error: \(error)")
+        }
         isLoading = false
     }
 }
