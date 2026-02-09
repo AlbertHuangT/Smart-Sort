@@ -33,7 +33,7 @@ struct CommunityView: View {
                     }
                     .pickerStyle(.segmented)
                     .padding(.horizontal, 16)
-                    .padding(.bottom, 16)
+                    .padding(.vertical, 12)
                     .background(Color.neuBackground)
                     
                     // Main Content Area

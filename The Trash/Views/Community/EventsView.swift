@@ -472,6 +472,7 @@ struct EventsView: View {
                             .font(.caption)
                         Text(location.city)
                             .font(.subheadline.bold())
+                            .lineLimit(1)
                     }
                     .foregroundColor(.neuAccentBlue)
                     .padding(.horizontal, 12)
@@ -485,6 +486,7 @@ struct EventsView: View {
                             .font(.caption)
                         Text("Select Location")
                             .font(.subheadline.bold())
+                            .lineLimit(1)
                     }
                     .foregroundColor(.neuSecondaryText)
                     .padding(.horizontal, 12)
@@ -494,7 +496,7 @@ struct EventsView: View {
                 }
             }
 
-            Spacer()
+            Spacer(minLength: 4)
 
             // Map/List Toggle
             Button(action: {
@@ -509,6 +511,7 @@ struct EventsView: View {
                     .background(Color.neuAccentBlue)
                     .clipShape(Circle())
             }
+            .fixedSize()
 
             // 仅显示已加入社区 Toggle
             Button(action: {
@@ -517,10 +520,9 @@ struct EventsView: View {
                 HStack(spacing: 4) {
                     Image(systemName: viewModel.showOnlyJoinedCommunities ? "person.3.fill" : "globe")
                         .font(.caption)
-                        .frame(width: 14) // 🚀 固定宽度
+                        .frame(width: 14)
                     Text(viewModel.showOnlyJoinedCommunities ? "Joined" : "All")
                         .font(.caption.bold())
-                        .frame(width: 45, alignment: .center) // 🚀 固定宽度并居中
                 }
                 .foregroundColor(viewModel.showOnlyJoinedCommunities ? .cyan : .neuSecondaryText)
                 .padding(.horizontal, 10)
@@ -537,6 +539,7 @@ struct EventsView: View {
                 )
                 .animation(.easeInOut(duration: 0.2), value: viewModel.showOnlyJoinedCommunities)
             }
+            .fixedSize()
 
             // 排序按钮
             Menu {
@@ -559,7 +562,6 @@ struct EventsView: View {
                         .font(.caption)
                     Text(viewModel.sortOption.rawValue)
                         .font(.caption.bold())
-                        .frame(width: 70, alignment: .center) // 🚀 固定宽度防止跳动
                         .lineLimit(1)
                     Image(systemName: "chevron.down")
                         .font(.caption2)
@@ -575,6 +577,7 @@ struct EventsView: View {
                 )
                 .animation(.none, value: viewModel.sortOption)
             }
+            .fixedSize()
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)

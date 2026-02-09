@@ -96,6 +96,7 @@ struct GroupsView: View {
                             .font(.caption)
                         Text(location.city)
                             .font(.subheadline.bold())
+                            .lineLimit(1)
                     }
                     .foregroundColor(.neuAccentBlue)
                     .padding(.horizontal, 12)
@@ -109,6 +110,7 @@ struct GroupsView: View {
                             .font(.caption)
                         Text("Select Location")
                             .font(.subheadline.bold())
+                            .lineLimit(1)
                     }
                     .foregroundColor(.neuSecondaryText)
                     .padding(.horizontal, 12)
