@@ -1,5 +1,5 @@
 //
-//  CommunityTabView.swift
+//  GroupsView.swift
 //  The Trash
 //
 //  Created by Albert Huang on 2/6/26.
@@ -24,7 +24,7 @@ enum CommunityTabSection: String, CaseIterable {
 
 // MARK: - Main View
 
-struct CommunityTabView: View {
+struct GroupsView: View {
     @ObservedObject private var userSettings = UserSettings.shared
     @EnvironmentObject var authVM: AuthViewModel
     @State private var showAccountSheet = false
@@ -35,41 +35,38 @@ struct CommunityTabView: View {
     @State private var showCreateCommunitySheet = false
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                VStack(spacing: 0) {
-                    appStoreHeader(title: "Communities")
+        ZStack {
+            VStack(spacing: 0) {
+                // Header handled by parent
 
-                    if authVM.isAnonymous {
-                        anonymousRestrictionView
-                    } else {
-                        sectionPicker
+                if authVM.isAnonymous {
+                    anonymousRestrictionView
+                } else {
+                    controlBar
 
-                        switch selectedSection {
-                        case .nearby:
-                            nearbyCommunitiesContent
-                        case .joined:
-                            joinedCommunitiesContent
-                        }
-                    }
-                }
-                .background(Color(.systemGroupedBackground))
-
-                if !authVM.isAnonymous {
-                    VStack {
-                        Spacer()
-                        HStack {
-                            Spacer()
-                            FloatingActionButton(icon: "plus") {
-                                showCreateCommunitySheet = true
-                            }
-                            .padding(.trailing, 20)
-                            .padding(.bottom, 20)
-                        }
+                    switch selectedSection {
+                    case .nearby:
+                        nearbyCommunitiesContent
+                    case .joined:
+                        joinedCommunitiesContent
                     }
                 }
             }
-            .navigationBarHidden(true)
+            .background(Color(.systemGroupedBackground))
+
+            if !authVM.isAnonymous {
+                VStack {
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        FloatingActionButton(icon: "plus") {
+                            showCreateCommunitySheet = true
+                        }
+                        .padding(.trailing, 20)
+                        .padding(.bottom, 20)
+                    }
+                }
+            }
         }
         .sheet(isPresented: $showLocationPicker) {
             LocationPickerSheet(isPresented: $showLocationPicker)
@@ -88,43 +85,75 @@ struct CommunityTabView: View {
         }
     }
 
-    // MARK: - App Store Style Header
-    private func appStoreHeader(title: String) -> some View {
-        HStack(alignment: .center) {
-            Text(title)
-                .font(.system(size: 34, weight: .bold, design: .default))
-
+    // MARK: - Control Bar (Location + Toggle)
+    private var controlBar: some View {
+        HStack {
+            // Location Button
+            if let location = userSettings.selectedLocation {
+                Button(action: { showLocationPicker = true }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "location.fill")
+                            .font(.caption)
+                        Text(location.city)
+                            .font(.subheadline.bold())
+                    }
+                    .foregroundColor(.blue)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.blue.opacity(0.1))
+                    .cornerRadius(16)
+                }
+            } else {
+                Button(action: { showLocationPicker = true }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "location.slash")
+                            .font(.caption)
+                        Text("Select Location")
+                            .font(.subheadline.bold())
+                    }
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color(.secondarySystemGroupedBackground))
+                    .cornerRadius(16)
+                }
+            }
+            
             Spacer()
-
-            AccountButton(showAccountSheet: $showAccountSheet)
-                .environmentObject(authVM)
-        }
-        .padding(.leading, 16)
-        .padding(.trailing, 20)
-        .padding(.top, 8)
-        .padding(.bottom, 8)
-    }
-
-    // MARK: - Section Picker
-    private var sectionPicker: some View {
-        Picker("Section", selection: $selectedSection) {
-            ForEach(CommunityTabSection.allCases, id: \.self) { section in
-                Label(section.rawValue, systemImage: section.icon)
-                    .tag(section)
+            
+            // Toggle Button (Nearby / Joined)
+            Button(action: {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    if selectedSection == .nearby {
+                        selectedSection = .joined
+                    } else {
+                        selectedSection = .nearby
+                    }
+                }
+            }) {
+                HStack(spacing: 4) {
+                    Image(systemName: selectedSection == .joined ? "person.3.fill" : "globe")
+                        .font(.caption)
+                        .frame(width: 14) // Fixed width for icon stability
+                    Text(selectedSection == .joined ? "Joined" : "Nearby")
+                        .font(.caption.bold())
+                        .frame(width: 50, alignment: .center) // Fixed width for text stability
+                }
+                .foregroundColor(selectedSection == .joined ? .white : .secondary)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(selectedSection == .joined ? Color.blue : Color(.secondarySystemGroupedBackground))
+                .cornerRadius(16)
             }
         }
-        .pickerStyle(.segmented)
         .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(Color(.systemGroupedBackground))
+        .padding(.vertical, 8)
     }
 
     // MARK: - Nearby Communities Content
     @ViewBuilder
     private var nearbyCommunitiesContent: some View {
         VStack(spacing: 0) {
-            locationHeader
-
             if userSettings.selectedLocation == nil {
                 noLocationView
             } else if userSettings.isLoadingCommunities {
@@ -140,51 +169,6 @@ struct CommunityTabView: View {
                 await userSettings.loadCommunitiesForCity(location.city)
             }
         }
-    }
-
-    private var locationHeader: some View {
-        Button(action: { showLocationPicker = true }) {
-            HStack(spacing: 12) {
-                ZStack {
-                    Circle()
-                        .fill(Color.blue.opacity(0.15))
-                        .frame(width: 40, height: 40)
-                    Image(systemName: "mappin.circle.fill")
-                        .font(.system(size: 20))
-                        .foregroundColor(.blue)
-                }
-
-                VStack(alignment: .leading, spacing: 2) {
-                    if let location = userSettings.selectedLocation {
-                        Text(location.city)
-                            .font(.headline)
-                            .foregroundColor(.primary)
-                        Text(location.state)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    } else {
-                        Text("Select Location")
-                            .font(.headline)
-                            .foregroundColor(.primary)
-                        Text("Tap to choose your city")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
-
-                Spacer()
-
-                Image(systemName: "chevron.right")
-                    .font(.caption)
-                    .foregroundColor(.gray)
-            }
-            .padding(16)
-            .background(Color(.secondarySystemGroupedBackground))
-            .cornerRadius(16)
-            .padding(.horizontal, 16)
-            .padding(.top, 8)
-        }
-        .buttonStyle(.plain)
     }
 
     private var noLocationView: some View {

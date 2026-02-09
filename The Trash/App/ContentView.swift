@@ -25,17 +25,11 @@ struct ContentView: View {
                 }
                 .tag(2)
             
-            CommunityTabView()
+            CommunityView()
                 .tabItem {
                     Label("Community", systemImage: "person.3.fill")
                 }
                 .tag(3)
-            
-            CommunityView()
-                .tabItem {
-                    Label("Events", systemImage: "calendar.badge.clock")
-                }
-                .tag(4)
         }
         .tint(.blue)
     }
