@@ -191,6 +191,7 @@ class DuelViewModel: ObservableObject {
     }
 
     private var _bothReadyCancellable: AnyCancellable?
+    private var countdownTask: Task<Void, Never>?
 
     // MARK: - Countdown
 
@@ -198,11 +199,13 @@ class DuelViewModel: ObservableObject {
         phase = .countdown
         countdownValue = 3
 
-        Task {
+        countdownTask = Task {
             for i in stride(from: 3, through: 1, by: -1) {
+                guard !Task.isCancelled else { return }
                 countdownValue = i
                 try? await Task.sleep(nanoseconds: 1_000_000_000)
             }
+            guard !Task.isCancelled else { return }
             answerStartTime = Date()
             phase = .playing
         }
@@ -288,6 +291,7 @@ class DuelViewModel: ObservableObject {
     // MARK: - Cleanup
 
     func cleanup() async {
+        countdownTask?.cancel()
         _bothReadyCancellable?.cancel()
         await realtimeManager.disconnect()
     }

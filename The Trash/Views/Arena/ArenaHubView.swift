@@ -145,6 +145,9 @@ struct ArenaHubView: View {
     private func startPolling() {
         guard !authViewModel.isAnonymous else { return }
 
+        // Cancel any existing timer to prevent duplicates
+        pollTimer?.cancel()
+
         // Initial fetch
         Task { await fetchPendingCount() }
 

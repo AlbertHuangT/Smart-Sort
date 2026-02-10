@@ -125,7 +125,7 @@ struct DailyLeaderboardRow: View {
             VStack(alignment: .trailing, spacing: 2) {
                 Text("\(entry.score)")
                     .font(.title3.bold())
-                    .foregroundColor(.green)
+                    .foregroundColor(.neuAccentGreen)
                 Text("pts")
                     .font(.caption2)
                     .foregroundColor(.neuSecondaryText)

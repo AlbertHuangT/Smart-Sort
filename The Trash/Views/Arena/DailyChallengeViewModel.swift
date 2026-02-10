@@ -57,7 +57,7 @@ class DailyChallengeViewModel: ObservableObject {
     var formattedTime: String {
         let mins = Int(elapsedSeconds) / 60
         let secs = Int(elapsedSeconds) % 60
-        let tenths = Int((elapsedSeconds * 10).truncatingRemainder(dividingBy: 10))
+        let tenths = Int(elapsedSeconds * 10) % 10
         if mins > 0 {
             return String(format: "%d:%02d.%d", mins, secs, tenths)
         }
@@ -105,7 +105,7 @@ class DailyChallengeViewModel: ObservableObject {
             }
     }
 
-    private func stopTimer() {
+    func stopTimer() {
         timerCancellable?.cancel()
     }
 

@@ -56,6 +56,9 @@ struct DailyChallengeView: View {
             pulseAnimation = true
             await viewModel.fetchChallenge()
         }
+        .onDisappear {
+            viewModel.stopTimer()
+        }
     }
 
     // MARK: - Already Played View

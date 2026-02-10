@@ -275,10 +275,14 @@ class ChallengeListViewModel: ObservableObject {
     }
 
     func decline(challengeId: UUID) async {
+        // Optimistically remove, but restore on failure
+        let removed = challenges.filter { $0.id == challengeId }
+        challenges.removeAll { $0.id == challengeId }
         do {
             try await arenaService.declineChallenge(challengeId: challengeId)
-            challenges.removeAll { $0.id == challengeId }
         } catch {
+            // Restore on failure
+            challenges.append(contentsOf: removed)
             print("❌ [ChallengeList] Decline failed: \(error)")
         }
     }

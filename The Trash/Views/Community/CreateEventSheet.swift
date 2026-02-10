@@ -15,6 +15,7 @@ struct CreateEventSheet: View {
     @State private var location = ""
     @State private var category = "cleanup"
     @State private var maxParticipants = 50
+    @State private var showNotImplementedAlert = false
 
     let categories = ["cleanup", "workshop", "competition", "education", "other"]
 
@@ -25,7 +26,7 @@ struct CreateEventSheet: View {
                     TextField("Event Title", text: $title)
                     TextField("Description", text: $description, axis: .vertical)
                         .lineLimit(3...6)
-                    DatePicker("Date & Time", selection: $eventDate)
+                    DatePicker("Date & Time", selection: $eventDate, in: Date()...)
                     TextField("Location", text: $location)
                 }
 
@@ -49,11 +50,15 @@ struct CreateEventSheet: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Create") {
-                        // TODO: Call backend API to create event
-                        isPresented = false
+                        showNotImplementedAlert = true
                     }
                     .disabled(title.isEmpty || location.isEmpty)
                 }
+            }
+            .alert("Coming Soon", isPresented: $showNotImplementedAlert) {
+                Button("OK") { isPresented = false }
+            } message: {
+                Text("Event creation from community pages is coming soon. Use the Events tab to create events for now.")
             }
         }
     }

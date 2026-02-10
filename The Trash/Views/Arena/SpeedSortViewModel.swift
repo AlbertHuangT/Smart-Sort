@@ -28,6 +28,7 @@ class SpeedSortViewModel: ObservableObject {
     @Published var timeRemaining: Double = 5.0
     let timePerQuestion: Double = 5.0
     private var timerCancellable: AnyCancellable?
+    private var timeoutTask: Task<Void, Never>?
 
     // Countdown before game starts
     @Published var countdownValue: Int? = nil
@@ -118,13 +119,14 @@ class SpeedSortViewModel: ObservableObject {
                 } else {
                     // Time's up — treat as wrong answer
                     self.timerCancellable?.cancel()
-                    Task { await self.handleTimeout() }
+                    self.timeoutTask = Task { await self.handleTimeout() }
                 }
             }
     }
 
     func stopTimer() {
         timerCancellable?.cancel()
+        timeoutTask?.cancel()
     }
 
     // MARK: - Answer Submission
@@ -199,7 +201,7 @@ class SpeedSortViewModel: ObservableObject {
     }
 
     private func handleTimeout() async {
-        guard !isSubmitting else { return }
+        guard !isSubmitting, !Task.isCancelled else { return }
         isSubmitting = true
         defer { isSubmitting = false }
 

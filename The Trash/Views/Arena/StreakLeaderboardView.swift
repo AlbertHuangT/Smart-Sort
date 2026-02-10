@@ -112,7 +112,7 @@ struct StreakLeaderboardRow: View {
             VStack(alignment: .trailing, spacing: 2) {
                 Text("\(entry.bestStreak)")
                     .font(.title3.bold())
-                    .foregroundColor(.purple)
+                    .foregroundColor(.neuAccentPurple)
                 Text("best streak")
                     .font(.caption2)
                     .foregroundColor(.neuSecondaryText)
