@@ -227,8 +227,8 @@ struct GameModeCard: View {
             .padding(.horizontal, 8)
             .background(Color.neuBackground)
             .clipShape(RoundedRectangle(cornerRadius: 20))
-            .shadow(color: isPressed ? .clear : .neuDarkShadow, radius: 10, x: 8, y: 8)
-            .shadow(color: isPressed ? .clear : .neuLightShadow, radius: 10, x: -5, y: -5)
+            .shadow(color: isPressed ? .clear : .neuDarkShadow, radius: 7, x: 5, y: 5)
+            .shadow(color: isPressed ? .clear : .neuLightShadow, radius: 7, x: -3, y: -3)
             .overlay(
                 RoundedRectangle(cornerRadius: 20)
                     .stroke(

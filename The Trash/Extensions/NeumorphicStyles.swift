@@ -12,7 +12,7 @@ extension Color {
     static let neuLightShadow = Color(UIColor { trait in
         trait.userInterfaceStyle == .dark
             ? UIColor(red: 58/255, green: 63/255, blue: 78/255, alpha: 0.5)
-            : UIColor.white.withAlphaComponent(0.9)
+            : UIColor.white.withAlphaComponent(0.7)
     })
 
     static let neuDarkShadow = Color(UIColor { trait in
@@ -45,6 +45,18 @@ extension Color {
         trait.userInterfaceStyle == .dark
             ? UIColor(red: 60/255, green: 210/255, blue: 160/255, alpha: 1)
             : UIColor(red: 50/255, green: 200/255, blue: 150/255, alpha: 1)
+    })
+
+    static let neuAccentOrange = Color(UIColor { trait in
+        trait.userInterfaceStyle == .dark
+            ? UIColor(red: 255/255, green: 159/255, blue: 60/255, alpha: 1)
+            : UIColor(red: 240/255, green: 140/255, blue: 40/255, alpha: 1)
+    })
+
+    static let neuAccentPurple = Color(UIColor { trait in
+        trait.userInterfaceStyle == .dark
+            ? UIColor(red: 160/255, green: 100/255, blue: 255/255, alpha: 1)
+            : UIColor(red: 140/255, green: 80/255, blue: 230/255, alpha: 1)
     })
 
     // Card background (same as neuBackground but available as a semantic alias)
@@ -191,5 +203,19 @@ enum NeumorphicAppearance {
         UISegmentedControl.appearance().selectedSegmentTintColor = segSelected
         UISegmentedControl.appearance().setTitleTextAttributes([.foregroundColor: segText], for: .normal)
         UISegmentedControl.appearance().setTitleTextAttributes([.foregroundColor: segSelectedText], for: .selected)
+
+        // Navigation Bar — match neuBackground so NavigationStack views look consistent
+        let navBg = UIColor { trait in
+            trait.userInterfaceStyle == .dark
+                ? UIColor(red: 44/255, green: 48/255, blue: 62/255, alpha: 1)
+                : UIColor(red: 224/255, green: 229/255, blue: 236/255, alpha: 1)
+        }
+        let navAppearance = UINavigationBarAppearance()
+        navAppearance.configureWithOpaqueBackground()
+        navAppearance.backgroundColor = navBg
+        navAppearance.shadowColor = nil  // Remove bottom separator
+        UINavigationBar.appearance().standardAppearance = navAppearance
+        UINavigationBar.appearance().scrollEdgeAppearance = navAppearance
+        UINavigationBar.appearance().compactAppearance = navAppearance
     }
 }

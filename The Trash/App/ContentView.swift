@@ -5,6 +5,7 @@ import Auth
 struct ContentView: View {
     @State private var selectedTab = 0
     @State private var showAccountSheet = false
+    @State private var contentPushedDown = false
     @ObservedObject private var arenaRouter = ArenaRouter.shared
     @EnvironmentObject var authVM: AuthViewModel
 
@@ -63,10 +64,8 @@ struct ContentView: View {
             .tint(Color.neuAccentBlue)
             .environment(\.showAccountSheet, $showAccountSheet)
             // Push-down effect when account sheet opens (all tabs)
-            .scaleEffect(showAccountSheet ? 0.92 : 1.0)
-            .offset(y: showAccountSheet ? -20 : 0)
-            .blur(radius: showAccountSheet ? 2 : 0)
-            .animation(.spring(response: 0.5, dampingFraction: 0.85), value: showAccountSheet)
+            .scaleEffect(contentPushedDown ? 0.92 : 1.0)
+            .offset(y: contentPushedDown ? -20 : 0)
         }
         .sheet(isPresented: $showAccountSheet) {
             AccountView()
@@ -75,6 +74,11 @@ struct ContentView: View {
                 .presentationDragIndicator(.visible)
                 .presentationCornerRadius(32)
                 .presentationBackground(Color.neuBackground)
+        }
+        .onChange(of: showAccountSheet) { newValue in
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+                contentPushedDown = newValue
+            }
         }
         .onChange(of: arenaRouter.pendingChallengeId) { newValue in
             if newValue != nil {
