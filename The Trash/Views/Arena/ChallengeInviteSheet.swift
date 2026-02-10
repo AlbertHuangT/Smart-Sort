@@ -125,14 +125,14 @@ struct InviteMemberRow: View {
 
 // MARK: - Models & ViewModel
 
-struct InvitableMember: Identifiable, Codable {
+private struct RawProfile: Codable {
+    let id: UUID
+    let username: String?
+}
+
+struct InvitableMember: Identifiable {
     let id: UUID
     let displayName: String
-
-    enum CodingKeys: String, CodingKey {
-        case id
-        case displayName = "display_name"
-    }
 }
 
 @MainActor
@@ -150,15 +150,19 @@ class ChallengeInviteViewModel: ObservableObject {
 
         do {
             // Fetch profiles (excluding self) — simple approach
-            let profiles: [InvitableMember] = try await client
+            // username is nullable, so decode as optional first then filter
+            let raw: [RawProfile] = try await client
                 .from("profiles")
-                .select("id, display_name")
+                .select("id, username")
                 .neq("id", value: myId)
                 .limit(50)
                 .execute()
                 .value
 
-            self.members = profiles.filter { !$0.displayName.isEmpty }
+            self.members = raw.compactMap { p in
+                guard let name = p.username, !name.isEmpty else { return nil }
+                return InvitableMember(id: p.id, displayName: name)
+            }
         } catch {
             print("❌ [ChallengeInvite] Failed: \(error)")
         }
