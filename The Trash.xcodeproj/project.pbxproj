@@ -22,8 +22,6 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		88258C6E2F20E40C0071F13F /* The Trash */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = "The Trash";
 			sourceTree = "<group>";
 		};
@@ -114,6 +112,7 @@
 			knownRegions = (
 				en,
 				Base,
+				"zh-Hans",
 			);
 			mainGroup = 88258C632F20E40C0071F13F;
 			minimizedProjectReferenceProxies = 1;

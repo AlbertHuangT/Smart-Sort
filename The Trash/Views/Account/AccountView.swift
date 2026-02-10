@@ -13,6 +13,7 @@ struct AccountView: View {
     @EnvironmentObject var authVM: AuthViewModel
     @StateObject private var profileVM = ProfileViewModel()
     @ObservedObject private var userSettings = UserSettings.shared
+    @ObservedObject private var achievementService = AchievementService.shared
 
     // Sheets & Alerts
     @State private var showBindPhoneSheet = false
@@ -105,6 +106,14 @@ struct AccountView: View {
             }
             .background(Color.neuBackground)
             .navigationBarHidden(true)
+            .overlay {
+                // 成就解锁 Toast 通知
+                if let result = achievementService.lastGrantedAchievement, result.granted {
+                    AchievementToastView(result: result) {
+                        achievementService.dismissGrantNotification()
+                    }
+                }
+            }
             .task {
                 await profileVM.fetchProfile()
             }
@@ -208,6 +217,28 @@ struct AccountView: View {
                             .foregroundColor(.neuAccentBlue)
                             .neumorphicConcave(cornerRadius: 13)
                             .frame(height: 26)
+                            
+                            // 装备的成就徽章
+                            if let icon = profileVM.equippedAchievementIcon,
+                               let name = profileVM.equippedAchievementName {
+                                HStack(spacing: 4) {
+                                    Image(systemName: icon)
+                                        .font(.caption2)
+                                    Text(name)
+                                        .font(.caption2.bold())
+                                        .lineLimit(1)
+                                }
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .foregroundColor(profileVM.equippedAchievementRarity?.color ?? .neuAccentBlue)
+                                .background(
+                                    Capsule()
+                                        .fill(Color.neuBackground)
+                                        .shadow(color: .neuDarkShadow, radius: 2, x: 1, y: 1)
+                                        .shadow(color: .neuLightShadow, radius: 2, x: -1, y: -1)
+                                )
+                                .frame(height: 22)
+                            }
                         }
                     }
                     .animation(.none, value: profileVM.username)

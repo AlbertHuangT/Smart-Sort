@@ -1,33 +1,39 @@
 -- 006_achievements_system.sql
 -- New tables for Achievement System
+-- Fixed: correct table names (profiles, user_community_memberships) and types (community_id TEXT)
 
 -- 1. Create achievements table
 CREATE TABLE IF NOT EXISTS public.achievements (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    community_id UUID REFERENCES public.communities(id) ON DELETE CASCADE, -- NULL means official achievement
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    community_id TEXT REFERENCES public.communities(id) ON DELETE CASCADE, -- NULL means official achievement
     name TEXT NOT NULL,
     description TEXT,
     icon_name TEXT NOT NULL, -- SF Symbol name
     created_by UUID REFERENCES auth.users(id),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     points INT DEFAULT 0, -- Achievement point value (optional)
-    is_hidden BOOLEAN DEFAULT FALSE
+    is_hidden BOOLEAN DEFAULT FALSE,
+    rarity TEXT DEFAULT 'common' CHECK (rarity IN ('common', 'rare', 'epic', 'legendary')),
+    trigger_key TEXT UNIQUE
 );
 
 -- 2. Create user_achievements table (Many-to-Many)
 CREATE TABLE IF NOT EXISTS public.user_achievements (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
     achievement_id UUID REFERENCES public.achievements(id) ON DELETE CASCADE,
-    community_id UUID REFERENCES public.communities(id) ON DELETE SET NULL, -- Track which community context this was earned in
+    community_id TEXT REFERENCES public.communities(id) ON DELETE SET NULL,
     granted_at TIMESTAMPTZ DEFAULT NOW(),
-    granted_by UUID REFERENCES auth.users(id), -- Admin who granted it (if manually granted)
-    UNIQUE(user_id, achievement_id) -- Avoid duplicate grants of same achievement
+    granted_by UUID REFERENCES auth.users(id),
+    UNIQUE(user_id, achievement_id)
 );
 
--- 3. Add selected_achievement_id to users table (Profile display)
-ALTER TABLE public.users 
+-- 3. Add selected_achievement_id and total_scans to profiles
+ALTER TABLE public.profiles
 ADD COLUMN IF NOT EXISTS selected_achievement_id UUID REFERENCES public.achievements(id) ON DELETE SET NULL;
+
+ALTER TABLE public.profiles
+ADD COLUMN IF NOT EXISTS total_scans INT DEFAULT 0;
 
 -- 4. Enable RLS
 ALTER TABLE public.achievements ENABLE ROW LEVEL SECURITY;
@@ -35,49 +41,43 @@ ALTER TABLE public.user_achievements ENABLE ROW LEVEL SECURITY;
 
 -- 5. RLS Policies
 
--- Public read access for achievements
 CREATE POLICY "Allow public read on achievements" ON public.achievements
     FOR SELECT USING (true);
 
--- Admins can create achievements for their community
 CREATE POLICY "Allow admins to create community achievements" ON public.achievements
     FOR INSERT WITH CHECK (
         community_id IS NOT NULL AND
         EXISTS (
-            SELECT 1 FROM public.community_members
+            SELECT 1 FROM public.user_community_memberships
             WHERE community_id = public.achievements.community_id
             AND user_id = auth.uid()
             AND status = 'admin'
         )
     );
 
--- Admins can update their community achievements
 CREATE POLICY "Allow admins to update community achievements" ON public.achievements
     FOR UPDATE USING (
         community_id IS NOT NULL AND
         EXISTS (
-            SELECT 1 FROM public.community_members
+            SELECT 1 FROM public.user_community_memberships
             WHERE community_id = public.achievements.community_id
             AND user_id = auth.uid()
             AND status = 'admin'
         )
     );
 
--- Users can see their own earned achievements
-CREATE POLICY "Allow users to read own achievements" ON public.user_achievements
-    FOR SELECT USING (true); -- Actually public should see others' achievements too mainly for leaderboard/profile context, kept open for now.
+CREATE POLICY "Allow users to read achievements" ON public.user_achievements
+    FOR SELECT USING (true);
 
--- Admins can grant achievements to members of their community
 CREATE POLICY "Allow admins to grant achievements" ON public.user_achievements
     FOR INSERT WITH CHECK (
         EXISTS (
             SELECT 1 FROM public.achievements a
-            JOIN public.community_members cm ON a.community_id = cm.community_id
+            JOIN public.user_community_memberships cm ON a.community_id = cm.community_id
             WHERE a.id = achievement_id
             AND cm.user_id = auth.uid()
             AND cm.status = 'admin'
         ) OR
-        -- Allow system to grant official achievements (handled by service role usually, but for user triggered logic)
         (SELECT community_id FROM public.achievements WHERE id = achievement_id) IS NULL
     );
 
@@ -87,16 +87,15 @@ CREATE POLICY "Allow admins to grant achievements" ON public.user_achievements
 CREATE OR REPLACE FUNCTION set_primary_achievement(achievement_id UUID)
 RETURNS VOID AS $$
 BEGIN
-    -- Verify user owns the achievement
     IF achievement_id IS NOT NULL AND NOT EXISTS (
-        SELECT 1 FROM public.user_achievements
-        WHERE user_id = auth.uid() AND achievement_id = set_primary_achievement.achievement_id
+        SELECT 1 FROM public.user_achievements ua
+        WHERE ua.user_id = auth.uid() AND ua.achievement_id = set_primary_achievement.achievement_id
     ) THEN
         RAISE EXCEPTION 'User does not own this achievement';
     END IF;
 
-    UPDATE public.users
-    SET selected_achievement_id = achievement_id
+    UPDATE public.profiles
+    SET selected_achievement_id = set_primary_achievement.achievement_id
     WHERE id = auth.uid();
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -109,14 +108,15 @@ RETURNS TABLE (
     name TEXT,
     description TEXT,
     icon_name TEXT,
-    community_id UUID,
+    community_id TEXT,
     community_name TEXT,
     granted_at TIMESTAMPTZ,
-    is_equipped BOOLEAN
+    is_equipped BOOLEAN,
+    rarity TEXT
 ) AS $$
 BEGIN
     RETURN QUERY
-    SELECT 
+    SELECT
         ua.id,
         a.id,
         a.name,
@@ -125,11 +125,12 @@ BEGIN
         a.community_id,
         c.name,
         ua.granted_at,
-        (u.selected_achievement_id = a.id)
+        (p.selected_achievement_id = a.id),
+        a.rarity
     FROM public.user_achievements ua
     JOIN public.achievements a ON ua.achievement_id = a.id
     LEFT JOIN public.communities c ON a.community_id = c.id
-    LEFT JOIN public.users u ON ua.user_id = u.id
+    LEFT JOIN public.profiles p ON ua.user_id = p.id
     WHERE ua.user_id = auth.uid()
     ORDER BY ua.granted_at DESC;
 END;

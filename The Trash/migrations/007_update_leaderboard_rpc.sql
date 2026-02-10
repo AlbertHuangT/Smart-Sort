@@ -1,8 +1,9 @@
 -- 007_update_leaderboard_rpc.sql
 -- Update get_community_leaderboard to include achievement icon
+-- Fixed: correct table names (profiles, user_community_memberships) and types (p_community_id TEXT)
 
 CREATE OR REPLACE FUNCTION public.get_community_leaderboard(
-    p_community_id UUID,
+    p_community_id TEXT,
     p_limit INTEGER DEFAULT 100
 )
 RETURNS TABLE (
@@ -15,19 +16,19 @@ RETURNS TABLE (
 AS $$
 BEGIN
     RETURN QUERY
-    SELECT 
-        u.id,
-        COALESCE(u.username, 'Anonymous'),
-        COALESCE(u.credits, 0),
+    SELECT
+        p.id,
+        COALESCE(p.username, 'Anonymous'),
+        COALESCE(p.credits, 0),
         c.name,
         a.icon_name
-    FROM public.community_members cm
-    JOIN public.users u ON cm.user_id = u.id
+    FROM public.user_community_memberships cm
+    JOIN public.profiles p ON cm.user_id = p.id
     JOIN public.communities c ON cm.community_id = c.id
-    LEFT JOIN public.achievements a ON u.selected_achievement_id = a.id
+    LEFT JOIN public.achievements a ON p.selected_achievement_id = a.id
     WHERE cm.community_id = p_community_id
     AND cm.status IN ('member', 'admin')
-    ORDER BY u.credits DESC
+    ORDER BY p.credits DESC
     LIMIT p_limit;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

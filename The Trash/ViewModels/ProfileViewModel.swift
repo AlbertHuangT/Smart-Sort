@@ -16,6 +16,11 @@ class ProfileViewModel: ObservableObject {
     @Published var levelName: String = "Novice Recycler"
     @Published var isLoading = false
     @Published var errorMessage: String?
+    
+    // 成就展示
+    @Published var equippedAchievementIcon: String?
+    @Published var equippedAchievementName: String?
+    @Published var equippedAchievementRarity: AchievementRarity?
 
     private var lastFetchTime: Date?
     private let cacheValidDuration: TimeInterval = 30
@@ -40,11 +45,17 @@ class ProfileViewModel: ObservableObject {
             struct UserProfile: Decodable {
                 let credits: Int?
                 let username: String?
+                let selectedAchievementId: UUID?
+                
+                enum CodingKeys: String, CodingKey {
+                    case credits, username
+                    case selectedAchievementId = "selected_achievement_id"
+                }
             }
 
             let profile: UserProfile = try await client
                 .from("profiles")
-                .select("credits, username")
+                .select("credits, username, selected_achievement_id")
                 .eq("id", value: userId)
                 .single()
                 .execute()
@@ -55,6 +66,15 @@ class ProfileViewModel: ObservableObject {
             self.lastFetchTime = Date()
             self.hasFetchedOnce = true
             calculateLevel()
+            
+            // 获取装备的成就信息
+            if let achievementId = profile.selectedAchievementId {
+                await fetchEquippedAchievement(achievementId)
+            } else {
+                self.equippedAchievementIcon = nil
+                self.equippedAchievementName = nil
+                self.equippedAchievementRarity = nil
+            }
         } catch {
             print("❌ Fetch profile error: \(error)")
             if !Task.isCancelled {
@@ -62,6 +82,38 @@ class ProfileViewModel: ObservableObject {
             }
         }
         isLoading = false
+    }
+    
+    private func fetchEquippedAchievement(_ achievementId: UUID) async {
+        do {
+            struct AchievementInfo: Decodable {
+                let iconName: String
+                let name: String
+                let rarity: AchievementRarity?
+                
+                enum CodingKeys: String, CodingKey {
+                    case iconName = "icon_name"
+                    case name, rarity
+                }
+            }
+            
+            let info: AchievementInfo = try await client
+                .from("achievements")
+                .select("icon_name, name, rarity")
+                .eq("id", value: achievementId)
+                .single()
+                .execute()
+                .value
+            
+            self.equippedAchievementIcon = info.iconName
+            self.equippedAchievementName = info.name
+            self.equippedAchievementRarity = info.rarity
+        } catch {
+            print("❌ Fetch equipped achievement error: \(error)")
+            self.equippedAchievementIcon = nil
+            self.equippedAchievementName = nil
+            self.equippedAchievementRarity = nil
+        }
     }
 
     func updateUsername(_ newName: String) async {

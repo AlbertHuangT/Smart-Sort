@@ -11,6 +11,14 @@ import Foundation
 import Supabase
 import Combine
 
+// MARK: - Nonisolated decode helper (avoids @MainActor Decodable warning)
+private func decodeBroadcastPayload<T: Decodable & Sendable>(
+    _ type: T.Type,
+    from message: [String: AnyJSON]
+) -> T? {
+    try? message["payload"]?.decode(as: type)
+}
+
 struct DuelPresenceUser: Identifiable, Codable {
     let id: String
     let username: String

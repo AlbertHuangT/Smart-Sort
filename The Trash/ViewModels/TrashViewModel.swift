@@ -116,9 +116,31 @@ class TrashViewModel: ObservableObject {
             do {
                 _ = try await client.rpc("increment_credits", params: ["amount": amount]).execute()
                 print("🎉 Points granted: \(amount)")
+                
+                // 成就自动检查
+                await checkAchievementTriggers()
             } catch {
                 print("❌ [Gamification] Error: \(error)")
             }
         }
+    }
+    
+    // MARK: - Achievement Auto-Grant
+    
+    private func checkAchievementTriggers() async {
+        let achievementService = AchievementService.shared
+        
+        // 增加扫描计数
+        await achievementService.incrementTotalScans()
+        
+        // 批量检查触发条件
+        await achievementService.checkMultipleTriggers([
+            "first_scan",
+            "scans_10",
+            "scans_50",
+            "credits_100",
+            "credits_500",
+            "credits_2000"
+        ])
     }
 }
