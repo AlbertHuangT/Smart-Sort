@@ -12,7 +12,7 @@ struct DailyChallengeView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @Environment(\.dismiss) private var dismiss
     @State private var pulseAnimation = false
-    @State private var showAccountSheet = false
+    // showAccountSheet managed by ContentView via environment
     @State private var showLeaderboard = false
 
     let categories = ["Recyclable", "Compostable", "Landfill", "Hazardous"]
@@ -25,7 +25,6 @@ struct DailyChallengeView: View {
             VStack(spacing: 0) {
                 ArenaHeader(
                     title: "Daily Challenge",
-                    showAccountSheet: $showAccountSheet,
                     showBackButton: true,
                     onBack: { dismiss() }
                 )
@@ -133,7 +132,7 @@ struct DailyChallengeView: View {
                             .monospacedDigit()
                     }
                     .font(.subheadline)
-                    .foregroundColor(.green)
+                    .foregroundColor(.neuAccentGreen)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
                     .neumorphicConcave(cornerRadius: 20)
@@ -216,10 +215,10 @@ struct DailyChallengeView: View {
             icon: "calendar.circle.fill",
             isGoodResult: accuracy >= 70,
             stats: [
-                (icon: "flame.fill", title: "Score", value: "+\(viewModel.sessionScore)", color: .orange),
-                (icon: "checkmark.circle.fill", title: "Correct", value: "\(viewModel.correctCount)/\(viewModel.questions.count)", color: .green),
-                (icon: "timer", title: "Time", value: viewModel.formattedTime, color: .blue),
-                (icon: "bolt.fill", title: "Best Combo", value: "\(viewModel.maxCombo)x", color: .purple)
+                (icon: "flame.fill", title: "Score", value: "+\(viewModel.sessionScore)", color: .neuAccentOrange),
+                (icon: "checkmark.circle.fill", title: "Correct", value: "\(viewModel.correctCount)/\(viewModel.questions.count)", color: .neuAccentGreen),
+                (icon: "timer", title: "Time", value: viewModel.formattedTime, color: .neuAccentBlue),
+                (icon: "bolt.fill", title: "Best Combo", value: "\(viewModel.maxCombo)x", color: .neuAccentPurple)
             ],
             onPlayAgain: {
                 // Can't play again — show leaderboard instead

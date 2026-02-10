@@ -4,7 +4,9 @@ import Auth
 
 struct ContentView: View {
     @State private var selectedTab = 0
+    @State private var showAccountSheet = false
     @ObservedObject private var arenaRouter = ArenaRouter.shared
+    @EnvironmentObject var authVM: AuthViewModel
 
     init() {
         // Configure TabBar appearance for Neumorphism (dark mode adaptive)
@@ -29,32 +31,51 @@ struct ContentView: View {
     }
 
     var body: some View {
-        TabView(selection: $selectedTab) {
-            VerifyView()
-                .tabItem {
-                    Label("Verify", systemImage: "camera.viewfinder")
-                }
-                .tag(0)
+        ZStack {
+            Color.neuBackground
+                .ignoresSafeArea()
 
-            ArenaHubView()
-                .tabItem {
-                    Label("Arena", systemImage: "flame.fill")
-                }
-                .tag(1)
+            TabView(selection: $selectedTab) {
+                VerifyView()
+                    .tabItem {
+                        Label("Verify", systemImage: "camera.viewfinder")
+                    }
+                    .tag(0)
 
-            LeaderboardView()
-                .tabItem {
-                    Label("Leaderboard", systemImage: "chart.bar.fill")
-                }
-                .tag(2)
+                ArenaHubView()
+                    .tabItem {
+                        Label("Arena", systemImage: "flame.fill")
+                    }
+                    .tag(1)
 
-            CommunityView()
-                .tabItem {
-                    Label("Community", systemImage: "person.3.fill")
-                }
-                .tag(3)
+                LeaderboardView()
+                    .tabItem {
+                        Label("Leaderboard", systemImage: "chart.bar.fill")
+                    }
+                    .tag(2)
+
+                CommunityView()
+                    .tabItem {
+                        Label("Community", systemImage: "person.3.fill")
+                    }
+                    .tag(3)
+            }
+            .tint(Color.neuAccentBlue)
+            .environment(\.showAccountSheet, $showAccountSheet)
+            // Push-down effect when account sheet opens (all tabs)
+            .scaleEffect(showAccountSheet ? 0.92 : 1.0)
+            .offset(y: showAccountSheet ? -20 : 0)
+            .blur(radius: showAccountSheet ? 2 : 0)
+            .animation(.spring(response: 0.5, dampingFraction: 0.85), value: showAccountSheet)
         }
-        .tint(Color.neuAccentBlue)
+        .sheet(isPresented: $showAccountSheet) {
+            AccountView()
+                .environmentObject(authVM)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+                .presentationCornerRadius(32)
+                .presentationBackground(Color.neuBackground)
+        }
         .onChange(of: arenaRouter.pendingChallengeId) { newValue in
             if newValue != nil {
                 selectedTab = 1 // Switch to Arena tab

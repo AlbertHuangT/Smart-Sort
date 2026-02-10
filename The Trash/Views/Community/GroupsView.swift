@@ -27,7 +27,7 @@ enum CommunityTabSection: String, CaseIterable {
 struct GroupsView: View {
     @ObservedObject private var userSettings = UserSettings.shared
     @EnvironmentObject var authVM: AuthViewModel
-    @State private var showAccountSheet = false
+    // showAccountSheet managed by ContentView via environment
     @State private var selectedSection: CommunityTabSection = .nearby
     @State private var searchText = ""
     @State private var showLocationPicker = false

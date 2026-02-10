@@ -326,7 +326,7 @@ struct EventsView: View {
     @EnvironmentObject var authVM: AuthViewModel
     @State private var showEventDetail: CommunityEvent? = nil
     @State private var showSortMenu = false
-    @State private var showAccountSheet = false
+    // showAccountSheet managed by ContentView via environment
     @State private var showCreateEventSheet = false
     @State private var showLocationPicker = false // Added for location picker
     @State private var isMapView = false

@@ -250,7 +250,7 @@ struct ArenaView: View {
     @StateObject private var viewModel = ArenaViewModel()
     @EnvironmentObject var authViewModel: AuthViewModel
     @State private var pulseAnimation = false
-    @State private var showAccountSheet = false
+    // showAccountSheet managed by ContentView via environment
 
     let categories = ["Recyclable", "Compostable", "Landfill", "Hazardous"]
 
@@ -293,7 +293,7 @@ struct ArenaView: View {
 
             Spacer()
 
-            AccountButton(showAccountSheet: $showAccountSheet)
+            AccountButton()
                 .environmentObject(authViewModel)
         }
         .padding(.leading, 16)
@@ -364,7 +364,7 @@ struct ArenaView: View {
                         .fontWeight(.black)
                 }
                 .font(.subheadline)
-                .foregroundColor(.orange)
+                .foregroundColor(.neuAccentOrange)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .neumorphicConcave(cornerRadius: 20)
@@ -870,10 +870,10 @@ struct EnhancedSessionSummaryView: View {
 
             // Stats Cards
             VStack(spacing: 14) {
-                EnhancedStatRow(icon: "flame.fill", title: "Points Earned", value: "+\(viewModel.sessionScore)", color: .orange)
-                EnhancedStatRow(icon: "checkmark.circle.fill", title: "Correct Answers", value: "\(viewModel.correctCount)/\(viewModel.questions.count)", color: .green)
-                EnhancedStatRow(icon: "percent", title: "Accuracy", value: "\(accuracy)%", color: .blue)
-                EnhancedStatRow(icon: "bolt.fill", title: "Best Combo", value: "\(viewModel.maxCombo)x", color: .purple)
+                EnhancedStatRow(icon: "flame.fill", title: "Points Earned", value: "+\(viewModel.sessionScore)", color: .neuAccentOrange)
+                EnhancedStatRow(icon: "checkmark.circle.fill", title: "Correct Answers", value: "\(viewModel.correctCount)/\(viewModel.questions.count)", color: .neuAccentGreen)
+                EnhancedStatRow(icon: "percent", title: "Accuracy", value: "\(accuracy)%", color: .neuAccentBlue)
+                EnhancedStatRow(icon: "bolt.fill", title: "Best Combo", value: "\(viewModel.maxCombo)x", color: .neuAccentPurple)
             }
             .padding(20)
             .background(

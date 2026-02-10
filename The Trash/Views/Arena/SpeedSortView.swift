@@ -12,7 +12,7 @@ struct SpeedSortView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @Environment(\.dismiss) private var dismiss
     @State private var pulseAnimation = false
-    @State private var showAccountSheet = false
+    // showAccountSheet managed by ContentView via environment
 
     let categories = ["Recyclable", "Compostable", "Landfill", "Hazardous"]
 
@@ -25,7 +25,6 @@ struct SpeedSortView: View {
                 // Header with back button
                 ArenaHeader(
                     title: "Speed Sort",
-                    showAccountSheet: $showAccountSheet,
                     showBackButton: true,
                     onBack: { dismiss() }
                 )
@@ -187,10 +186,10 @@ struct SpeedSortView: View {
             icon: "bolt.fill",
             isGoodResult: accuracy >= 70,
             stats: [
-                (icon: "flame.fill", title: "Total Score", value: "+\(viewModel.sessionScore)", color: .orange),
-                (icon: "checkmark.circle.fill", title: "Correct", value: "\(viewModel.correctCount)/\(viewModel.questions.count)", color: .green),
-                (icon: "percent", title: "Accuracy", value: "\(accuracy)%", color: .blue),
-                (icon: "bolt.fill", title: "Best Combo", value: "\(viewModel.maxCombo)x", color: .purple)
+                (icon: "flame.fill", title: "Total Score", value: "+\(viewModel.sessionScore)", color: .neuAccentOrange),
+                (icon: "checkmark.circle.fill", title: "Correct", value: "\(viewModel.correctCount)/\(viewModel.questions.count)", color: .neuAccentGreen),
+                (icon: "percent", title: "Accuracy", value: "\(accuracy)%", color: .neuAccentBlue),
+                (icon: "bolt.fill", title: "Best Combo", value: "\(viewModel.maxCombo)x", color: .neuAccentPurple)
             ],
             onPlayAgain: {
                 Task { await viewModel.startNewSession() }

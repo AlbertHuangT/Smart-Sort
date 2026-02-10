@@ -17,7 +17,7 @@ struct VerifyView: View {
     @State private var showingFeedbackForm = false
     @State private var isCameraActive = false
     @State private var pulseAnimation = false
-    @State private var showAccountSheet = false
+    // showAccountSheet is managed by ContentView via environment
     
     // Form Data
     @State private var feedbackItemName = ""
@@ -61,11 +61,6 @@ struct VerifyView: View {
                 analyzingOverlay
             }
         }
-        // 🎨 景深效果：当账户页面打开时，主页面缩小并后退
-        .scaleEffect(showAccountSheet ? 0.92 : 1.0)
-        .offset(y: showAccountSheet ? -20 : 0)
-        .blur(radius: showAccountSheet ? 2 : 0)
-        .animation(.spring(response: 0.5, dampingFraction: 0.85), value: showAccountSheet)
         .onAppear {
             // 如果相机之前是激活状态，重新启动相机会话
             if isCameraActive && cameraManager.capturedImage == nil {
@@ -91,7 +86,7 @@ struct VerifyView: View {
             
             Spacer()
             
-            AccountButton(showAccountSheet: $showAccountSheet)
+            AccountButton()
                 .environmentObject(authVM)
         }
         .padding(.leading, 16)

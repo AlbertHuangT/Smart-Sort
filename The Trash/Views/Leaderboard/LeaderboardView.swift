@@ -16,7 +16,7 @@ struct LeaderboardView: View {
     @StateObject private var friendService = FriendService()
     @StateObject private var currentUserVM = CurrentUserViewModel()
     @EnvironmentObject var authVM: AuthViewModel
-    @State private var showAccountSheet = false
+    // showAccountSheet managed by ContentView via environment
     @State private var selectedType: LeaderboardType = .friends
     
     // Community leaderboard state
@@ -97,7 +97,7 @@ struct LeaderboardView: View {
             
             Spacer()
             
-            AccountButton(showAccountSheet: $showAccountSheet)
+            AccountButton()
                 .environmentObject(authVM)
         }
         .padding(.leading, 16)

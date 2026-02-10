@@ -9,7 +9,7 @@ import SwiftUI
 
 struct CommunityView: View {
     @State private var selectedTab: CommunityTab = .events
-    @State private var showAccountSheet = false
+    // showAccountSheet managed by ContentView via environment
     @EnvironmentObject var authVM: AuthViewModel
     
     enum CommunityTab: String, CaseIterable {
@@ -61,7 +61,7 @@ struct CommunityView: View {
             
             Spacer()
             
-            AccountButton(showAccountSheet: $showAccountSheet)
+            AccountButton()
                 .environmentObject(authVM)
         }
         .padding(.leading, 16)

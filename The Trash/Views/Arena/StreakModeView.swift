@@ -12,7 +12,7 @@ struct StreakModeView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @Environment(\.dismiss) private var dismiss
     @State private var pulseAnimation = false
-    @State private var showAccountSheet = false
+    // showAccountSheet managed by ContentView via environment
     @State private var showLeaderboard = false
 
     let categories = ["Recyclable", "Compostable", "Landfill", "Hazardous"]
@@ -25,7 +25,6 @@ struct StreakModeView: View {
             VStack(spacing: 0) {
                 ArenaHeader(
                     title: "Streak Mode",
-                    showAccountSheet: $showAccountSheet,
                     showBackButton: true,
                     onBack: { dismiss() }
                 )
@@ -59,7 +58,7 @@ struct StreakModeView: View {
                     Text("Streak: \(viewModel.streakCount)")
                         .font(.subheadline.bold())
                 }
-                .foregroundColor(.purple)
+                .foregroundColor(.neuAccentPurple)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .neumorphicConcave(cornerRadius: 20)
@@ -71,7 +70,7 @@ struct StreakModeView: View {
                         .fontWeight(.black)
                 }
                 .font(.subheadline)
-                .foregroundColor(.orange)
+                .foregroundColor(.neuAccentOrange)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .neumorphicConcave(cornerRadius: 20)
@@ -169,8 +168,8 @@ struct StreakModeView: View {
             icon: "arrow.up.right",
             isGoodResult: viewModel.streakCount >= 5,
             stats: [
-                (icon: "arrow.up.right", title: "Streak", value: "\(viewModel.streakCount)", color: .purple),
-                (icon: "flame.fill", title: "Points Earned", value: "+\(viewModel.sessionScore)", color: .orange)
+                (icon: "arrow.up.right", title: "Streak", value: "\(viewModel.streakCount)", color: .neuAccentPurple),
+                (icon: "flame.fill", title: "Points Earned", value: "+\(viewModel.sessionScore)", color: .neuAccentOrange)
             ],
             onPlayAgain: {
                 Task { await viewModel.startNewSession() }

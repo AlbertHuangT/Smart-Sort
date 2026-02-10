@@ -135,7 +135,7 @@ struct ArenaStatusBar: View {
                         .fontWeight(.black)
                 }
                 .font(.subheadline)
-                .foregroundColor(.orange)
+                .foregroundColor(.neuAccentOrange)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .neumorphicConcave(cornerRadius: 20)
@@ -159,7 +159,6 @@ struct ArenaStatusBar: View {
 
 struct ArenaHeader: View {
     let title: String
-    @Binding var showAccountSheet: Bool
     var showBackButton: Bool = false
     var onBack: (() -> Void)? = nil
 
@@ -181,7 +180,7 @@ struct ArenaHeader: View {
 
             Spacer()
 
-            AccountButton(showAccountSheet: $showAccountSheet)
+            AccountButton()
                 .environmentObject(authViewModel)
         }
         .padding(.leading, 16)

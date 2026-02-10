@@ -12,7 +12,7 @@ import Combine
 struct ArenaHubView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @ObservedObject var arenaRouter = ArenaRouter.shared
-    @State private var showAccountSheet = false
+    // showAccountSheet managed by ContentView via environment
     @State private var navigationPath = NavigationPath()
     @State private var showChallengeList = false
     @State private var showInviteSheet = false
@@ -59,7 +59,7 @@ struct ArenaHubView: View {
                             .padding(.trailing, 8)
                         }
 
-                        AccountButton(showAccountSheet: $showAccountSheet)
+                        AccountButton()
                             .environmentObject(authViewModel)
                     }
                     .padding(.leading, 16)
@@ -112,6 +112,7 @@ struct ArenaHubView: View {
                 }
             }
         }
+        .background(Color.neuBackground.ignoresSafeArea())
         .sheet(isPresented: $showChallengeList) {
             ChallengeListView()
         }
@@ -179,8 +180,8 @@ struct GameModeCard: View {
         let colors: [Color] = {
             switch mode {
             case .classic: return [.neuAccentBlue, .cyan]
-            case .speedSort: return [.orange, .yellow]
-            case .streak: return [.purple, .pink]
+            case .speedSort: return [.neuAccentOrange, .yellow]
+            case .streak: return [.neuAccentPurple, .pink]
             case .dailyChallenge: return [.green, .mint]
             case .duel: return [.red, .orange]
             }

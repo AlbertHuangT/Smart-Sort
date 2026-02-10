@@ -11,7 +11,7 @@ struct DuelView: View {
     @StateObject private var viewModel = DuelViewModel()
     @EnvironmentObject var authViewModel: AuthViewModel
     @Environment(\.dismiss) private var dismiss
-    @State private var showAccountSheet = false
+    // showAccountSheet managed by ContentView via environment
 
     let challengeId: UUID?
     let opponentId: UUID?
@@ -27,7 +27,6 @@ struct DuelView: View {
             VStack(spacing: 0) {
                 ArenaHeader(
                     title: "1v1 Duel",
-                    showAccountSheet: $showAccountSheet,
                     showBackButton: true,
                     onBack: {
                         Task { await viewModel.cleanup() }

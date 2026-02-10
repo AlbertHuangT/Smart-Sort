@@ -7,14 +7,26 @@
 
 import SwiftUI
 
+// MARK: - Environment Key for shared account sheet state
+private struct AccountSheetKey: EnvironmentKey {
+    static let defaultValue: Binding<Bool> = .constant(false)
+}
+
+extension EnvironmentValues {
+    var showAccountSheet: Binding<Bool> {
+        get { self[AccountSheetKey.self] }
+        set { self[AccountSheetKey.self] = newValue }
+    }
+}
+
 // MARK: - Account Button (Neumorphic Style)
 struct AccountButton: View {
-    @Binding var showAccountSheet: Bool
+    @Environment(\.showAccountSheet) private var showAccountSheet
     @EnvironmentObject var authVM: AuthViewModel
 
     var body: some View {
         Button {
-            showAccountSheet = true
+            showAccountSheet.wrappedValue = true
         } label: {
             ZStack {
                 Circle()
@@ -27,15 +39,6 @@ struct AccountButton: View {
                     .font(.system(size: 22, weight: .medium))
                     .foregroundColor(.neuAccentBlue)
             }
-        }
-        .sheet(isPresented: $showAccountSheet) {
-            AccountView()
-                .environmentObject(authVM)
-                .presentationDetents([.large])
-                .presentationDragIndicator(.visible)
-                .presentationCornerRadius(32)
-                .presentationBackground(Color.neuBackground)
-                .presentationBackgroundInteraction(.enabled(upThrough: .large))
         }
     }
 }
