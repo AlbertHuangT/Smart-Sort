@@ -147,8 +147,8 @@ struct ArenaHubView: View {
         // Initial fetch
         Task { await fetchPendingCount() }
 
-        // Poll every 30 seconds
-        pollTimer = Timer.publish(every: 30, on: .main, in: .common)
+        // Poll every 10 seconds (challenges expire after 1 minute)
+        pollTimer = Timer.publish(every: 10, on: .main, in: .common)
             .autoconnect()
             .sink { _ in
                 Task { await fetchPendingCount() }
