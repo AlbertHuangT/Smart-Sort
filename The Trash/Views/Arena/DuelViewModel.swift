@@ -102,9 +102,41 @@ class DuelViewModel: ObservableObject {
                 )
             }
 
+            // When opponent accepts and sends player_ready, fetch questions and get ready
+            observeOpponentReadyThenLoad()
+
             phase = .lobby
         } catch {
             phase = .error("Failed to create challenge: \(error.localizedDescription)")
+        }
+    }
+
+    /// Challenger waits for opponent to accept and send ready, then fetches questions
+    private func observeOpponentReadyThenLoad() {
+        _opponentReadyCancellable = realtimeManager.$opponentReady
+            .filter { $0 }
+            .first()
+            .sink { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    await self?.loadQuestionsAndSendReady()
+                }
+            }
+    }
+
+    /// Challenger fetches questions after opponent accepts, preloads images, and sends ready
+    private func loadQuestionsAndSendReady() async {
+        guard let cid = challengeId else { return }
+        do {
+            let response = try await arenaService.getChallengeQuestions(challengeId: cid)
+            self.questions = response.questions
+            self.challengerId = response.challengerId
+            self.opponentId = response.opponentId
+
+            await preloadImages()
+            await realtimeManager.sendReady()
+            observeBothReady()
+        } catch {
+            phase = .error("Failed to load questions: \(error.localizedDescription)")
         }
     }
 
@@ -191,6 +223,7 @@ class DuelViewModel: ObservableObject {
     }
 
     private var _bothReadyCancellable: AnyCancellable?
+    private var _opponentReadyCancellable: AnyCancellable?
     private var countdownTask: Task<Void, Never>?
 
     // MARK: - Countdown
@@ -293,6 +326,7 @@ class DuelViewModel: ObservableObject {
     func cleanup() async {
         countdownTask?.cancel()
         _bothReadyCancellable?.cancel()
+        _opponentReadyCancellable?.cancel()
         await realtimeManager.disconnect()
     }
 
