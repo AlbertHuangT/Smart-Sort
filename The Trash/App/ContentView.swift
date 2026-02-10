@@ -49,7 +49,7 @@ struct ContentView: View {
                     }
                     .tag(1)
 
-                LeaderboardView()
+                LeaderboardView(selectedTab: $selectedTab)
                     .tabItem {
                         Label("Leaderboard", systemImage: "chart.bar.fill")
                     }

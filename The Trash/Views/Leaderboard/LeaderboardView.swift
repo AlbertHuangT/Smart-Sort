@@ -17,6 +17,7 @@ struct LeaderboardView: View {
     @StateObject private var currentUserVM = CurrentUserViewModel()
     @EnvironmentObject var authVM: AuthViewModel
     // showAccountSheet managed by ContentView via environment
+    @Binding var selectedTab: Int
     @State private var selectedType: LeaderboardType = .friends
     
     // Community leaderboard state
@@ -63,28 +64,26 @@ struct LeaderboardView: View {
         }
         .background(Color.neuBackground)
         .task {
-            // 🚀 优化：只在首次加载时请求数据
-            loadDataIfNeeded()
+            await refreshData()
+        }
+        .onChange(of: selectedTab) { newTab in
+            if newTab == 2 {
+                Task { await refreshData() }
+            }
         }
         .onChange(of: selectedType) { newType in
-            if newType == .community && myCommunities.isEmpty {
+            if newType == .community {
                 Task { await loadMyCommunities() }
             }
         }
     }
     
-    // 🚀 新增：避免重复请求的数据加载方法
-    private func loadDataIfNeeded() {
+    private func refreshData() async {
         friendService.checkPermission()
-        
+
         if !authVM.isAnonymous && friendService.permissionStatus == .authorized {
-            // 只在数据为空时请求
-            if friendService.friends.isEmpty || currentUserVM.myProfile == nil {
-                Task {
-                    await friendService.fetchContactsAndSync()
-                    await currentUserVM.fetchMyScore()
-                }
-            }
+            async let _ = friendService.fetchContactsAndSync()
+            async let _ = currentUserVM.fetchMyScore()
         }
     }
     
@@ -339,12 +338,12 @@ struct LeaderboardView: View {
     private func loadMyCommunities() async {
         do {
             let communities = try await CommunityService.shared.getMyCommunities()
-            await MainActor.run {
-                myCommunities = communities
-                if let first = communities.first, selectedCommunity == nil {
-                    selectedCommunity = first
-                    Task { await loadCommunityLeaderboard(communityId: first.id) }
-                }
+            myCommunities = communities
+            if selectedCommunity == nil, let first = communities.first {
+                selectedCommunity = first
+            }
+            if let community = selectedCommunity {
+                await loadCommunityLeaderboard(communityId: community.id)
             }
         } catch {
             print("❌ Failed to load communities: \(error)")
