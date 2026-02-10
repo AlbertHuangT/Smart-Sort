@@ -67,7 +67,11 @@ struct ContentView: View {
             .scaleEffect(contentPushedDown ? 0.92 : 1.0)
             .offset(y: contentPushedDown ? -20 : 0)
         }
-        .sheet(isPresented: $showAccountSheet) {
+        .sheet(isPresented: $showAccountSheet, onDismiss: {
+            withAnimation(.easeOut(duration: 0.25)) {
+                contentPushedDown = false
+            }
+        }) {
             AccountView()
                 .environmentObject(authVM)
                 .presentationDetents([.large])
@@ -76,8 +80,10 @@ struct ContentView: View {
                 .presentationBackground(Color.neuBackground)
         }
         .onChange(of: showAccountSheet) { newValue in
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
-                contentPushedDown = newValue
+            if newValue {
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+                    contentPushedDown = true
+                }
             }
         }
         .onChange(of: arenaRouter.pendingChallengeId) { newValue in
