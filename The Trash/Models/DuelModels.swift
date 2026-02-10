@@ -134,7 +134,7 @@ extension SubmitDuelAnswerParams: Encodable {
 
 // MARK: - Realtime Events
 
-struct DuelPlayerReady: Codable {
+struct DuelPlayerReady: Codable, Sendable {
     let userId: String
 
     enum CodingKeys: String, CodingKey {
@@ -142,7 +142,7 @@ struct DuelPlayerReady: Codable {
     }
 }
 
-struct DuelAnswerSubmitted: Codable {
+struct DuelAnswerSubmitted: Codable, Sendable {
     let userId: String
     let questionIndex: Int
     let isCorrect: Bool
@@ -154,7 +154,7 @@ struct DuelAnswerSubmitted: Codable {
     }
 }
 
-struct DuelPlayerFinished: Codable {
+struct DuelPlayerFinished: Codable, Sendable {
     let userId: String
     let totalCorrect: Int
     let totalScore: Int
