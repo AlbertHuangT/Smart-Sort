@@ -11,11 +11,6 @@ import Foundation
 import Supabase
 import Combine
 
-struct DuelPresenceUser: Identifiable, Codable {
-    let id: String
-    let username: String
-}
-
 @MainActor
 class DuelRealtimeManager: ObservableObject {
     @Published var opponentReady = false
@@ -67,12 +62,11 @@ class DuelRealtimeManager: ObservableObject {
             await withTaskGroup(of: Void.self) { group in
                 group.addTask {
                     for await message in readyStream {
-                        if let payload = try? message["payload"]?.decode(as: DuelPlayerReady.self) {
-                            await MainActor.run {
-                                if payload.userId == self.opponentUserId {
-                                    self.opponentReady = true
-                                    self.checkBothReady()
-                                }
+                        await MainActor.run {
+                            if let payload = try? message["payload"]?.decode(as: DuelPlayerReady.self),
+                               payload.userId == self.opponentUserId {
+                                self.opponentReady = true
+                                self.checkBothReady()
                             }
                         }
                     }
@@ -80,13 +74,12 @@ class DuelRealtimeManager: ObservableObject {
 
                 group.addTask {
                     for await message in answerStream {
-                        if let payload = try? message["payload"]?.decode(as: DuelAnswerSubmitted.self) {
-                            await MainActor.run {
-                                if payload.userId == self.opponentUserId {
-                                    self.opponentProgress = payload.questionIndex + 1
-                                    if payload.isCorrect {
-                                        self.opponentCorrect += 1
-                                    }
+                        await MainActor.run {
+                            if let payload = try? message["payload"]?.decode(as: DuelAnswerSubmitted.self),
+                               payload.userId == self.opponentUserId {
+                                self.opponentProgress = payload.questionIndex + 1
+                                if payload.isCorrect {
+                                    self.opponentCorrect += 1
                                 }
                             }
                         }
@@ -95,11 +88,10 @@ class DuelRealtimeManager: ObservableObject {
 
                 group.addTask {
                     for await message in finishedStream {
-                        if let payload = try? message["payload"]?.decode(as: DuelPlayerFinished.self) {
-                            await MainActor.run {
-                                if payload.userId == self.opponentUserId {
-                                    self.opponentFinished = true
-                                }
+                        await MainActor.run {
+                            if let payload = try? message["payload"]?.decode(as: DuelPlayerFinished.self),
+                               payload.userId == self.opponentUserId {
+                                self.opponentFinished = true
                             }
                         }
                     }
