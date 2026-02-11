@@ -37,3 +37,5 @@ Package.pins
 # --- Custom Ignore (Sensitive Data) ---
 Secrets.swift
 TODO/
+CLAUDE.md
+
