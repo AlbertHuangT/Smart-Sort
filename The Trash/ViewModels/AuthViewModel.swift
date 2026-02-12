@@ -160,7 +160,7 @@ class AuthViewModel: ObservableObject {
         isLoading = false
     }
     
-    func bindEmail(email: String) async {
+    func updateEmail(email: String) async {
         isLoading = true
         errorMessage = nil
         do {
@@ -172,6 +172,37 @@ class AuthViewModel: ObservableObject {
         }
         isLoading = false
     }
+
+    func bindEmail(email: String) async {
+        await updateEmail(email: email)
+    }
+
+    // MARK: - Guest Upgrade
+
+    func upgradeGuestAccount(email: String, password: String) async {
+        guard isAnonymous else {
+            errorMessage = "You already have a linked account."
+            return
+        }
+
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            let attributes = UserAttributes(email: email, password: password)
+            try await client.auth.update(user: attributes)
+            showCheckEmailAlert = true
+            do {
+                _ = try await client.auth.refreshSession()
+            } catch {
+                print("Refresh session after upgrade failed: \(error)")
+            }
+        } catch {
+            errorMessage = "Upgrade failed: \(error.localizedDescription)"
+        }
+
+        isLoading = false
+    }
     
     // MARK: - System
     
@@ -180,6 +211,42 @@ class AuthViewModel: ObservableObject {
             try await client.auth.signOut()
         } catch {
             print("Sign out error: \(error)")
+        }
+    }
+
+    func changePassword(newPassword: String) async {
+        isLoading = true
+        errorMessage = nil
+        do {
+            let attributes = UserAttributes(password: newPassword)
+            try await client.auth.update(user: attributes)
+        } catch {
+            errorMessage = "Failed to change password: \(error.localizedDescription)"
+        }
+        isLoading = false
+    }
+
+    func resendEmailVerification() async {
+        guard let email = session?.user.email else {
+            errorMessage = "Link an email first."
+            return
+        }
+        isLoading = true
+        errorMessage = nil
+        do {
+            try await client.auth.resend(email: email, type: .signup)
+        } catch {
+            errorMessage = "Failed to send verification email: \(error.localizedDescription)"
+        }
+        isLoading = false
+    }
+
+    func refreshUserSession() async {
+        do {
+            let refreshed = try await client.auth.refreshSession()
+            self.session = refreshed
+        } catch {
+            print("Refresh session error: \(error)")
         }
     }
     

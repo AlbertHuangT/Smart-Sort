@@ -76,7 +76,7 @@ struct EnhancedAccountRow: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: { if !isLinked { action() } }) {
+        Button(action: action) {
             HStack(spacing: 12) {
                 ZStack {
                     Circle()
@@ -116,16 +116,14 @@ struct EnhancedAccountRow: View {
                 .padding(.vertical, 5)
                 .neumorphicConcave(cornerRadius: 10)
 
-                if !isLinked {
-                    Image(systemName: "chevron.right")
-                        .font(.caption.bold())
-                        .foregroundColor(.neuSecondaryText)
-                }
+                Image(systemName: "chevron.right")
+                    .font(.caption.bold())
+                    .foregroundColor(.neuSecondaryText)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
         }
-        .disabled(isLinked)
+        .buttonStyle(.plain)
     }
 }
 

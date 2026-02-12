@@ -26,6 +26,13 @@ struct AccountView: View {
     @State private var showDeleteAlert = false
     @State private var showDeleteNotAvailableAlert = false
     @State private var showProfileError = false
+    @State private var showChangePasswordSheet = false
+    @State private var verificationStatusMessage: String?
+    @State private var didTriggerUCSDCheck = false
+    @State private var showUpgradeSheet = false
+    @State private var upgradeEmail = ""
+    @State private var upgradePassword = ""
+    @State private var upgradeConfirmPassword = ""
 
     var body: some View {
         NavigationView {
@@ -114,6 +121,9 @@ struct AccountView: View {
                     }
                 }
             }
+            .overlay(alignment: .top) {
+                FloatingToast(message: $verificationStatusMessage)
+            }
             .task {
                 await profileVM.fetchProfile()
             }
@@ -122,6 +132,18 @@ struct AccountView: View {
             }
             .sheet(isPresented: $showBindEmailSheet) {
                 BindEmailSheet(inputEmail: $inputEmail, authVM: authVM, isPresented: $showBindEmailSheet)
+            }
+            .sheet(isPresented: $showChangePasswordSheet) {
+                ChangePasswordSheet(authVM: authVM, isPresented: $showChangePasswordSheet)
+            }
+            .sheet(isPresented: $showUpgradeSheet) {
+                UpgradeGuestSheet(
+                    authVM: authVM,
+                    email: $upgradeEmail,
+                    password: $upgradePassword,
+                    confirmPassword: $upgradeConfirmPassword,
+                    isPresented: $showUpgradeSheet
+                )
             }
             .alert("Change Username", isPresented: $showEditNameAlert) {
                 TextField("Enter new name", text: $newNameInput)
@@ -144,6 +166,17 @@ struct AccountView: View {
                 Button("OK", role: .cancel) { }
             } message: {
                 Text("Account deletion requires verification. Please contact support@thetrash.app to request account deletion.")
+            }
+            .onAppear {
+                evaluateUCSDGrant()
+            }
+            .onChange(of: authVM.session?.user.emailConfirmedAt) { _ in
+                evaluateUCSDGrant()
+            }
+            .onChange(of: authVM.session?.user.email) { _ in
+                didTriggerUCSDCheck = false
+                verificationStatusMessage = nil
+                evaluateUCSDGrant()
             }
         }
     }
@@ -254,63 +287,88 @@ struct AccountView: View {
 
     // MARK: - Stats View
     var compactStatsView: some View {
-        HStack(spacing: 12) {
-            EnhancedStatCard(
-                title: "Credits",
-                value: "\(profileVM.credits)",
-                icon: "flame.fill",
-                gradient: [Color.orange, Color.red]
-            )
-            EnhancedStatCard(
-                title: "Status",
-                value: "Active",
-                icon: "checkmark.shield.fill",
-                gradient: [Color.neuAccentGreen, Color.mint]
-            )
+        VStack(spacing: 12) {
+            HStack(spacing: 12) {
+                EnhancedStatCard(
+                    title: "Credits",
+                    value: "\(profileVM.credits)",
+                    icon: "flame.fill",
+                    gradient: [Color.orange, Color.red]
+                )
+                Button(action: handleStatusTap) {
+                    EnhancedStatCard(
+                        title: "Status",
+                        value: statusValue,
+                        icon: statusIcon,
+                        gradient: statusGradient
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+
+            if !hasLinkedEmail && verificationStatusMessage == nil {
+                Text("Link an email to secure your account.")
+                    .font(.caption)
+                    .foregroundColor(.neuSecondaryText)
+                    .padding(.horizontal, 16)
+            } else if !emailVerified && verificationStatusMessage == nil {
+                Text("Tap \"Status\" to resend verification or refresh.")
+                    .font(.caption)
+                    .foregroundColor(.neuSecondaryText)
+                    .padding(.horizontal, 16)
+            }
         }
-        .padding(.horizontal, 16)
         .padding(.top, 16)
     }
 
     // MARK: - Guest Teaser View
     var compactGuestTeaserView: some View {
-        HStack(spacing: 14) {
-            ZStack {
-                Circle()
-                    .fill(Color.neuBackground)
-                    .frame(width: 44, height: 44)
-                    .shadow(color: .neuDarkShadow, radius: 4, x: 3, y: 3)
-                    .shadow(color: .neuLightShadow, radius: 4, x: -2, y: -2)
+        Button(action: {
+            upgradeEmail = ""
+            upgradePassword = ""
+            upgradeConfirmPassword = ""
+            authVM.errorMessage = nil
+            showUpgradeSheet = true
+        }) {
+            HStack(spacing: 14) {
+                ZStack {
+                    Circle()
+                        .fill(Color.neuBackground)
+                        .frame(width: 44, height: 44)
+                        .shadow(color: .neuDarkShadow, radius: 4, x: 3, y: 3)
+                        .shadow(color: .neuLightShadow, radius: 4, x: -2, y: -2)
 
-                Image(systemName: "link.circle.fill")
+                    Image(systemName: "link.circle.fill")
+                        .font(.title2)
+                        .foregroundColor(.neuAccentBlue)
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Link Account to Save Progress")
+                        .font(.subheadline.bold())
+                        .foregroundColor(.neuText)
+                    Text("Don't lose your hard-earned credits!")
+                        .font(.caption)
+                        .foregroundColor(.neuSecondaryText)
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right.circle.fill")
                     .font(.title2)
                     .foregroundColor(.neuAccentBlue)
             }
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Link Account to Save Progress")
-                    .font(.subheadline.bold())
-                    .foregroundColor(.neuText)
-                Text("Don't lose your hard-earned credits!")
-                    .font(.caption)
-                    .foregroundColor(.neuSecondaryText)
-            }
-
-            Spacer()
-
-            Image(systemName: "chevron.right.circle.fill")
-                .font(.title2)
-                .foregroundColor(.neuAccentBlue)
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color.neuBackground)
+                    .shadow(color: .neuDarkShadow, radius: 6, x: 4, y: 4)
+                    .shadow(color: .neuLightShadow, radius: 6, x: -3, y: -3)
+            )
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
         }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color.neuBackground)
-                .shadow(color: .neuDarkShadow, radius: 6, x: 4, y: 4)
-                .shadow(color: .neuLightShadow, radius: 6, x: -3, y: -3)
-        )
-        .padding(.horizontal, 16)
-        .padding(.top, 16)
+        .buttonStyle(.plain)
     }
 
     // MARK: - Menu Section
@@ -348,9 +406,13 @@ struct AccountView: View {
                         icon: "envelope.fill",
                         gradient: [.blue, .indigo],
                         title: "Email",
-                        status: authVM.session?.user.email != nil ? "Linked" : "Link Now",
-                        isLinked: authVM.session?.user.email != nil
-                    ) { showBindEmailSheet = true }
+                        status: authVM.session?.user.email ?? "Link Now",
+                        isLinked: hasLinkedEmail
+                    ) {
+                        verificationStatusMessage = nil
+                        inputEmail = authVM.session?.user.email ?? ""
+                        showBindEmailSheet = true
+                    }
 
                     Color.neuDivider.frame(height: 1).padding(.leading, 52)
 
@@ -358,9 +420,26 @@ struct AccountView: View {
                         icon: "phone.fill",
                         gradient: [.green, .mint],
                         title: "Phone",
-                        status: authVM.session?.user.phone != nil ? "Linked" : "Link Now",
+                        status: authVM.session?.user.phone ?? "Link Now",
                         isLinked: authVM.session?.user.phone != nil
-                    ) { showBindPhoneSheet = true }
+                    ) {
+                        inputPhone = authVM.session?.user.phone ?? "+1"
+                        showBindPhoneSheet = true
+                    }
+
+                    if !authVM.isAnonymous {
+                        Color.neuDivider.frame(height: 1).padding(.leading, 52)
+
+                        EnhancedAccountRow(
+                            icon: "key.fill",
+                            gradient: [.orange, .red],
+                            title: "Password",
+                            status: "Change",
+                            isLinked: true
+                        ) {
+                            showChangePasswordSheet = true
+                        }
+                    }
                 }
             }
             .background(
@@ -404,6 +483,12 @@ struct AccountView: View {
 
                     Color.neuDivider.frame(height: 1).padding(.leading, 52)
 
+                    NavigationLink(destination: BadgePickerView()) {
+                        EnhancedSettingsRow(icon: "star.circle.fill", gradient: [.yellow, .orange], title: "Badges")
+                    }
+
+                    Color.neuDivider.frame(height: 1).padding(.leading, 52)
+
                     NavigationLink(destination: RewardView()) {
                         EnhancedSettingsRow(icon: "gift.fill", gradient: [.orange, .yellow], title: "Rewards")
                     }
@@ -430,5 +515,90 @@ struct AccountView: View {
         }
         .padding(.horizontal, 16)
         .padding(.top, 16)
+    }
+}
+
+// MARK: - Helpers
+
+extension AccountView {
+    private var hasLinkedEmail: Bool {
+        guard let email = authVM.session?.user.email else { return false }
+        return !email.isEmpty
+    }
+
+    private var emailVerified: Bool {
+        authVM.session?.user.emailConfirmedAt != nil
+    }
+
+    private var isUCSDMail: Bool {
+        authVM.session?.user.email?.lowercased().hasSuffix("@ucsd.edu") == true
+    }
+
+    private var statusValue: String {
+        guard hasLinkedEmail else { return "Link Email" }
+        return emailVerified ? "Active" : "Verify Email"
+    }
+
+    private var statusIcon: String {
+        guard hasLinkedEmail else { return "envelope.badge" }
+        return emailVerified ? "checkmark.shield.fill" : "exclamationmark.shield.fill"
+    }
+
+    private var statusGradient: [Color] {
+        guard hasLinkedEmail else { return [Color.gray, Color.neuSecondaryText] }
+        return emailVerified ? [Color.neuAccentGreen, Color.mint] : [Color.orange, Color.yellow]
+    }
+
+    private func handleStatusTap() {
+        verificationStatusMessage = nil
+        guard hasLinkedEmail else {
+            inputEmail = ""
+            showBindEmailSheet = true
+            return
+        }
+
+        if emailVerified {
+            verificationStatusMessage = "Email verified. You're all set!"
+        } else {
+            Task {
+                await sendVerificationEmail()
+                refreshVerificationStatus()
+            }
+        }
+    }
+
+    private func refreshVerificationStatus() {
+        Task {
+            await authVM.refreshUserSession()
+            await MainActor.run {
+                verificationStatusMessage = emailVerified ? "Email verified!" : "Still waiting for verification."
+            }
+            evaluateUCSDGrant()
+        }
+    }
+
+    private func sendVerificationEmail() async {
+        await authVM.resendEmailVerification()
+        await MainActor.run {
+            if let error = authVM.errorMessage {
+                verificationStatusMessage = error
+                authVM.errorMessage = nil
+            } else if let email = authVM.session?.user.email {
+                verificationStatusMessage = "Verification email sent to \(email)."
+            }
+        }
+    }
+
+    private func evaluateUCSDGrant() {
+        guard hasLinkedEmail,
+              emailVerified,
+              isUCSDMail else {
+            return
+        }
+        if didTriggerUCSDCheck { return }
+        didTriggerUCSDCheck = true
+        Task {
+            await achievementService.checkAndGrant(triggerKey: "ucsd_email")
+        }
     }
 }

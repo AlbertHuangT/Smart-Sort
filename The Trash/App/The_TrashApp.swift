@@ -14,6 +14,10 @@ struct The_TrashApp: App {
     
     // 🔥 新增：在这里初始化真实的 ViewModel，连接 RealClassifierService
     @StateObject private var trashVM = TrashViewModel(classifier: RealClassifierService.shared)
+
+    init() {
+        NeumorphicAppearance.configureGlobalAppearance()
+    }
     
     var body: some Scene {
         WindowGroup {
@@ -54,6 +58,9 @@ struct The_TrashApp: App {
             // Add animation for smoother transitions
             .animation(.easeInOut, value: authVM.session)
             .animation(.spring(), value: authVM.deepLinkStatus)
+            .onChange(of: authVM.session?.user.id) { _ in
+                trashVM.reset() // Clear Verify state when session changes (logout/login)
+            }
         }
     }
 }

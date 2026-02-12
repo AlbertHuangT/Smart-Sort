@@ -12,8 +12,11 @@ import Combine
 struct ChallengeInviteSheet: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var viewModel = ChallengeInviteViewModel()
-    @State private var showDuel = false
-    @State private var selectedOpponentId: UUID?
+    let onChallenge: (UUID) -> Void
+
+    init(onChallenge: @escaping (UUID) -> Void = { _ in }) {
+        self.onChallenge = onChallenge
+    }
 
     var body: some View {
         NavigationStack {
@@ -30,8 +33,8 @@ struct ChallengeInviteSheet: View {
                         VStack(spacing: 12) {
                             ForEach(viewModel.members) { member in
                                 InviteMemberRow(member: member) {
-                                    selectedOpponentId = member.id
-                                    showDuel = true
+                                    onChallenge(member.id)
+                                    dismiss()
                                 }
                             }
                         }
@@ -50,11 +53,6 @@ struct ChallengeInviteSheet: View {
             }
             .task {
                 await viewModel.fetchMembers()
-            }
-            .fullScreenCover(isPresented: $showDuel) {
-                if let oppId = selectedOpponentId {
-                    DuelView(challengeId: nil, opponentId: oppId, isAccepting: false)
-                }
             }
         }
     }

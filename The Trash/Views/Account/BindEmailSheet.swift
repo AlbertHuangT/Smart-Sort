@@ -19,7 +19,7 @@ struct BindEmailSheet: View {
                     TextField("Email", text: $inputEmail).keyboardType(.emailAddress).autocapitalization(.none)
                     Button("Send Link") {
                         Task {
-                            await authVM.bindEmail(email: inputEmail)
+                            await authVM.updateEmail(email: inputEmail)
                             if authVM.errorMessage == nil && authVM.showCheckEmailAlert {
                                 isPresented = false
                             }

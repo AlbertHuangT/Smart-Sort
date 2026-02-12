@@ -17,6 +17,9 @@ struct ArenaHubView: View {
     @State private var showChallengeList = false
     @State private var showInviteSheet = false
     @State private var showAcceptView = false
+    @State private var showDuel = false
+    @State private var activeOpponentId: UUID?
+    @State private var pendingOpponentId: UUID?
     @State private var pendingBadgeCount = 0
 
     // Polling timer for pending challenges
@@ -116,8 +119,11 @@ struct ArenaHubView: View {
         .sheet(isPresented: $showChallengeList) {
             ChallengeListView()
         }
-        .sheet(isPresented: $showInviteSheet) {
-            ChallengeInviteSheet()
+        .sheet(isPresented: $showInviteSheet, onDismiss: handleInviteDismiss) {
+            ChallengeInviteSheet { opponentId in
+                pendingOpponentId = opponentId
+                showInviteSheet = false
+            }
         }
         .sheet(isPresented: $showAcceptView) {
             if let challengeId = arenaRouter.pendingChallengeId {
@@ -125,6 +131,11 @@ struct ArenaHubView: View {
                     showAcceptView = false
                     arenaRouter.clearPending()
                 }
+            }
+        }
+        .fullScreenCover(isPresented: $showDuel) {
+            if let opponentId = activeOpponentId {
+                DuelView(challengeId: nil, opponentId: opponentId, isAccepting: false)
             }
         }
         .onAppear {
@@ -138,6 +149,13 @@ struct ArenaHubView: View {
                 showAcceptView = true
             }
         }
+    }
+
+    private func handleInviteDismiss() {
+        guard let opponentId = pendingOpponentId else { return }
+        pendingOpponentId = nil
+        activeOpponentId = opponentId
+        showDuel = true
     }
 
     // MARK: - Polling

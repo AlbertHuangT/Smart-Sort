@@ -80,11 +80,11 @@ struct LeaderboardView: View {
     
     private func refreshData() async {
         friendService.checkPermission()
+        guard !authVM.isAnonymous, friendService.permissionStatus == .authorized else { return }
 
-        if !authVM.isAnonymous && friendService.permissionStatus == .authorized {
-            async let _ = friendService.fetchContactsAndSync()
-            async let _ = currentUserVM.fetchMyScore()
-        }
+        async let friendsTask: Void = friendService.fetchContactsAndSync(forceRefresh: true)
+        async let scoreTask: Void = currentUserVM.fetchMyScore(forceRefresh: true)
+        _ = await (friendsTask, scoreTask)
     }
     
     // MARK: - 🎨 App Store Style Header
@@ -133,31 +133,33 @@ struct LeaderboardView: View {
                 Spacer()
                 ProgressView("Finding your friends...")
                 Spacer()
-            } else if friendService.friends.isEmpty {
-                noFriendsState
             } else {
                 ScrollView {
-                    LazyVStack(spacing: 16) {
-                        let allUsers = mergeCurrentUser(friends: friendService.friends)
-                        
-                        ForEach(Array(allUsers.enumerated()), id: \.element.id) { index, user in
-                            LeaderboardRow(
-                                rank: index + 1,
-                                username: user.username,
-                                credits: user.credits,
-                                isMe: isMe(user.id)
-                            )
-                            .padding(.horizontal, 16)
+                    if friendService.friends.isEmpty {
+                        noFriendsState
+                            .frame(maxWidth: .infinity)
+                    } else {
+                        LazyVStack(spacing: 16) {
+                            let allUsers = mergeCurrentUser(friends: friendService.friends)
+                            
+                            ForEach(Array(allUsers.enumerated()), id: \.element.id) { index, user in
+                                LeaderboardRow(
+                                    rank: index + 1,
+                                    username: user.username,
+                                    credits: user.credits,
+                                    isMe: isMe(user.id)
+                                )
+                                .padding(.horizontal, 16)
+                            }
+                            
+                            Color.clear.frame(height: 100)
                         }
-                        
-                        // Bottom padding for scroll content to clear the floating bar
-                        Color.clear.frame(height: 100)
+                        .padding(.top, 16)
                     }
-                    .padding(.top, 16)
                 }
                 .refreshable {
-                    await friendService.fetchContactsAndSync()
-                    await currentUserVM.fetchMyScore()
+                    await friendService.fetchContactsAndSync(forceRefresh: true)
+                    await currentUserVM.fetchMyScore(forceRefresh: true)
                 }
             }
         }
@@ -471,7 +473,6 @@ struct LeaderboardView: View {
     
     var noFriendsState: some View {
         VStack(spacing: 20) {
-            Spacer()
             ZStack {
                 Circle()
                     .fill(Color.neuBackground)
@@ -502,8 +503,8 @@ struct LeaderboardView: View {
                     .cornerRadius(20)
                     .shadow(color: .neuAccentGreen.opacity(0.4), radius: 8, y: 4)
             }
-            Spacer()
         }
+        .padding(.vertical, 40)
     }
     
     @ViewBuilder

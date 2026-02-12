@@ -101,14 +101,8 @@ struct LoginView: View {
         VStack(spacing: 24) {
             // Segmented picker
             Picker("Method", selection: $loginMethod) {
-                HStack {
-                    Image(systemName: "envelope.fill")
-                    Text("Email")
-                }.tag(0)
-                HStack {
-                    Image(systemName: "phone.fill")
-                    Text("Phone")
-                }.tag(1)
+                Label("Email", systemImage: "envelope.fill").tag(0)
+                Label("Phone", systemImage: "phone.fill").tag(1)
             }
             .pickerStyle(.segmented)
 

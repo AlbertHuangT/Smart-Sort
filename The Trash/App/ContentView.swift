@@ -25,9 +25,6 @@ struct ContentView: View {
         // Apply to both standard and scrollEdge
         UITabBar.appearance().standardAppearance = appearance
         UITabBar.appearance().scrollEdgeAppearance = appearance
-
-        // Configure segmented controls & nav bars
-        NeumorphicAppearance.configureGlobalAppearance()
     }
 
     var body: some View {
