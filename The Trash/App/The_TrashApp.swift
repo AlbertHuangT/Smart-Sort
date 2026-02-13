@@ -11,7 +11,7 @@ import Supabase
 @main
 struct The_TrashApp: App {
     @StateObject private var authVM = AuthViewModel()
-    
+
     // 🔥 新增：在这里初始化真实的 ViewModel，连接 RealClassifierService
     @StateObject private var trashVM = TrashViewModel(classifier: RealClassifierService.shared)
     @StateObject private var themeManager: ThemeManager
@@ -19,7 +19,7 @@ struct The_TrashApp: App {
     init() {
         _themeManager = StateObject(wrappedValue: ThemeManager.shared)
     }
-    
+
     var body: some Scene {
         WindowGroup {
             ZStack {
@@ -27,14 +27,14 @@ struct The_TrashApp: App {
                 Group {
                     if authVM.session != nil {
                         ContentView()
-                            .environmentObject(trashVM) // 🔥 注入给 ContentView 及其子视图
-                            .transition(.opacity) // Fade in/out effect
+                            .environmentObject(trashVM)
+                            .transition(.opacity)
                     } else {
                         LoginView()
                             .transition(.opacity)
                     }
                 }
-                
+
                 // --- 2. Global Authentication Status Overlay ---
                 // Only show when status is not idle
                 if authVM.deepLinkStatus != .idle {
@@ -46,6 +46,7 @@ struct The_TrashApp: App {
             .environmentObject(authVM)
             .environmentObject(themeManager)
             .trashTheme(themeManager.currentTheme)
+            .themeOption(themeManager.currentOption)
             .id(themeManager.themeIdentity)
             // Observe URL
             .onOpenURL { url in
@@ -72,7 +73,7 @@ struct The_TrashApp: App {
 // --- 3. Extracted Stylish Overlay Component ---
 struct DeepLinkOverlay: View {
     let status: AuthDeepLinkStatus
-    
+
     var body: some View {
         VStack {
             HStack(spacing: 12) {
@@ -82,17 +83,17 @@ struct DeepLinkOverlay: View {
                     Text("Verifying email...")
                         .fontWeight(.medium)
                         .foregroundColor(.primary)
-                    
+
                 case .success:
-                    Image(systemName: "checkmark.circle.fill")
+                    TrashIcon(systemName: "checkmark.circle.fill")
                         .foregroundColor(.green)
                         .font(.title2)
                     Text("Verified! Logging you in...")
                         .fontWeight(.bold)
                         .foregroundColor(.primary)
-                    
+
                 case .failure(let msg):
-                    Image(systemName: "xmark.circle.fill")
+                    TrashIcon(systemName: "xmark.circle.fill")
                         .foregroundColor(.red)
                         .font(.title2)
                     VStack(alignment: .leading) {
@@ -103,7 +104,7 @@ struct DeepLinkOverlay: View {
                             .lineLimit(2)
                     }
                     .foregroundColor(.primary)
-                    
+
                 case .idle:
                     EmptyView()
                 }

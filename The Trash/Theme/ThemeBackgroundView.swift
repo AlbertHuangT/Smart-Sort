@@ -1,16 +1,13 @@
 import SwiftUI
 
 struct ThemeBackgroundView: View {
-    @EnvironmentObject private var themeManager: ThemeManager
+    @Environment(\.trashTheme) private var theme
 
     var body: some View {
-        Group {
-            switch themeManager.currentOption {
-            case .ecoSkeuomorphic:
-                PaperTextureView()
-            default:
-                Color.neuBackground
-            }
+        GeometryReader { proxy in
+            theme.backgroundView()
+                .frame(width: proxy.size.width, height: proxy.size.height)
+                .clipped()
         }
     }
 }

@@ -14,33 +14,12 @@ struct ContentView: View {
             ThemeBackgroundView()
                 .ignoresSafeArea()
 
-            TabView(selection: $selectedTab) {
-                VerifyView()
-                    .tabItem {
-                        Label("Verify", systemImage: "camera.viewfinder")
-                    }
-                    .tag(0)
-
-                ArenaHubView()
-                    .tabItem {
-                        Label("Arena", systemImage: "flame.fill")
-                    }
-                    .tag(1)
-
-                LeaderboardView(selectedTab: $selectedTab)
-                    .tabItem {
-                        Label("Leaderboard", systemImage: "chart.bar.fill")
-                    }
-                    .tag(2)
-
-                CommunityView()
-                    .tabItem {
-                        Label("Community", systemImage: "person.3.fill")
-                    }
-                    .tag(3)
-            }
-            .tint(Color.neuAccentBlue)
-            .environment(\.showAccountSheet, $showAccountSheet)
+            tabContent
+                .environment(\.showAccountSheet, $showAccountSheet)
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            TrashBottomTabBar(items: tabItems, selection: $selectedTab)
+                .tint(Color(uiColor: theme.appearance.tabBarSelectedTint))
         }
         .sheet(isPresented: $showAccountSheet) {
             AccountView()
@@ -55,5 +34,30 @@ struct ContentView: View {
                 selectedTab = 1 // Switch to Arena tab
             }
         }
+    }
+
+    private var tabItems: [TrashTabItem<Int>] {
+        [
+            TrashTabItem(value: 0, title: "Verify", icon: "camera.viewfinder"),
+            TrashTabItem(value: 1, title: "Arena", icon: "flame.fill"),
+            TrashTabItem(value: 2, title: "Leaderboard", icon: "chart.bar.fill"),
+            TrashTabItem(value: 3, title: "Community", icon: "person.3.fill")
+        ]
+    }
+
+    private var tabContent: some View {
+        Group {
+            if selectedTab == 0 {
+                VerifyView()
+            } else if selectedTab == 1 {
+                ArenaHubView()
+            } else if selectedTab == 2 {
+                LeaderboardView(selectedTab: $selectedTab)
+            } else {
+                CommunityView()
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .clipped()
     }
 }
