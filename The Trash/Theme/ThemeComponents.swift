@@ -200,13 +200,13 @@ struct TrashSegmentedControl<Value: Hashable>: View {
         case .ecoPaper:
             ZStack {
                 RoundedRectangle(cornerRadius: theme.corners.pill - 2, style: .continuous)
-                    .fill(theme.palette.divider.opacity(0.55))
+                    .fill(theme.palette.divider.opacity(0.60))
                     .offset(y: 2)
 
                 RoundedRectangle(cornerRadius: theme.corners.pill, style: .continuous)
-                    .fill(theme.palette.card)
+                    .fill(Color(red: 0.90, green: 0.87, blue: 0.82))
                     .overlay(
-                        PaperTextureView(baseColor: theme.palette.card)
+                        PaperTextureView(baseColor: Color(red: 0.90, green: 0.87, blue: 0.82))
                             .clipShape(
                                 RoundedRectangle(
                                     cornerRadius: theme.corners.pill, style: .continuous)
@@ -260,9 +260,10 @@ struct TrashSegmentedControl<Value: Hashable>: View {
                     )
                     .overlay(
                         shape
-                            .stroke(Color.white.opacity(0.14), lineWidth: 1)
+                            .stroke(Color.white.opacity(0.25), lineWidth: 1)
                             .padding(1)
                     )
+                    .shadow(color: theme.accents.green.opacity(0.35), radius: 6, x: 0, y: 2)
                     .shadow(color: theme.shadows.dark.opacity(0.65), radius: 3, x: 0, y: 2)
             }
         }
@@ -409,13 +410,13 @@ struct TrashBottomTabBar<Value: Hashable>: View {
         case .ecoPaper:
             ZStack {
                 RoundedRectangle(cornerRadius: theme.corners.large - 2, style: .continuous)
-                    .fill(theme.palette.divider.opacity(0.5))
+                    .fill(theme.palette.divider.opacity(0.55))
                     .offset(y: 2)
 
                 RoundedRectangle(cornerRadius: theme.corners.large, style: .continuous)
-                    .fill(theme.palette.card)
+                    .fill(Color(red: 0.90, green: 0.87, blue: 0.82))
                     .overlay(
-                        PaperTextureView(baseColor: theme.palette.card)
+                        PaperTextureView(baseColor: Color(red: 0.90, green: 0.87, blue: 0.82))
                             .clipShape(
                                 RoundedRectangle(
                                     cornerRadius: theme.corners.large, style: .continuous)
@@ -469,9 +470,10 @@ struct TrashBottomTabBar<Value: Hashable>: View {
                     )
                     .overlay(
                         shape
-                            .stroke(Color.white.opacity(0.14), lineWidth: 1)
+                            .stroke(Color.white.opacity(0.25), lineWidth: 1)
                             .padding(1)
                     )
+                    .shadow(color: theme.accents.green.opacity(0.35), radius: 6, x: 0, y: 2)
                     .shadow(color: theme.shadows.dark.opacity(0.55), radius: 2, x: 0, y: 1)
             }
         }

@@ -75,48 +75,18 @@ struct TrashIcon: View {
             .overlay {
                 if theme.visualStyle == .ecoPaper {
                     symbol
-                        .foregroundColor(Color.white.opacity(0.2))
-                        .offset(x: -0.4, y: -0.4)
+                        .foregroundColor(Color.white.opacity(0.26))
+                        .offset(x: -0.8, y: -0.8)
                         .blendMode(.screen)
                 }
             }
             .overlay {
                 if theme.visualStyle == .ecoPaper {
                     symbol
-                        .foregroundColor(Color.black.opacity(0.24))
-                        .offset(x: 0.55, y: 0.55)
+                        .foregroundColor(Color.black.opacity(0.30))
+                        .offset(x: 1.2, y: 1.2)
                         .blendMode(.multiply)
                 }
             }
-            .overlay {
-                if theme.visualStyle == .ecoPaper {
-                    IconInkNoise()
-                        .blendMode(.multiply)
-                        .mask(symbol.foregroundColor(.white))
-                }
-            }
-    }
-}
-
-private struct IconInkNoise: View {
-    var body: some View {
-        Canvas { context, size in
-            let density = Int((size.width * size.height) / 280)
-
-            for _ in 0..<density {
-                let point = CGPoint(
-                    x: Double.random(in: 0...size.width),
-                    y: Double.random(in: 0...size.height)
-                )
-                let dot = CGSize(
-                    width: Double.random(in: 0.35...1.0),
-                    height: Double.random(in: 0.35...1.0)
-                )
-                let rect = CGRect(origin: point, size: dot)
-                context.fill(
-                    Path(ellipseIn: rect),
-                    with: .color(Color.black.opacity(Double.random(in: 0.08...0.24))))
-            }
-        }
     }
 }

@@ -12,20 +12,14 @@ public struct PaperTextureView: View {
             .overlay(
                 ZStack {
                     LinearGradient(
-                        colors: [Color.white.opacity(0.18), Color.black.opacity(0.06)],
+                        colors: [Color.white.opacity(0.28), Color.black.opacity(0.06)],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
                     .blendMode(.softLight)
 
-                    PaperNoiseLayer(opacity: 0.03, densityScale: 1.0)
+                    PaperNoiseLayer(opacity: 0.06, densityScale: 0.7)
                         .blendMode(.multiply)
-
-                    PaperFiberLayer(opacity: 0.045)
-                        .blendMode(.multiply)
-
-                    PaperNoiseLayer(opacity: 0.018, densityScale: 0.65)
-                        .blendMode(.screen)
                 }
             )
             .clipped()
@@ -131,34 +125,6 @@ private struct PaperNoiseLayer: View {
                 let y = Double.random(in: 0...size.height, using: &rng)
                 let w = Double.random(in: 0.45...1.3, using: &rng)
                 context.fill(Path(ellipseIn: CGRect(x: x, y: y, width: w, height: w)), with: .color(Color.black.opacity(opacity)))
-            }
-        }
-    }
-}
-
-private struct PaperFiberLayer: View {
-    var opacity: Double
-
-    var body: some View {
-        Canvas { context, size in
-            var rng = LinearCongruentialGenerator(seed: 31415)
-            let lineCount = Int(size.width * size.height / 2300)
-
-            for _ in 0..<lineCount {
-                let x = Double.random(in: 0...size.width, using: &rng)
-                let y = Double.random(in: 0...size.height, using: &rng)
-                let length = Double.random(in: 6...20, using: &rng)
-                let angle = Double.random(in: -.pi...(.pi), using: &rng)
-
-                let dx = cos(angle) * length
-                let dy = sin(angle) * length
-
-                var path = Path()
-                path.move(to: CGPoint(x: x, y: y))
-                path.addLine(to: CGPoint(x: x + dx, y: y + dy))
-
-                let shade = Color.black.opacity(Double.random(in: opacity * 0.4...opacity, using: &rng))
-                context.stroke(path, with: .color(shade), lineWidth: Double.random(in: 0.22...0.55, using: &rng))
             }
         }
     }
