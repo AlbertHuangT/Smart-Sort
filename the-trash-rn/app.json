@@ -1,0 +1,68 @@
+{
+  "expo": {
+    "name": "The Trash",
+    "slug": "the-trash-rn",
+    "scheme": "thetrash",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#02070f"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "bundleIdentifier": "com.thetrash.app",
+      "supportsTablet": false,
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "infoPlist": {
+        "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to access your camera",
+        "NSLocationWhenInUseUsageDescription": "允许 The Trash 使用你的位置来展示附近活动与社群"
+      }
+    },
+    "android": {
+      "package": "com.thetrash.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#07131f"
+      },
+      "permissions": [
+        "CAMERA",
+        "READ_CONTACTS",
+        "WRITE_CONTACTS",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "android.permission.CAMERA"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "react-native-vision-camera",
+      [
+        "./plugins/withReactNativeContacts",
+        {
+          "contactsPermission": "允许 The Trash 匹配通讯录好友"
+        }
+      ],
+      "expo-font"
+    ],
+    "experiments": {
+      "typedRoutes": false
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "38ac8528-bb20-4014-9eb4-3fbcb2911609"
+      }
+    },
+    "owner": "pp-b1s0n"
+  }
+}

@@ -4,58 +4,147 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
-swift_rpcs=$(rg -o 'rpc\("[a-zA-Z0-9_]+' -n 'The Trash' \
-  | sed -E 's/.*rpc\("//' \
-  | tr 'A-Z' 'a-z' \
-  | sort -u)
+SWIFT_DIR="The Trash"
+SUPABASE_MIGRATIONS_DIR="supabase/migrations"
+APP_MIRROR_MIGRATIONS_DIR="The Trash/migrations"
+STRICT_MODE=0
 
-sql_functions_supabase=$(rg -n "create\s+or\s+replace\s+function" supabase/migrations -i \
-  | sed -E 's/.*create[[:space:]]+or[[:space:]]+replace[[:space:]]+function[[:space:]]+((public\.)?[a-zA-Z0-9_]+).*/\1/I' \
-  | sed 's/^public\.//' \
-  | tr 'A-Z' 'a-z' \
-  | sort -u)
+usage() {
+  cat <<'EOF'
+Usage: scripts/check_backend_contracts.sh [--strict]
 
-sql_functions_app_mirror=$(rg -n "create\s+or\s+replace\s+function" 'The Trash/migrations' -i \
-  | sed -E 's/.*create[[:space:]]+or[[:space:]]+replace[[:space:]]+function[[:space:]]+((public\.)?[a-zA-Z0-9_]+).*/\1/I' \
-  | sed 's/^public\.//' \
-  | tr 'A-Z' 'a-z' \
-  | sort -u)
+Options:
+  --strict  Exit with non-zero status when drift is detected.
+  -h, --help  Show this help.
+EOF
+}
+
+for arg in "$@"; do
+  case "$arg" in
+    --strict)
+      STRICT_MODE=1
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "Unknown argument: $arg" >&2
+      usage >&2
+      exit 2
+      ;;
+  esac
+done
+
+for cmd in rg sed tr sort comm wc mktemp awk; do
+  if ! command -v "$cmd" >/dev/null 2>&1; then
+    echo "Missing required command: $cmd" >&2
+    exit 2
+  fi
+done
+
+cleanup_files=()
+register_tmp() {
+  cleanup_files+=("$1")
+}
+cleanup() {
+  if [[ ${#cleanup_files[@]} -gt 0 ]]; then
+    rm -f "${cleanup_files[@]}"
+  fi
+}
+trap cleanup EXIT
+
+extract_swift_rpcs() {
+  rg -o --no-filename --pcre2 'rpc\(\s*"[A-Za-z0-9_]+"' "$SWIFT_DIR" \
+    | sed -E 's/.*rpc\(\s*"([A-Za-z0-9_]+)"/\1/' \
+    | tr 'A-Z' 'a-z' \
+    | sort -u
+}
+
+extract_sql_functions() {
+  local source_dir="$1"
+  rg -o --no-filename -i --pcre2 'create\s+(?:or\s+replace\s+)?function\s+((?:"[^"]+"|[A-Za-z0-9_]+)(?:\.(?:"[^"]+"|[A-Za-z0-9_]+))?)' "$source_dir" \
+    | tr 'A-Z' 'a-z' \
+    | sed -E 's/.*function[[:space:]]+//' \
+    | sed -E 's/"//g' \
+    | awk -F'.' '{print $NF}' \
+    | sort -u
+}
+
+swift_rpcs_file="$(mktemp)"
+register_tmp "$swift_rpcs_file"
+extract_swift_rpcs > "$swift_rpcs_file"
+
+sql_functions_supabase_file="$(mktemp)"
+register_tmp "$sql_functions_supabase_file"
+extract_sql_functions "$SUPABASE_MIGRATIONS_DIR" > "$sql_functions_supabase_file"
+
+sql_functions_app_mirror_file="$(mktemp)"
+register_tmp "$sql_functions_app_mirror_file"
+extract_sql_functions "$APP_MIRROR_MIGRATIONS_DIR" > "$sql_functions_app_mirror_file"
 
 # Helper to print sorted set difference A - B
 set_diff() {
-  comm -23 <(printf "%s\n" "$1" | sed '/^$/d' | sort -u) <(printf "%s\n" "$2" | sed '/^$/d' | sort -u)
+  local left_file="$1"
+  local right_file="$2"
+  comm -23 "$left_file" "$right_file"
 }
 
 echo "=== Backend Contract Check ==="
 echo
 
-echo "Swift RPC count: $(printf "%s\n" "$swift_rpcs" | sed '/^$/d' | wc -l | tr -d ' ')"
-echo "Supabase migration function count: $(printf "%s\n" "$sql_functions_supabase" | sed '/^$/d' | wc -l | tr -d ' ')"
-echo "App mirror migration function count: $(printf "%s\n" "$sql_functions_app_mirror" | sed '/^$/d' | wc -l | tr -d ' ')"
+echo "Swift RPC count: $(wc -l < "$swift_rpcs_file" | tr -d ' ')"
+echo "Supabase migration function count: $(wc -l < "$sql_functions_supabase_file" | tr -d ' ')"
+echo "App mirror migration function count: $(wc -l < "$sql_functions_app_mirror_file" | tr -d ' ')"
 echo
 
-echo "-- RPCs missing in supabase/migrations --"
-missing_in_supabase=$(set_diff "$swift_rpcs" "$sql_functions_supabase" || true)
-if [[ -n "${missing_in_supabase}" ]]; then
-  printf "%s\n" "$missing_in_supabase"
-else
-  echo "(none)"
+drift_detected=0
+print_diff() {
+  local title="$1"
+  local diff_file="$2"
+  local fail_on_drift="${3:-0}"
+  echo "-- $title --"
+  if [[ -s "$diff_file" ]]; then
+    cat "$diff_file"
+    if [[ "$fail_on_drift" -eq 1 ]]; then
+      drift_detected=1
+    fi
+  else
+    echo "(none)"
+  fi
+  echo
+}
+
+missing_in_supabase_file="$(mktemp)"
+register_tmp "$missing_in_supabase_file"
+set_diff "$swift_rpcs_file" "$sql_functions_supabase_file" > "$missing_in_supabase_file" || true
+print_diff "RPCs missing in supabase/migrations" "$missing_in_supabase_file" 1
+
+missing_in_app_mirror_file="$(mktemp)"
+register_tmp "$missing_in_app_mirror_file"
+set_diff "$swift_rpcs_file" "$sql_functions_app_mirror_file" > "$missing_in_app_mirror_file" || true
+print_diff "RPCs missing in app mirror migrations (The Trash/migrations)" "$missing_in_app_mirror_file" 1
+
+unused_mirror_file="$(mktemp)"
+register_tmp "$unused_mirror_file"
+set_diff "$sql_functions_app_mirror_file" "$swift_rpcs_file" > "$unused_mirror_file" || true
+print_diff "Mirror-only functions not used by current Swift RPC calls" "$unused_mirror_file" 0
+
+missing_in_mirror_vs_supabase_file="$(mktemp)"
+register_tmp "$missing_in_mirror_vs_supabase_file"
+set_diff "$sql_functions_supabase_file" "$sql_functions_app_mirror_file" > "$missing_in_mirror_vs_supabase_file" || true
+print_diff "Functions present in supabase/migrations but missing in app mirror" "$missing_in_mirror_vs_supabase_file" 1
+
+missing_in_supabase_vs_mirror_file="$(mktemp)"
+register_tmp "$missing_in_supabase_vs_mirror_file"
+set_diff "$sql_functions_app_mirror_file" "$sql_functions_supabase_file" > "$missing_in_supabase_vs_mirror_file" || true
+print_diff "Functions present in app mirror but missing in supabase/migrations" "$missing_in_supabase_vs_mirror_file" 0
+
+if [[ "$STRICT_MODE" -eq 1 && "$drift_detected" -eq 1 ]]; then
+  echo "Strict mode enabled: drift detected."
+  exit 1
 fi
 
-echo
-echo "-- RPCs missing in app mirror migrations (The Trash/migrations) --"
-missing_in_app_mirror=$(set_diff "$swift_rpcs" "$sql_functions_app_mirror" || true)
-if [[ -n "${missing_in_app_mirror}" ]]; then
-  printf "%s\n" "$missing_in_app_mirror"
-else
-  echo "(none)"
-fi
-
-echo
-echo "-- Mirror-only functions not used by current Swift RPC calls --"
-unused_mirror=$(set_diff "$sql_functions_app_mirror" "$swift_rpcs" || true)
-if [[ -n "${unused_mirror}" ]]; then
-  printf "%s\n" "$unused_mirror"
-else
-  echo "(none)"
+if [[ "$STRICT_MODE" -eq 1 ]]; then
+  echo "Strict mode enabled: no drift detected."
 fi

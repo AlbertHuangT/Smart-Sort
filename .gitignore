@@ -41,3 +41,8 @@ CLAUDE.md
 AGENTS.md
 supabase/.temp/
 GEMINI.md
+
+# --- Local tooling/state (do not commit) ---
+.claude/
+.pnpm-store/
+plan.md
