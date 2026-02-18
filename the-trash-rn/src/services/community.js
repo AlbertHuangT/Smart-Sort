@@ -1,14 +1,12 @@
+import { hasSupabaseConfig } from 'src/services/config';
+import {
+  AppError,
+  ERROR_CODES,
+  fromSupabaseError,
+  messageFromError
+} from 'src/utils/errors';
+
 import { supabase } from './supabase';
-
-const hasSupabaseConfig = Boolean(
-  process.env.EXPO_PUBLIC_SUPABASE_URL && process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
-);
-
-const getErrorMessage = (error) => {
-  if (error instanceof Error) return error.message;
-  if (typeof error === 'string') return error;
-  return 'Unknown error';
-};
 
 const toNumber = (value) => {
   const num = Number(value);
@@ -31,18 +29,21 @@ const slugify = (value) =>
 const rpc = async (fn, args = {}) => {
   const { data, error } = await supabase.rpc(fn, args);
   if (error) {
-    throw new Error(error.message);
+    throw fromSupabaseError(error, {
+      message: '请求失败，请稍后再试'
+    });
   }
   return data;
 };
 
 const resolveCity = (city) => {
-  if (!city) return { cityName: null, latitude: null, longitude: null, state: null };
+  if (!city)
+    return { cityName: null, latitude: null, longitude: null, state: null };
   if (typeof city === 'string') {
     return { cityName: city, latitude: null, longitude: null, state: null };
   }
   return {
-    cityName: city.id ?? city.city ?? city.name ?? null,
+    cityName: city.city ?? city.name ?? city.id ?? null,
     latitude: toNumber(city.latitude),
     longitude: toNumber(city.longitude),
     state: city.state ?? null
@@ -91,7 +92,11 @@ const getCityCoordinates = async (cityName) => {
     .eq('is_active', true)
     .limit(1)
     .maybeSingle();
-  if (error) throw new Error(error.message);
+  if (error) {
+    throw fromSupabaseError(error, {
+      message: '读取城市坐标失败'
+    });
+  }
   return {
     latitude: toNumber(data?.latitude),
     longitude: toNumber(data?.longitude)
@@ -100,7 +105,7 @@ const getCityCoordinates = async (cityName) => {
 
 export const communityService = {
   async fetchCities() {
-    if (!hasSupabaseConfig) return [];
+    if (!hasSupabaseConfig()) return [];
     const { data, error } = await supabase
       .from('communities')
       .select('city,state,latitude,longitude')
@@ -108,7 +113,9 @@ export const communityService = {
       .not('city', 'is', null)
       .order('city', { ascending: true });
     if (error) {
-      throw new Error(error.message);
+      throw fromSupabaseError(error, {
+        message: '加载城市失败'
+      });
     }
 
     const cityMap = new Map();
@@ -129,15 +136,19 @@ export const communityService = {
         });
         return;
       }
-      if (existing.latitude == null && latitude != null) existing.latitude = latitude;
-      if (existing.longitude == null && longitude != null) existing.longitude = longitude;
+      if (existing.latitude == null && latitude != null)
+        existing.latitude = latitude;
+      if (existing.longitude == null && longitude != null)
+        existing.longitude = longitude;
     });
 
-    return Array.from(cityMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+    return Array.from(cityMap.values()).sort((a, b) =>
+      a.name.localeCompare(b.name)
+    );
   },
 
   async fetchEvents(city) {
-    if (!hasSupabaseConfig) return [];
+    if (!hasSupabaseConfig()) return [];
     const resolved = resolveCity(city);
     if (!resolved.cityName) return [];
 
@@ -162,7 +173,7 @@ export const communityService = {
   },
 
   async fetchGroups(city) {
-    if (!hasSupabaseConfig) return [];
+    if (!hasSupabaseConfig()) return [];
     const resolved = resolveCity(city);
     if (resolved.cityName) {
       const rows = await rpc('get_communities_by_city', {
@@ -175,16 +186,24 @@ export const communityService = {
       .select('id,name,city,state,description,member_count,latitude,longitude')
       .eq('is_active', true)
       .order('member_count', { ascending: false });
-    if (error) throw new Error(error.message);
+    if (error) {
+      throw fromSupabaseError(error, {
+        message: '加载社群失败'
+      });
+    }
     return (data ?? []).map(formatGroup);
   },
 
   async createEvent(payload) {
-    if (!hasSupabaseConfig) {
-      throw new Error('请先连接 Supabase');
+    if (!hasSupabaseConfig()) {
+      throw new AppError('请先连接 Supabase', { code: ERROR_CODES.BACKEND });
     }
-    const eventDate = payload.startTime ? new Date(payload.startTime) : new Date(Date.now() + 86400000);
-    const safeDate = Number.isNaN(eventDate.getTime()) ? new Date(Date.now() + 86400000) : eventDate;
+    const eventDate = payload.startTime
+      ? new Date(payload.startTime)
+      : new Date(Date.now() + 86400000);
+    const safeDate = Number.isNaN(eventDate.getTime())
+      ? new Date(Date.now() + 86400000)
+      : eventDate;
     const data = await rpc('create_event', {
       p_title: payload.title,
       p_description: payload.description,
@@ -198,10 +217,14 @@ export const communityService = {
       p_icon_name: payload.iconName ?? 'calendar'
     });
     if (!data?.success) {
-      throw new Error(data?.message ?? '创建活动失败');
+      throw new AppError(data?.message ?? '创建活动失败', {
+        code: ERROR_CODES.BACKEND
+      });
     }
     if (!data?.event_id) {
-      throw new Error('活动创建成功但未返回活动 ID');
+      throw new AppError('活动创建成功但未返回活动 ID', {
+        code: ERROR_CODES.BACKEND
+      });
     }
     const event = await this.fetchEvent(data.event_id);
     if (!event) return null;
@@ -212,10 +235,10 @@ export const communityService = {
   },
 
   async createCommunity(payload) {
-    if (!hasSupabaseConfig) {
-      throw new Error('请先连接 Supabase');
+    if (!hasSupabaseConfig()) {
+      throw new AppError('请先连接 Supabase', { code: ERROR_CODES.BACKEND });
     }
-    const cityName = payload.cityId ?? payload.city ?? payload.cityName;
+    const cityName = payload.city ?? payload.cityName ?? payload.cityId;
     const baseId = slugify(`${payload.name}-${cityName}`);
     const communityId = `${baseId}-${Date.now().toString().slice(-6)}`;
     const data = await rpc('create_community', {
@@ -228,65 +251,84 @@ export const communityService = {
       p_longitude: toNumber(payload.longitude)
     });
     if (!data?.success) {
-      throw new Error(data?.message ?? '创建社群失败');
+      throw new AppError(data?.message ?? '创建社群失败', {
+        code: ERROR_CODES.BACKEND
+      });
     }
     return this.fetchCommunity(communityId);
   },
 
   async fetchCommunity(id) {
-    if (!id || !hasSupabaseConfig) return null;
+    if (!id || !hasSupabaseConfig()) return null;
     const { data, error } = await supabase
       .from('communities')
       .select('id,name,city,state,description,member_count,latitude,longitude')
       .eq('id', id)
       .maybeSingle();
-    if (error) throw new Error(error.message);
+    if (error) {
+      throw fromSupabaseError(error, {
+        message: '加载社群详情失败'
+      });
+    }
     return data ? formatGroup(data) : null;
   },
 
   async fetchEvent(id) {
-    if (!id || !hasSupabaseConfig) return null;
+    if (!id || !hasSupabaseConfig()) return null;
     const { data, error } = await supabase
       .from('community_events')
-      .select('id,title,description,category,event_date,location,latitude,longitude,icon_name,max_participants,participant_count,community_id')
+      .select(
+        'id,title,description,category,event_date,location,latitude,longitude,icon_name,max_participants,participant_count,community_id'
+      )
       .eq('id', id)
       .maybeSingle();
-    if (error) throw new Error(error.message);
+    if (error) {
+      throw fromSupabaseError(error, {
+        message: '加载活动详情失败'
+      });
+    }
     return data ? formatEvent(data) : null;
   },
 
   async joinCommunity(id) {
-    if (!id || !hasSupabaseConfig) return null;
+    if (!id || !hasSupabaseConfig()) return null;
     const result = await rpc('apply_to_join_community', {
       p_community_id: id,
       p_message: null
     });
     if (!result?.success) {
-      throw new Error(result?.message ?? '加入社群失败');
+      throw new AppError(result?.message ?? '加入社群失败', {
+        code: ERROR_CODES.BACKEND
+      });
     }
     return true;
   },
 
   async rsvpEvent(id) {
-    if (!id || !hasSupabaseConfig) return null;
+    if (!id || !hasSupabaseConfig()) return null;
     const result = await rpc('register_for_event', {
       p_event_id: id
     });
     if (!result?.success) {
-      throw new Error(result?.message ?? '报名失败');
+      throw new AppError(result?.message ?? '报名失败', {
+        code: ERROR_CODES.BACKEND
+      });
     }
     return this.fetchEvent(id);
   },
 
   async adminDashboard(communityId) {
-    if (!communityId || !hasSupabaseConfig) {
+    if (!communityId || !hasSupabaseConfig()) {
       return { requests: [], members: [], logs: [] };
     }
     try {
       const [requests, members, logs] = await Promise.all([
         rpc('get_pending_applications', { p_community_id: communityId }),
         rpc('get_community_members_admin', { p_community_id: communityId }),
-        rpc('get_admin_action_logs', { p_community_id: communityId, p_limit: 50 })
+        rpc('get_admin_action_logs', {
+          p_community_id: communityId,
+          p_limit: 50
+        })
       ]);
       return {
         requests: requests ?? [],
@@ -294,7 +336,10 @@ export const communityService = {
         logs: logs ?? []
       };
     } catch (error) {
-      console.warn('[communityService] adminDashboard failed', getErrorMessage(error));
+      console.warn(
+        '[communityService] adminDashboard failed',
+        messageFromError(error, '加载管理数据失败')
+      );
       return { requests: [], members: [], logs: [] };
     }
   }

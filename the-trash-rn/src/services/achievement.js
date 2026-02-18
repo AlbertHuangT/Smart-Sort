@@ -1,8 +1,6 @@
-import { supabase } from './supabase';
+import { hasSupabaseConfig } from 'src/services/config';
 
-const hasSupabaseConfig = Boolean(
-  process.env.EXPO_PUBLIC_SUPABASE_URL && process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
-);
+import { supabase } from './supabase';
 
 const mapBadge = (achievement, ownedMap) => {
   const owned = ownedMap.get(achievement.id);
@@ -38,7 +36,7 @@ const triggerKeysFromPayload = ({ trigger, stats }) => {
 
 export const achievementService = {
   async fetchBadges() {
-    if (!hasSupabaseConfig) {
+    if (!hasSupabaseConfig()) {
       return [];
     }
     const [allAchievementsResult, myAchievementsResult] = await Promise.all([
@@ -63,7 +61,9 @@ export const achievementService = {
       ])
     );
 
-    return (allAchievementsResult.data ?? []).map((item) => mapBadge(item, ownedMap));
+    return (allAchievementsResult.data ?? []).map((item) =>
+      mapBadge(item, ownedMap)
+    );
   },
 
   async fetchRewards() {
@@ -75,7 +75,7 @@ export const achievementService = {
   },
 
   async checkAndGrant(payload) {
-    if (!hasSupabaseConfig) {
+    if (!hasSupabaseConfig()) {
       return { unlocked: [], points: 0 };
     }
 
@@ -86,7 +86,9 @@ export const achievementService = {
 
     const unlocked = [];
     for (const key of triggerKeys) {
-      const result = await rpc('check_and_grant_achievement', { p_trigger_key: key });
+      const result = await rpc('check_and_grant_achievement', {
+        p_trigger_key: key
+      });
       if (result?.granted && result?.achievement_id) {
         unlocked.push({
           id: result.achievement_id,

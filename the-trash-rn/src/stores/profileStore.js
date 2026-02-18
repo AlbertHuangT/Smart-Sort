@@ -1,9 +1,7 @@
 import { create } from 'zustand';
-import { supabase } from 'src/services/supabase';
 
-const hasSupabaseConfig = Boolean(
-  process.env.EXPO_PUBLIC_SUPABASE_URL && process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
-);
+import { hasSupabaseConfig } from 'src/services/config';
+import { supabase } from 'src/services/supabase';
 
 const emptyStats = {
   scans: 0,
@@ -20,7 +18,7 @@ const getCurrentUser = async () => {
 };
 
 const fetchStats = async () => {
-  if (!hasSupabaseConfig) {
+  if (!hasSupabaseConfig()) {
     return { ...emptyStats };
   }
   const user = await getCurrentUser();
@@ -28,15 +26,17 @@ const fetchStats = async () => {
     return { ...emptyStats };
   }
 
-  const [{ data: profileRow, error: profileError }, { data: challengeRows, error: challengeError }] =
-    await Promise.all([
-      supabase
-        .from('profiles')
-        .select('credits,total_scans')
-        .eq('id', user.id)
-        .maybeSingle(),
-      supabase.rpc('get_my_challenges', { p_status: 'completed' })
-    ]);
+  const [
+    { data: profileRow, error: profileError },
+    { data: challengeRows, error: challengeError }
+  ] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('credits,total_scans')
+      .eq('id', user.id)
+      .maybeSingle(),
+    supabase.rpc('get_my_challenges', { p_status: 'completed' })
+  ]);
 
   if (profileError) {
     throw new Error(profileError.message);
@@ -46,7 +46,9 @@ const fetchStats = async () => {
   }
 
   const completedChallenges = Array.isArray(challengeRows) ? challengeRows : [];
-  const arenaWins = completedChallenges.filter((item) => item.winner_id === user.id).length;
+  const arenaWins = completedChallenges.filter(
+    (item) => item.winner_id === user.id
+  ).length;
 
   return {
     scans: profileRow?.total_scans ?? 0,
