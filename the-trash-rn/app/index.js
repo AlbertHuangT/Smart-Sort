@@ -48,6 +48,7 @@ export default function Index() {
   const headerSinkOffset = Math.max(0, Math.min(64, (height - 780) * 0.24));
 
   const status = useAuthStore((state) => state.status);
+  const profile = useAuthStore((state) => state.profile);
   const bootstrap = useAuthStore((state) => state.bootstrap);
   const authenticating = useAuthStore((state) => state.authenticating);
   const globalError = useAuthStore((state) => state.error);
@@ -126,7 +127,10 @@ export default function Index() {
     return <FullScreenLoader message="Restoring your session" />;
   }
 
-  if (status === 'authenticated') {
+  if (
+    status === 'authenticated' ||
+    (status === 'guest' && profile?.id === 'guest')
+  ) {
     return <Redirect href="/(tabs)/verify" />;
   }
 

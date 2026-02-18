@@ -1,19 +1,16 @@
 import Contacts from 'react-native-contacts';
 
+import { hasSupabaseConfig } from 'src/services/config';
+import { AppError, ERROR_CODES, fromSupabaseError } from 'src/utils/errors';
 import { normalizePhoneNumber } from 'src/utils/phone';
 
 import { supabase } from './supabase';
 
-const hasSupabaseConfig = Boolean(
-  process.env.EXPO_PUBLIC_SUPABASE_URL &&
-  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
-);
+const isSupabaseEnabled = () =>
+  process.env.NODE_ENV === 'test' || hasSupabaseConfig();
 
-const getErrorMessage = (error) => {
-  if (error instanceof Error) return error.message;
-  if (typeof error === 'string') return error;
-  return 'Unknown error';
-};
+const CONTACT_EMAIL_LIMIT = 300;
+const CONTACT_PHONE_LIMIT = 300;
 
 const mapCommunityEntry = (item, currentUserId) => {
   const entryId = item.id ?? item.user_id ?? null;
@@ -46,23 +43,32 @@ const mapMyCommunity = (item) => ({
 const getCurrentUserId = async () => {
   const { data, error } = await supabase.auth.getUser();
   if (error) {
-    throw new Error(error.message);
+    throw fromSupabaseError(error, {
+      code: ERROR_CODES.AUTH,
+      message: '读取用户信息失败'
+    });
   }
   return data.user?.id ?? null;
 };
 
-const requestContactsPermission = async () => {
+const requestContactsPermission = async ({
+  allowPermissionPrompt = true
+} = {}) => {
   const status = await Contacts.checkPermission();
   if (status === 'authorized') return true;
+  if (!allowPermissionPrompt) return false;
   const nextStatus = await Contacts.requestPermission();
   return nextStatus === 'authorized';
 };
 
-const readContactsPayload = async () => {
-  const granted = await requestContactsPermission();
+const readContactsPayload = async ({ allowPermissionPrompt = true } = {}) => {
+  const granted = await requestContactsPermission({ allowPermissionPrompt });
   if (!granted) {
-    throw new Error('通讯录权限被拒绝');
+    throw new AppError('需要通讯录权限后才能同步好友榜', {
+      code: ERROR_CODES.CONTACTS_PERMISSION_REQUIRED
+    });
   }
+
   const contacts = await Contacts.getAll();
   const emails = new Set();
   const phones = new Set();
@@ -80,26 +86,44 @@ const readContactsPayload = async () => {
     });
   });
 
+  const minimizedEmails = Array.from(emails).slice(0, CONTACT_EMAIL_LIMIT);
+  const minimizedPhones = Array.from(phones).slice(0, CONTACT_PHONE_LIMIT);
+
+  if (!minimizedEmails.length && !minimizedPhones.length) {
+    throw new AppError('通讯录里没有可匹配的邮箱或手机号', {
+      code: ERROR_CODES.CONTACTS_EMPTY
+    });
+  }
+
   return {
-    emails: Array.from(emails),
-    phones: Array.from(phones)
+    emails: minimizedEmails,
+    phones: minimizedPhones,
+    stats: {
+      emailCount: minimizedEmails.length,
+      phoneCount: minimizedPhones.length,
+      contactCount: contacts.length
+    }
   };
 };
 
-const fetchFriendsLeaderboard = async () => {
-  const payload = await readContactsPayload();
-  if (!payload.emails.length && !payload.phones.length) {
-    return [];
-  }
+const fetchFriendsLeaderboard = async ({
+  allowPermissionPrompt = true
+} = {}) => {
+  const payload = await readContactsPayload({ allowPermissionPrompt });
   const { data, error } = await supabase.rpc('find_friends_leaderboard', {
     p_emails: payload.emails,
     p_phones: payload.phones
   });
   if (error) {
-    throw new Error(error.message);
+    throw fromSupabaseError(error, {
+      message: '同步好友榜失败'
+    });
   }
   const currentUserId = await getCurrentUserId();
-  return (data ?? []).map((item) => mapFriendEntry(item, currentUserId));
+  return {
+    entries: (data ?? []).map((item) => mapFriendEntry(item, currentUserId)),
+    syncStats: payload.stats
+  };
 };
 
 const fetchCommunityLeaderboard = async (communityId) => {
@@ -108,7 +132,9 @@ const fetchCommunityLeaderboard = async (communityId) => {
     p_limit: 100
   });
   if (error) {
-    throw new Error(error.message);
+    throw fromSupabaseError(error, {
+      message: '加载社群排行榜失败'
+    });
   }
   const currentUserId = await getCurrentUserId();
   return (data ?? []).map((item) => mapCommunityEntry(item, currentUserId));
@@ -116,31 +142,31 @@ const fetchCommunityLeaderboard = async (communityId) => {
 
 export const leaderboardService = {
   async fetchMyCommunities() {
-    if (!hasSupabaseConfig) {
+    if (!isSupabaseEnabled()) {
       return [];
     }
     const { data, error } = await supabase.rpc('get_my_communities');
     if (error) {
-      throw new Error(error.message);
+      throw fromSupabaseError(error, {
+        message: '加载我的社群失败'
+      });
     }
     return (data ?? []).map(mapMyCommunity);
   },
 
   async fetch(filter = 'community', options = {}) {
-    if (!hasSupabaseConfig) {
+    if (!isSupabaseEnabled()) {
       return [];
     }
 
     if (filter === 'friends') {
-      try {
-        return await fetchFriendsLeaderboard();
-      } catch (error) {
-        console.warn(
-          '[leaderboardService] fetch friends failed',
-          getErrorMessage(error)
-        );
+      if (!options.explicitSync) {
         return [];
       }
+      const result = await fetchFriendsLeaderboard({
+        allowPermissionPrompt: options.allowPermissionPrompt !== false
+      });
+      return result.entries;
     }
 
     const communityId = options.communityId;
@@ -148,21 +174,20 @@ export const leaderboardService = {
       return [];
     }
 
-    try {
-      return await fetchCommunityLeaderboard(communityId);
-    } catch (error) {
-      console.warn(
-        '[leaderboardService] fetch community failed',
-        getErrorMessage(error)
-      );
-      return [];
-    }
+    return fetchCommunityLeaderboard(communityId);
   },
 
-  async syncContacts() {
-    if (!hasSupabaseConfig) {
-      return [];
+  async syncContacts(options = {}) {
+    if (!isSupabaseEnabled()) {
+      return { entries: [], syncStats: null };
     }
-    return fetchFriendsLeaderboard();
+    return fetchFriendsLeaderboard({
+      allowPermissionPrompt: options.allowPermissionPrompt !== false
+    });
   }
+};
+
+export const leaderboardPrivacy = {
+  maxEmailsPerSync: CONTACT_EMAIL_LIMIT,
+  maxPhonesPerSync: CONTACT_PHONE_LIMIT
 };

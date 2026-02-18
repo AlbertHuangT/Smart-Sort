@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+
 import { achievementService } from 'src/services/achievement';
 
 const initialStats = {
@@ -56,11 +57,16 @@ export const useAchievementStore = create((set, get) => ({
       console.log('[achievementStore] badges load failed', badgesResult.reason);
     }
     if (rewardsResult.status === 'rejected') {
-      console.log('[achievementStore] rewards load failed', rewardsResult.reason);
+      console.log(
+        '[achievementStore] rewards load failed',
+        rewardsResult.reason
+      );
     }
 
-    const badges = badgesResult.status === 'fulfilled' ? badgesResult.value : [];
-    const rewards = rewardsResult.status === 'fulfilled' ? rewardsResult.value : [];
+    const badges =
+      badgesResult.status === 'fulfilled' ? badgesResult.value : [];
+    const rewards =
+      rewardsResult.status === 'fulfilled' ? rewardsResult.value : [];
     const equipped = badges.find((badge) => badge.equipped)?.id ?? null;
     const points = badges.filter((badge) => badge.unlocked).length * 25;
     set({ badges, rewards, equippedBadgeId: equipped, points, loading: false });
@@ -106,7 +112,9 @@ export const useAchievementStore = create((set, get) => ({
       const timestamp = new Date().toISOString();
       set((state) => {
         const previouslyUnlocked = new Set(
-          state.badges.filter((badge) => badge.unlocked).map((badge) => badge.id)
+          state.badges
+            .filter((badge) => badge.unlocked)
+            .map((badge) => badge.id)
         );
         const mergedBadges = state.badges.map((badge) =>
           unlocked?.some((item) => item.id === badge.id)
@@ -114,7 +122,10 @@ export const useAchievementStore = create((set, get) => ({
             : badge
         );
         const appendedBadges = (unlocked ?? [])
-          .filter((badge) => !state.badges.some((existing) => existing.id === badge.id))
+          .filter(
+            (badge) =>
+              !state.badges.some((existing) => existing.id === badge.id)
+          )
           .map((badge) => ({ ...badge, unlocked: true }));
         const badges = [...mergedBadges, ...appendedBadges];
         const newToasts = (unlocked ?? [])

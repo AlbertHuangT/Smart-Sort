@@ -1,5 +1,6 @@
 import { router } from 'expo-router';
 import { Pressable, ScrollView, Text } from 'react-native';
+
 import ModalSheet from 'src/components/layout/ModalSheet';
 import { useAuthStore } from 'src/stores/authStore';
 
@@ -28,8 +29,13 @@ export default function AccountSettingsModal() {
             <Text className="text-white font-semibold">{item.title}</Text>
           </Pressable>
         ))}
-        <Pressable onPress={signOut} className="rounded-3xl bg-red-500/20 border border-red-500/40 p-4">
-          <Text className="text-red-200 font-semibold text-center">退出登录</Text>
+        <Pressable
+          onPress={signOut}
+          className="rounded-3xl bg-red-500/20 border border-red-500/40 p-4"
+        >
+          <Text className="text-red-200 font-semibold text-center">
+            退出登录
+          </Text>
         </Pressable>
       </ScrollView>
     </ModalSheet>

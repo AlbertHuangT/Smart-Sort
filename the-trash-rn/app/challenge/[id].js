@@ -1,5 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect } from 'react';
+
 import FullScreenLoader from 'src/components/shared/FullScreenLoader';
 import { useArenaStore } from 'src/stores/arenaStore';
 

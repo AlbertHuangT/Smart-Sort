@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { FlatList, Pressable, Text, View } from 'react-native';
+
 import ModalSheet from 'src/components/layout/ModalSheet';
 import { useArenaStore } from 'src/stores/arenaStore';
 
@@ -21,7 +22,9 @@ export default function ChallengeInviteModal() {
           <View className="flex-row items-center justify-between py-3">
             <View>
               <Text className="text-white font-semibold">{item.name}</Text>
-              <Text className="text-white/60 text-xs">最近分数 {item.score ?? 0}</Text>
+              <Text className="text-white/60 text-xs">
+                最近分数 {item.score ?? 0}
+              </Text>
             </View>
             <Pressable
               onPress={() => sendInvite(item.id)}

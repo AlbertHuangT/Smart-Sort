@@ -460,7 +460,10 @@ export default function CommunityScreen() {
             }
             renderItem={({ item }) => {
               const city = cities.find(
-                (cityItem) => cityItem.id === item.cityId
+                (cityItem) =>
+                  cityItem.id === item.cityId ||
+                  cityItem.city === item.cityId ||
+                  cityItem.name === item.cityId
               );
               return (
                 <Pressable

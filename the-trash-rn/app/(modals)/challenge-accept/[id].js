@@ -1,6 +1,7 @@
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
+
 import ModalSheet from 'src/components/layout/ModalSheet';
 import { useArenaStore } from 'src/stores/arenaStore';
 
@@ -8,7 +9,9 @@ export default function ChallengeAcceptModal() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const challengeId = Array.isArray(id) ? id[0] : id;
-  const challenge = useArenaStore((state) => state.pendingChallenges[challengeId]);
+  const challenge = useArenaStore(
+    (state) => state.pendingChallenges[challengeId]
+  );
   const refreshChallenges = useArenaStore((state) => state.refreshChallenges);
   const acceptChallenge = useArenaStore((state) => state.acceptChallenge);
   const [accepting, setAccepting] = useState(false);
@@ -34,7 +37,8 @@ export default function ChallengeAcceptModal() {
     <ModalSheet title="接受挑战">
       <View className="gap-4">
         <Text className="text-white/70">
-          {challenge?.opponentName ?? challenge?.opponent ?? '有好友'} 向你发起 {challenge?.mode ?? 'duel'} 对战。
+          {challenge?.opponentName ?? challenge?.opponent ?? '有好友'} 向你发起{' '}
+          {challenge?.mode ?? 'duel'} 对战。
         </Text>
         <Pressable
           className="bg-brand-neon rounded-3xl py-3 items-center"

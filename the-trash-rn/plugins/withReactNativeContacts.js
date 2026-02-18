@@ -22,7 +22,10 @@ module.exports = function withReactNativeContacts(config, options = {}) {
 
   config = withAndroidManifest(config, (config) => {
     ensureUsesPermission(config.modResults, 'android.permission.READ_CONTACTS');
-    ensureUsesPermission(config.modResults, 'android.permission.WRITE_CONTACTS');
+    ensureUsesPermission(
+      config.modResults,
+      'android.permission.WRITE_CONTACTS'
+    );
     return config;
   });
 

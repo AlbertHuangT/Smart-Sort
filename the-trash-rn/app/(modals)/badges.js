@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { FlatList, Pressable, Text, View } from 'react-native';
+
 import ModalSheet from 'src/components/layout/ModalSheet';
 import { useAchievementStore } from 'src/stores/achievementStore';
 
@@ -31,7 +32,9 @@ export default function BadgesModal() {
             style={{ opacity: item.unlocked ? 1 : 0.4 }}
           >
             <View className="w-12 h-12 rounded-full bg-white/10 items-center justify-center">
-              <Text className="text-brand-neon font-display text-lg">{item.icon ?? '✨'}</Text>
+              <Text className="text-brand-neon font-display text-lg">
+                {item.icon ?? '✨'}
+              </Text>
             </View>
             <View className="flex-1">
               <Text className="text-white font-semibold">{item.title}</Text>

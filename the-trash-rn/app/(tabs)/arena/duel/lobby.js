@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useEffect } from 'react';
 import { FlatList, Pressable, Text, View } from 'react-native';
+
 import ScreenShell from 'src/components/layout/ScreenShell';
 import { TrashButton } from 'src/components/themed';
 import { useArenaStore } from 'src/stores/arenaStore';

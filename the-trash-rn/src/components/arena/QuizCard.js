@@ -14,7 +14,9 @@ export default function QuizCard({ question, onAnswer, mode }) {
       <Text className="text-brand-neon text-xs mb-2 uppercase tracking-[0.4em]">
         {mode}
       </Text>
-      <Text className="text-white font-semibold text-xl mb-4">{question.prompt}</Text>
+      <Text className="text-white font-semibold text-xl mb-4">
+        {question.prompt}
+      </Text>
       {question.options?.map((option) => (
         <Pressable
           key={option}
