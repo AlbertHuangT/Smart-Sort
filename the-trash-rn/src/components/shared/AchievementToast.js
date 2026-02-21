@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Animated, Text, View } from 'react-native';
+
 import { useAchievementStore } from 'src/stores/achievementStore';
 import { useTheme } from 'src/theme/ThemeProvider';
 
@@ -48,7 +49,16 @@ export default function AchievementToast() {
   }
 
   return (
-    <View pointerEvents="none" style={{ position: 'absolute', top: 24, left: 0, right: 0, alignItems: 'center' }}>
+    <View
+      pointerEvents="none"
+      style={{
+        position: 'absolute',
+        top: 24,
+        left: 0,
+        right: 0,
+        alignItems: 'center'
+      }}
+    >
       <Animated.View
         style={{
           opacity,
@@ -65,10 +75,22 @@ export default function AchievementToast() {
           shadowRadius: 12
         }}
       >
-        <Text style={{ fontSize: 16, color: theme.palette.textPrimary, fontWeight: '700' }}>
+        <Text
+          style={{
+            fontSize: 16,
+            color: theme.palette.textPrimary,
+            fontWeight: '700'
+          }}
+        >
           {toast.icon ?? '✨'} {toast.title}
         </Text>
-        <Text style={{ fontSize: 13, color: theme.palette.textSecondary, marginTop: 4 }}>
+        <Text
+          style={{
+            fontSize: 13,
+            color: theme.palette.textSecondary,
+            marginTop: 4
+          }}
+        >
           {toast.description}
         </Text>
       </Animated.View>

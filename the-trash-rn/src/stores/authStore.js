@@ -1,100 +1,205 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { authService } from 'src/services/auth';
-import { createPersistStorage } from 'src/utils/storage';
 
-export const useAuthStore = create(
-  persist(
-    (set, get) => ({
-      status: 'checking',
-      session: null,
-      profile: null,
-      authenticating: false,
-      error: null,
-      bootstrap: async () => {
-        try {
-          const { session, profile } = await authService.restoreSession();
-          if (session) {
-            set({ status: 'authenticated', session, profile, error: null });
-          } else {
-            set({ status: 'guest', session: null, profile: null, error: null });
-          }
-        } catch (error) {
-          console.warn('[authStore] bootstrap failed', error);
-          set({ status: 'guest', session: null, profile: null, error: error.message });
-        }
-      },
-      signInWithEmail: async ({ email, password }) => {
-        set({ authenticating: true, error: null });
-        try {
-          const { session, profile } = await authService.signInWithEmail({ email, password });
-          set({ status: 'authenticated', session, profile, authenticating: false, error: null });
-        } catch (error) {
-          set({ authenticating: false, error: error.message });
-          throw error;
-        }
-      },
-      signUpWithEmail: async ({ email, password }) => {
-        set({ authenticating: true, error: null });
-        try {
-          const { session, profile, requiresEmailConfirmation } = await authService.signUpWithEmail({
-            email,
-            password
+import { authService } from 'src/services/auth';
+import { supabase } from 'src/services/supabase';
+import { messageFromError } from 'src/utils/errors';
+
+let authSubscription = null;
+
+const toGuestState = (currentProfile = null) => ({
+  status: 'guest',
+  session: null,
+  profile: currentProfile,
+  error: null
+});
+
+export const useAuthStore = create((set, get) => ({
+  status: 'checking',
+  session: null,
+  profile: null,
+  authenticating: false,
+  error: null,
+
+  bootstrap: async () => {
+    if (!authSubscription) {
+      const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+        const current = get();
+        if (session?.user) {
+          set({
+            status: 'authenticated',
+            session,
+            profile: {
+              id: session.user.id,
+              displayName:
+                session.user.user_metadata?.full_name ??
+                session.user.email ??
+                session.user.phone ??
+                'Trash Ranger',
+              email: session.user.email ?? null,
+              phone: session.user.phone ?? null,
+              level: current.profile?.level ?? 1
+            },
+            error: null
           });
-          if (session) {
-            set({ status: 'authenticated', session, profile, authenticating: false, error: null });
-          } else {
-            set({ status: 'guest', session: null, profile: null, authenticating: false, error: null });
-          }
-          return { requiresEmailConfirmation };
-        } catch (error) {
-          set({ authenticating: false, error: error.message });
-          throw error;
+          return;
         }
-      },
-      signInWithPhone: async ({ phone, code }) => {
-        set({ authenticating: true, error: null });
-        try {
-          const { session, profile } = await authService.signInWithPhone({ phone, code });
-          set({ status: 'authenticated', session, profile, authenticating: false, error: null });
-        } catch (error) {
-          set({ authenticating: false, error: error.message });
-          throw error;
-        }
-      },
-      requestPhoneCode: async (phone) => {
-        try {
-          await authService.requestPhoneCode(phone);
-          set({ error: null });
-          return true;
-        } catch (error) {
-          set({ error: error.message });
-          throw error;
-        }
-      },
-      signInAsGuest: () =>
-        set({
-          status: 'guest',
-          profile: { id: 'guest', displayName: '游客', level: 1 },
-          session: null,
-          error: null
-        }),
-      setSession: (session, profile) =>
+
+        const keepGuestProfile =
+          current.status === 'guest' && current.profile?.id === 'guest'
+            ? current.profile
+            : null;
+        set(toGuestState(keepGuestProfile));
+      });
+      authSubscription = data.subscription;
+    }
+
+    try {
+      const { session, profile } = await authService.restoreSession();
+      if (session) {
+        set({ status: 'authenticated', session, profile, error: null });
+      } else {
+        const current = get();
+        const keepGuestProfile =
+          current.status === 'guest' && current.profile?.id === 'guest'
+            ? current.profile
+            : null;
+        set(toGuestState(keepGuestProfile));
+      }
+    } catch (error) {
+      console.warn('[authStore] bootstrap failed', error);
+      set({
+        status: 'guest',
+        session: null,
+        profile: null,
+        error: messageFromError(error, '初始化登录状态失败')
+      });
+    }
+  },
+
+  signInWithEmail: async ({ email, password }) => {
+    set({ authenticating: true, error: null });
+    try {
+      const { session, profile } = await authService.signInWithEmail({
+        email,
+        password
+      });
+      set({
+        status: 'authenticated',
+        session,
+        profile,
+        authenticating: false,
+        error: null
+      });
+    } catch (error) {
+      set({
+        authenticating: false,
+        error: messageFromError(error, '登录失败')
+      });
+      throw error;
+    }
+  },
+
+  signUpWithEmail: async ({ email, password }) => {
+    set({ authenticating: true, error: null });
+    try {
+      const { session, profile, requiresEmailConfirmation } =
+        await authService.signUpWithEmail({
+          email,
+          password
+        });
+      if (session) {
         set({
           status: 'authenticated',
           session,
           profile,
+          authenticating: false,
           error: null
-        }),
-      signOut: async () => {
-        await authService.signOut();
-        set({ status: 'guest', session: null, profile: null, error: null });
+        });
+      } else {
+        set({
+          status: 'guest',
+          session: null,
+          profile: null,
+          authenticating: false,
+          error: null
+        });
       }
-    }),
-    {
-      name: 'the-trash-auth',
-      storage: createPersistStorage(),
-      partialize: (state) => ({ profile: state.profile, status: state.status, session: state.session })
+      return { requiresEmailConfirmation };
+    } catch (error) {
+      set({
+        authenticating: false,
+        error: messageFromError(error, '注册失败')
+      });
+      throw error;
     }
-  )
-);
+  },
+
+  signInWithPhone: async ({ phone, code }) => {
+    set({ authenticating: true, error: null });
+    try {
+      const { session, profile } = await authService.signInWithPhone({
+        phone,
+        code
+      });
+      set({
+        status: 'authenticated',
+        session,
+        profile,
+        authenticating: false,
+        error: null
+      });
+    } catch (error) {
+      set({
+        authenticating: false,
+        error: messageFromError(error, '手机登录失败')
+      });
+      throw error;
+    }
+  },
+
+  requestPhoneCode: async (phone) => {
+    try {
+      await authService.requestPhoneCode(phone);
+      set({ error: null });
+      return true;
+    } catch (error) {
+      set({ error: messageFromError(error, '验证码发送失败') });
+      throw error;
+    }
+  },
+
+  refreshSession: async ({ keepGuestOnMissingSession = true } = {}) => {
+    try {
+      const { session, profile } = await authService.restoreSession();
+      if (session) {
+        set({ status: 'authenticated', session, profile, error: null });
+        return session;
+      }
+
+      const current = get();
+      const shouldKeepGuest =
+        keepGuestOnMissingSession &&
+        current.status === 'guest' &&
+        current.profile?.id === 'guest';
+      set(toGuestState(shouldKeepGuest ? current.profile : null));
+      return null;
+    } catch (error) {
+      const message = messageFromError(error, '刷新登录状态失败');
+      set({ error: message });
+      throw error;
+    }
+  },
+
+  signInAsGuest: () =>
+    set({
+      status: 'guest',
+      profile: { id: 'guest', displayName: '游客', level: 1 },
+      session: null,
+      error: null
+    }),
+
+  signOut: async () => {
+    await authService.signOut();
+    set(toGuestState(null));
+  }
+}));

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { FlatList, Text, View } from 'react-native';
+
 import ModalSheet from 'src/components/layout/ModalSheet';
 import { useArenaStore } from 'src/stores/arenaStore';
 
@@ -23,7 +24,9 @@ export default function StreakLeaderboardModal() {
               <Text className="text-white font-semibold">{item.name}</Text>
               <Text className="text-white/60 text-xs">{item.community}</Text>
             </View>
-            <Text className="text-brand-amber font-semibold">{item.streak}</Text>
+            <Text className="text-brand-amber font-semibold">
+              {item.streak}
+            </Text>
           </View>
         )}
       />

@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, ScrollView, Text } from 'react-native';
+
 import ModalSheet from 'src/components/layout/ModalSheet';
 import { TrashButton, TrashInput } from 'src/components/themed';
 import { useCommunityStore } from 'src/stores/communityStore';
@@ -29,6 +30,7 @@ export default function CreateCommunityModal() {
         name: name.trim(),
         description: description.trim(),
         cityId: currentCity.id,
+        city: currentCity.city ?? currentCity.name ?? currentCity.id,
         state: currentCity.state,
         latitude: currentCity.latitude,
         longitude: currentCity.longitude
@@ -44,8 +46,15 @@ export default function CreateCommunityModal() {
   return (
     <ModalSheet title="创建社群">
       <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
-        <Text className="text-white/60 text-xs mb-2">城市 · {currentCity?.name ?? '未选择'}</Text>
-        <TrashInput label="名称" placeholder="虹口环保队" value={name} onChangeText={setName} />
+        <Text className="text-white/60 text-xs mb-2">
+          城市 · {currentCity?.name ?? '未选择'}
+        </Text>
+        <TrashInput
+          label="名称"
+          placeholder="虹口环保队"
+          value={name}
+          onChangeText={setName}
+        />
         <TrashInput
           label="简介"
           placeholder="介绍社群的使命与成员"
@@ -53,7 +62,12 @@ export default function CreateCommunityModal() {
           onChangeText={setDescription}
           multiline
         />
-        <TrashButton title="创建" onPress={handleCreate} loading={submitting} disabled={submitting} />
+        <TrashButton
+          title="创建"
+          onPress={handleCreate}
+          loading={submitting}
+          disabled={submitting}
+        />
       </ScrollView>
     </ModalSheet>
   );

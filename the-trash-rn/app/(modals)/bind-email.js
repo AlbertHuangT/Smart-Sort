@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { Text } from 'react-native';
+
 import ModalSheet from 'src/components/layout/ModalSheet';
 import { TrashButton, TrashInput } from 'src/components/themed';
 import { accountService } from 'src/services/account';
+import { useAuthStore } from 'src/stores/authStore';
 
 export default function BindEmailModal() {
+  const refreshSession = useAuthStore((state) => state.refreshSession);
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [sending, setSending] = useState(false);
@@ -33,6 +36,7 @@ export default function BindEmailModal() {
     setBinding(true);
     try {
       await accountService.bindEmail({ email, code });
+      await refreshSession();
       setStatus('绑定成功');
     } catch (error) {
       setStatus(error.message);
@@ -57,8 +61,14 @@ export default function BindEmailModal() {
         placeholder="123456"
         keyboardType="number-pad"
       />
-      {status ? <Text className="text-white/70 text-xs mb-3">{status}</Text> : null}
-      <TrashButton title={sending ? '发送中…' : '发送验证码'} onPress={sendCode} disabled={sending} />
+      {status ? (
+        <Text className="text-white/70 text-xs mb-3">{status}</Text>
+      ) : null}
+      <TrashButton
+        title={sending ? '发送中…' : '发送验证码'}
+        onPress={sendCode}
+        disabled={sending}
+      />
       <TrashButton
         title={binding ? '绑定中…' : '绑定邮箱'}
         onPress={handleBind}

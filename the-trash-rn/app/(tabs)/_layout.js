@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router';
 import { useMemo } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import TabBarIcon from 'src/components/navigation/TabBarIcon';
 import { useThemeStore } from 'src/stores/themeStore';
 

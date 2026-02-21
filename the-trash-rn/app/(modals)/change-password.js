@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Text } from 'react-native';
+
 import ModalSheet from 'src/components/layout/ModalSheet';
 import { TrashButton, TrashInput } from 'src/components/themed';
 import { accountService } from 'src/services/account';
@@ -45,8 +46,14 @@ export default function ChangePasswordModal() {
         placeholder="再次输入"
         secureTextEntry
       />
-      {status ? <Text className="text-white/70 text-xs mb-3">{status}</Text> : null}
-      <TrashButton title={saving ? '保存中…' : '保存'} onPress={handleSave} disabled={saving} />
+      {status ? (
+        <Text className="text-white/70 text-xs mb-3">{status}</Text>
+      ) : null}
+      <TrashButton
+        title={saving ? '保存中…' : '保存'}
+        onPress={handleSave}
+        disabled={saving}
+      />
     </ModalSheet>
   );
 }

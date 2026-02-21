@@ -1,6 +1,7 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text } from 'react-native';
+
 import ModalSheet from 'src/components/layout/ModalSheet';
 import { useCommunityStore } from 'src/stores/communityStore';
 
@@ -14,7 +15,7 @@ const formatTime = (isoString) => {
       minute: '2-digit',
       hour12: false
     });
-  } catch (error) {
+  } catch (_error) {
     return isoString;
   }
 };
@@ -59,7 +60,9 @@ export default function EventDetailModal() {
           disabled={rsvping}
           className="bg-brand-neon rounded-3xl py-3 items-center"
         >
-          <Text className="text-black font-semibold">{rsvping ? '报名中…' : '我要参加'}</Text>
+          <Text className="text-black font-semibold">
+            {rsvping ? '报名中…' : '我要参加'}
+          </Text>
         </Pressable>
       </ScrollView>
     </ModalSheet>

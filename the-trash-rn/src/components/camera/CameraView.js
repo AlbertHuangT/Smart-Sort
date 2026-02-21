@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { Camera, useCameraDevice } from 'react-native-vision-camera';
+
 import { useTheme } from 'src/theme/ThemeProvider';
 
 export default function CameraView({
@@ -74,7 +75,13 @@ export default function CameraView({
         }}
       >
         <ActivityIndicator color={theme.accents.blue} />
-        <Text style={{ color: theme.palette.textSecondary, fontSize: 13, marginTop: 8 }}>
+        <Text
+          style={{
+            color: theme.palette.textSecondary,
+            fontSize: 13,
+            marginTop: 8
+          }}
+        >
           加载相机…
         </Text>
       </View>

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { FlatList, Text, View } from 'react-native';
+
 import ModalSheet from 'src/components/layout/ModalSheet';
 import { useArenaStore } from 'src/stores/arenaStore';
 

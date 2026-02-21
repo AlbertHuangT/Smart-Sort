@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+
 import { THEMES, DEFAULT_THEME } from 'src/theme/themes';
 import { createPersistStorage } from 'src/utils/storage';
 

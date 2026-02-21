@@ -1,9 +1,8 @@
+import { hasSupabaseConfig } from 'src/services/config';
+
 import { supabase } from './supabase';
 
 const EDGE_FEEDBACK_FUNCTION = 'verify-feedback';
-const hasSupabaseConfig = Boolean(
-  process.env.EXPO_PUBLIC_SUPABASE_URL && process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
-);
 
 export const feedbackService = {
   async submitFeedback({ resultId, correction, note, photo }) {
@@ -11,20 +10,22 @@ export const feedbackService = {
       throw new Error('缺少反馈内容');
     }
 
-    if (!hasSupabaseConfig) {
-      console.log('[feedback] mock submit', { resultId, correction, note });
-      return { mocked: true };
+    if (!hasSupabaseConfig()) {
+      return { success: true, mocked: true };
     }
 
     try {
-      const { data, error } = await supabase.functions.invoke(EDGE_FEEDBACK_FUNCTION, {
-        body: {
-          resultId,
-          correction,
-          note,
-          photo
+      const { data, error } = await supabase.functions.invoke(
+        EDGE_FEEDBACK_FUNCTION,
+        {
+          body: {
+            resultId,
+            correction,
+            note,
+            photo
+          }
         }
-      });
+      );
       if (error) {
         throw error;
       }

@@ -1,8 +1,6 @@
-import { supabase } from './supabase';
+import { hasSupabaseConfig } from 'src/services/config';
 
-const hasSupabaseConfig = Boolean(
-  process.env.EXPO_PUBLIC_SUPABASE_URL && process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
-);
+import { supabase } from './supabase';
 
 const rpc = async (fn, args = {}) => {
   const { data, error } = await supabase.rpc(fn, args);
@@ -18,7 +16,7 @@ const emptyDashboard = {
 
 export const adminService = {
   async fetchDashboard(communityId) {
-    if (!hasSupabaseConfig || !communityId) {
+    if (!hasSupabaseConfig() || !communityId) {
       return { ...emptyDashboard };
     }
     const [requests, members, logs] = await Promise.all([
@@ -34,7 +32,7 @@ export const adminService = {
   },
 
   async approveMember({ requestId, approve }) {
-    if (!hasSupabaseConfig) return false;
+    if (!hasSupabaseConfig()) return false;
     const data = await rpc('review_join_application', {
       p_application_id: requestId,
       p_approve: Boolean(approve),
@@ -44,12 +42,12 @@ export const adminService = {
   },
 
   async grantCredits() {
-    if (!hasSupabaseConfig) return false;
+    if (!hasSupabaseConfig()) return false;
     throw new Error('批量积分发放需基于活动，当前面板暂不支持此操作');
   },
 
   async removeMember({ communityId, memberId }) {
-    if (!hasSupabaseConfig) return false;
+    if (!hasSupabaseConfig()) return false;
     const data = await rpc('remove_community_member', {
       p_community_id: communityId,
       p_user_id: memberId,

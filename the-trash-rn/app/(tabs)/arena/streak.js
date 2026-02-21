@@ -1,4 +1,5 @@
 import { Text, View } from 'react-native';
+
 import QuizCard from 'src/components/arena/QuizCard';
 import ScreenShell from 'src/components/layout/ScreenShell';
 import { TrashButton } from 'src/components/themed';
@@ -14,7 +15,9 @@ export default function StreakModeScreen() {
       <View className="rounded-3xl border border-white/10 bg-white/5 p-6 mb-4">
         <Text className="text-white/70 text-sm mb-2">当前连胜</Text>
         <Text className="text-white text-4xl font-bold">{streak.current}</Text>
-        <Text className="text-white/50 text-xs mt-2">最佳纪录 {streak.best}</Text>
+        <Text className="text-white/50 text-xs mt-2">
+          最佳纪录 {streak.best}
+        </Text>
       </View>
       {streak.state === 'playing' && streak.question ? (
         <QuizCard

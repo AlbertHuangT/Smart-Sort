@@ -1,8 +1,16 @@
 import { create } from 'zustand';
-import { communityService } from 'src/services/community';
-import { adminService } from 'src/services/admin';
 
-const mapById = (items) => Object.fromEntries(items.map((item) => [item.id, item]));
+import { adminService } from 'src/services/admin';
+import { communityService } from 'src/services/community';
+import { AppError, ERROR_CODES, messageFromError } from 'src/utils/errors';
+
+const mapById = (items) =>
+  Object.fromEntries(items.map((item) => [item.id, item]));
+const resolveCityKey = (city) => {
+  if (!city) return null;
+  if (typeof city === 'string') return city;
+  return city.city ?? city.name ?? city.id ?? null;
+};
 
 export const useCommunityStore = create((set, get) => ({
   events: [],
@@ -14,15 +22,18 @@ export const useCommunityStore = create((set, get) => ({
   adminDashboards: {},
   activeCityId: null,
   async loadEvents(city) {
-    const cityId = typeof city === 'string' ? city : city?.id;
-    if (!cityId) return;
-    set({ eventsLoading: true, activeCityId: cityId });
+    const cityKey = resolveCityKey(city);
+    if (!cityKey) return;
+    set({ eventsLoading: true, activeCityId: cityKey });
     try {
       const events = await communityService.fetchEvents(city);
       set({ events, eventMap: mapById(events), eventsLoading: false });
     } catch (error) {
       set({ eventsLoading: false });
-      console.warn('[communityStore] loadEvents failed', error);
+      console.warn(
+        '[communityStore] loadEvents failed',
+        messageFromError(error, '加载活动失败')
+      );
     }
   },
   async loadGroups(city) {
@@ -33,7 +44,10 @@ export const useCommunityStore = create((set, get) => ({
       set({ groups, groupMap: mapById(groups), groupsLoading: false });
     } catch (error) {
       set({ groupsLoading: false });
-      console.warn('[communityStore] loadGroups failed', error);
+      console.warn(
+        '[communityStore] loadGroups failed',
+        messageFromError(error, '加载社群失败')
+      );
     }
   },
   async refreshEvent(eventId) {
@@ -44,7 +58,10 @@ export const useCommunityStore = create((set, get) => ({
       set((state) => ({ eventMap: { ...state.eventMap, [eventId]: event } }));
       return event;
     } catch (error) {
-      console.warn('[communityStore] refreshEvent failed', error);
+      console.warn(
+        '[communityStore] refreshEvent failed',
+        messageFromError(error, '刷新活动失败')
+      );
       return null;
     }
   },
@@ -53,20 +70,25 @@ export const useCommunityStore = create((set, get) => ({
     try {
       const community = await communityService.fetchCommunity(communityId);
       if (!community) return null;
-      set((state) => ({ groupMap: { ...state.groupMap, [communityId]: community } }));
+      set((state) => ({
+        groupMap: { ...state.groupMap, [communityId]: community }
+      }));
       return community;
     } catch (error) {
-      console.warn('[communityStore] refreshCommunity failed', error);
+      console.warn(
+        '[communityStore] refreshCommunity failed',
+        messageFromError(error, '刷新社群失败')
+      );
       return null;
     }
   },
   async createEvent(payload) {
     const event = await communityService.createEvent(payload);
     if (!event) {
-      throw new Error('创建活动失败');
+      throw new AppError('创建活动失败', { code: ERROR_CODES.BACKEND });
     }
     set((state) => {
-      const shouldInsert = state.activeCityId === event.cityId;
+      const shouldInsert = state.activeCityId === resolveCityKey(event.cityId);
       const events = shouldInsert ? [event, ...state.events] : state.events;
       return {
         events,
@@ -78,7 +100,7 @@ export const useCommunityStore = create((set, get) => ({
   async createCommunity(payload) {
     const community = await communityService.createCommunity(payload);
     if (!community) {
-      throw new Error('创建社群失败');
+      throw new AppError('创建社群失败', { code: ERROR_CODES.BACKEND });
     }
     set((state) => ({
       groups: [community, ...state.groups],
@@ -95,14 +117,20 @@ export const useCommunityStore = create((set, get) => ({
     if (!updated) return null;
     set((state) => ({
       eventMap: { ...state.eventMap, [eventId]: updated },
-      events: state.events.map((event) => (event.id === eventId ? updated : event))
+      events: state.events.map((event) =>
+        event.id === eventId ? updated : event
+      )
     }));
     return updated;
   },
   communityById: (id) => get().groupMap[id] ?? null,
   eventById: (id) => get().eventMap[id] ?? null,
   adminDashboard: (communityId) =>
-    get().adminDashboards[communityId] ?? { requests: [], members: [], logs: [] },
+    get().adminDashboards[communityId] ?? {
+      requests: [],
+      members: [],
+      logs: []
+    },
   loadAdminDashboard: async (communityId) => {
     if (!communityId) return;
     const dashboard = await adminService.fetchDashboard(communityId);

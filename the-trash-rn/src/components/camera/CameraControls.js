@@ -1,5 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import { ActivityIndicator, Pressable, View } from 'react-native';
+
 import { useTheme } from 'src/theme/ThemeProvider';
 
 export default function CameraControls({

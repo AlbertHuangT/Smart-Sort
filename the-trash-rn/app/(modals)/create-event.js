@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, ScrollView, Text } from 'react-native';
+
 import ModalSheet from 'src/components/layout/ModalSheet';
 import { TrashButton, TrashInput } from 'src/components/themed';
 import { useCommunityStore } from 'src/stores/communityStore';
@@ -35,6 +36,7 @@ export default function CreateEventModal() {
         startTime,
         quota: Number(quota) || 50,
         cityId: currentCity.id,
+        city: currentCity.city ?? currentCity.name ?? currentCity.id,
         latitude: currentCity.latitude,
         longitude: currentCity.longitude
       });
@@ -49,15 +51,27 @@ export default function CreateEventModal() {
   return (
     <ModalSheet title="创建活动">
       <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
-        <Text className="text-white/60 text-xs mb-2">城市 · {currentCity?.name ?? '未选择'}</Text>
-        <TrashInput label="标题" placeholder="例如：周末净滩" value={title} onChangeText={setTitle} />
+        <Text className="text-white/60 text-xs mb-2">
+          城市 · {currentCity?.name ?? '未选择'}
+        </Text>
+        <TrashInput
+          label="标题"
+          placeholder="例如：周末净滩"
+          value={title}
+          onChangeText={setTitle}
+        />
         <TrashInput
           label="活动时间 (ISO)"
           placeholder="2024-06-22T14:00"
           value={startTime}
           onChangeText={setStartTime}
         />
-        <TrashInput label="地点" placeholder="静安区市民中心" value={venue} onChangeText={setVenue} />
+        <TrashInput
+          label="地点"
+          placeholder="静安区市民中心"
+          value={venue}
+          onChangeText={setVenue}
+        />
         <TrashInput
           label="名额"
           placeholder="80"
@@ -72,7 +86,12 @@ export default function CreateEventModal() {
           onChangeText={setDescription}
           multiline
         />
-        <TrashButton title="发布" onPress={handleSubmit} loading={submitting} disabled={submitting} />
+        <TrashButton
+          title="发布"
+          onPress={handleSubmit}
+          loading={submitting}
+          disabled={submitting}
+        />
       </ScrollView>
     </ModalSheet>
   );

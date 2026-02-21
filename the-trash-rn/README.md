@@ -59,7 +59,7 @@ pnpm expo start --dev-client --tunnel --clear
 supabase db push --project-ref <your-project-ref>
 ```
 
-迁移规范：`supabase/migrations/` 与 `The Trash/migrations/` 需要同步提交。
+迁移规范：仅提交 `supabase/migrations/`，该目录是唯一真相源。
 
 ## 常见问题
 
@@ -79,11 +79,26 @@ supabase db push --project-ref <your-project-ref>
 
 - 先执行迁移并确保 `communities` 有数据；客户端也会回退到内置城市列表。
 
+5. 好友榜同步通讯录会上传什么
+
+- 仅上传去重后的邮箱和手机号，不上传联系人姓名。
+- 默认需要你在好友榜里显式同意后才会同步。
+- 单次同步最多上传 300 个邮箱 + 300 个手机号。
+
+## 自动化测试
+
+```bash
+pnpm test
+```
+
+当前已覆盖：错误模型、认证状态管理、竞技场 store 拆分后的关键路径、好友榜通讯录最小化同步。
+
 ## 常用命令
 
 ```bash
 pnpm lint
 pnpm format
+pnpm test
 pnpm expo run:ios --device
 pnpm expo start --dev-client --tunnel --clear
 ```
