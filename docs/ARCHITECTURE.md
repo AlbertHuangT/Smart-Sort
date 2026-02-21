@@ -2,101 +2,79 @@
 
 ## 1. System Overview
 
-The app is a SwiftUI iOS client with a local CoreML classifier and Supabase backend.
+The Trash is an Expo + React Native app backed by Supabase.
 
-- Frontend: SwiftUI + Theme system + Feature-based views
-- Local AI: `RealClassifierService` (MobileCLIP embedding + cosine similarity)
-- Backend: Supabase Auth / Postgres / RPC / Realtime / Storage
+- Frontend: Expo Router + React Native + Zustand
+- Local AI: `src/services/classifier.js` + `assets/trash_knowledge.json`
+- Backend: Supabase Auth / Postgres RPC / Realtime / Edge Functions
+- Source of truth for DB schema: `supabase/migrations/`
 
-## 2. Frontend Layers
+## 2. Frontend Structure
 
 ### App shell
 
-- `The Trash/App/The_TrashApp.swift`
-  - App entry, dependency wiring (`AuthViewModel`, `TrashViewModel`, `ThemeManager`)
-- `The Trash/App/ContentView.swift`
-  - Root tab shell and custom bottom tab bar
+- `the-trash-rn/app/_layout.js`: root providers and navigation stack
+- `the-trash-rn/app/index.js`: auth/guest entry
+- `the-trash-rn/app/(tabs)/`: tab routes (verify/arena/leaderboard/community/profile)
+- `the-trash-rn/app/(modals)/`: modal flows (account, invite, location, history, etc.)
 
-### Theme abstraction layer
+### State layer
 
-- `The Trash/Theme/TrashTheme.swift` (protocol + semantic tokens)
-- `The Trash/Theme/ThemeComponents.swift` (cross-feature shared controls)
-- `The Trash/Theme/NeumorphicTheme.swift`
-- `The Trash/Theme/VibrantTheme.swift`
-- `The Trash/Theme/EcoSkeuomorphicTheme.swift`
+- `the-trash-rn/src/stores/authStore.js`: auth session state
+- `the-trash-rn/src/stores/trashStore.js`: camera + classify flow
+- `the-trash-rn/src/stores/arenaStore.js`: duel/game state machine
+- `the-trash-rn/src/stores/communityStore.js`: events/groups/admin actions
+- `the-trash-rn/src/stores/leaderboardStore.js`: leaderboard + communities
 
-### Feature modules
+### Service layer
 
-- Verify: `The Trash/Views/Verify/`
-- Arena: `The Trash/Views/Arena/`
-- Leaderboard: `The Trash/Views/Leaderboard/`
-- Community: `The Trash/Views/Community/`
-- Account/Auth/Admin/Profile: `The Trash/Views/{Account,Auth,Admin,Profile}/`
+- `the-trash-rn/src/services/supabase.js`: Supabase client bootstrap
+- `the-trash-rn/src/services/auth.js`: sign-in/up/phone OTP
+- `the-trash-rn/src/services/account.js`: bind phone/email, upgrade guest
+- `the-trash-rn/src/services/arena.js`: RPC facade for arena modes
+- `the-trash-rn/src/services/community.js`: events/groups/community RPC
+- `the-trash-rn/src/services/leaderboard.js`: community/friends ranking
 
-## 3. Backend Layers
+## 3. Backend Contract
 
-### Client gateway
+- SQL migrations live in `supabase/migrations/` only.
+- RPC drift checks:
+  - `scripts/check_backend_contracts.sh`
+  - `scripts/check_migration_mirror.sh`
+- Convenience commands:
+  - `make contracts`
+  - `make migrations-check`
+  - `make doctor`
 
-- `The Trash/Services/SupabaseManager.swift`
-  - Single Supabase client instance
+## 4. Main User Flows
 
-### Domain services
+### Verify
 
-- `CommunityService`: community/event/admin RPC and table access
-- `ArenaService` + `DuelRealtimeManager`: duel and realtime sync
-- `FriendService`: contacts sync + leaderboard RPC
-- `FeedbackService`: Storage upload + feedback log insert
-- `AchievementService`: achievements and trigger RPCs
+1. Capture photo (`src/components/camera/CameraView.js`)
+2. Run classifier (`src/services/classifier.js`)
+3. Save result/history (`src/stores/trashStore.js`)
+4. Optional correction feedback (`src/services/feedback.js`)
 
-### SQL source of truth
+### Arena
 
-- `supabase/migrations/` is backend schema source
-- `The Trash/migrations/` is app-side mirror used for reference
+1. Create/accept challenge via RPC (`src/services/arena.js`)
+2. Sync duel events via realtime (`src/services/realtime.js`)
+3. Persist duel state + finalize results (`src/stores/arenaStore.js`)
 
-## 4. End-to-end Interaction Flows
+### Community
 
-### Verify flow
+1. Resolve city/location (`src/stores/locationStore.js`)
+2. Fetch events/groups (`src/services/community.js`)
+3. Join RSVP/admin moderation actions (`src/stores/communityStore.js`)
 
-1. Camera capture (`CameraManager`)
-2. Local classify (`RealClassifierService`)
-3. State update (`TrashViewModel.appState`)
-4. Optional feedback upload (`FeedbackService`)
-5. Gamification RPC (`increment_credits` + achievements)
+### Auth & Account
 
-### Community/Event flow
+1. Login/signup/phone OTP (`src/services/auth.js`)
+2. Bind email/phone or upgrade guest (`src/services/account.js`)
+3. Refresh session/profile (`src/stores/authStore.js`)
 
-1. Location selection (`UserSettings` + `LocationManager`)
-2. Events/communities fetch via `CommunityService` RPC
-3. Join/register actions via RPC with optimistic UI updates
-4. Admin actions (approval/remove/grant credits) via RPC
+## 5. Current Gaps
 
-### Arena flow
-
-1. Challenge/create/accept via `ArenaService`
-2. Question/answer submit RPC
-3. Duel realtime broadcast sync via `DuelRealtimeManager`
-
-## 5. Audit Findings (this pass)
-
-### Fixed
-
-- Global width overflow caused by theme background decorative layers expanding root layout
-  - Fixed with container-bound sizing and clipping in theme background wrappers
-- Community tab page container issue
-  - Replaced `.page` `TabView` in `CommunityView` with explicit conditional rendering
-
-### Detected contract risk
-
-- RPC usage and migration functions are not fully aligned between:
-  - Swift calls
-  - `supabase/migrations`
-  - `The Trash/migrations`
-
-Use `scripts/check_backend_contracts.sh` to verify drift.
-
-## 6. Recommended Next Refactors
-
-1. Split service DTOs from domain models (avoid large model files)
-2. Introduce per-feature `Repository` protocol to improve testability
-3. Add `The TrashTests` for ViewModel + Service contract tests
-4. Add CI step to run `scripts/check_backend_contracts.sh`
+1. No automated unit/integration tests in RN workspace.
+2. `arenaStore` is large and could be split by mode/realtime concerns.
+3. Several modules currently swallow errors in UI and only log warnings.

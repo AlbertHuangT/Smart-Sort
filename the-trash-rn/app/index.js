@@ -31,7 +31,7 @@ export default function Index() {
   const [statusMessage, setStatusMessage] = useState('');
 
   const insets = useSafeAreaInsets();
-  const { height } = useWindowDimensions();
+  const { height, width } = useWindowDimensions();
   const theme = useTheme();
   const spacing = theme.spacing ?? {};
   const bodyType = theme.typography?.body ?? {
@@ -45,6 +45,8 @@ export default function Index() {
     letterSpacing: 0.2
   };
   const inlineActionWidth = theme.sizes?.inlineActionWidth ?? 136;
+  const contentMaxWidth = theme.sizes?.contentMaxWidth ?? 680;
+  const compactPhoneRow = width < 390;
   const headerSinkOffset = Math.max(0, Math.min(64, (height - 780) * 0.24));
 
   const status = useAuthStore((state) => state.status);
@@ -150,7 +152,13 @@ export default function Index() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={{ width: '100%' }}>
+        <View
+          style={{
+            width: '100%',
+            maxWidth: contentMaxWidth,
+            alignSelf: 'center'
+          }}
+        >
           <TrashPageHeader
             title="The Trash"
             subtitle="欢迎回来，继续你的环保挑战。登录后即可使用 AI 识别、竞技场和社群。"
@@ -190,8 +198,18 @@ export default function Index() {
                   onChangeText={setPhone}
                   keyboardType="phone-pad"
                 />
-                <View style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
-                  <View style={{ flex: 1, marginRight: spacing.md ?? 16 }}>
+                <View
+                  style={{
+                    flexDirection: compactPhoneRow ? 'column' : 'row',
+                    alignItems: compactPhoneRow ? 'stretch' : 'flex-end'
+                  }}
+                >
+                  <View
+                    style={{
+                      flex: 1,
+                      marginRight: compactPhoneRow ? 0 : (spacing.md ?? 14)
+                    }}
+                  >
                     <TrashInput
                       label="验证码"
                       placeholder="6 位数字"
@@ -207,7 +225,8 @@ export default function Index() {
                     onPress={handleSendCode}
                     disabled={authenticating}
                     style={{
-                      width: inlineActionWidth
+                      width: compactPhoneRow ? '100%' : inlineActionWidth,
+                      marginTop: compactPhoneRow ? (spacing.sm ?? 10) : 0
                     }}
                   />
                 </View>

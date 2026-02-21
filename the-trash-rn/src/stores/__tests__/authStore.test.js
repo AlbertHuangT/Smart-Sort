@@ -65,7 +65,9 @@ describe('authStore', () => {
 
   test('signInWithEmail failure stores normalized error', async () => {
     const { useAuthStore } = setupStore({
-      signInError: new AppError('邮箱或密码错误', { code: ERROR_CODES.AUTH })
+      signInError: new AppError('Incorrect email or password', {
+        code: ERROR_CODES.AUTH
+      })
     });
 
     await expect(
@@ -75,7 +77,7 @@ describe('authStore', () => {
       })
     ).rejects.toBeTruthy();
 
-    expect(useAuthStore.getState().error).toBe('邮箱或密码错误');
+    expect(useAuthStore.getState().error).toBe('Incorrect email or password');
     expect(useAuthStore.getState().authenticating).toBe(false);
   });
 

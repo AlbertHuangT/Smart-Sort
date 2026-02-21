@@ -100,6 +100,8 @@ export default function TrashSegmentedControl({
         {
           position: 'relative',
           flexDirection: 'row',
+          width: '100%',
+          alignSelf: 'stretch',
           backgroundColor: theme.palette.elevated ?? theme.palette.card,
           borderRadius: theme.radii?.segmented ?? 20,
           ...borderCurveStyle,

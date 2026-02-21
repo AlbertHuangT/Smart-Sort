@@ -14,11 +14,22 @@ import {
 import { useTrashStore } from 'src/stores/trashStore';
 import { useTheme } from 'src/theme/ThemeProvider';
 
-const CORRECTION_OPTIONS = ['可回收', '湿垃圾', '干垃圾', '有害垃圾'];
+const CORRECTION_OPTIONS = [
+  'Recyclable',
+  'Compost',
+  'General Waste',
+  'Hazardous Waste'
+];
 
 export default function VerifyScreen() {
   const router = useRouter();
   const theme = useTheme();
+  const spacing = theme.spacing ?? {};
+  const captionType = theme.typography?.caption ?? {
+    size: 12,
+    lineHeight: 17,
+    letterSpacing: 0.14
+  };
   const cameraRef = useRef(null);
   const permission = useTrashStore((state) => state.permission);
   const requestPermission = useTrashStore((state) => state.requestPermission);
@@ -90,57 +101,23 @@ export default function VerifyScreen() {
   return (
     <ScreenShell title="Verify" useScroll={false}>
       <View style={{ flex: 1 }}>
-        <View style={{ flex: 1.2, marginBottom: 24 }}>
+        <View
+          style={{
+            width: '100%',
+            aspectRatio: 1,
+            alignSelf: 'center',
+            borderRadius: theme.radii?.card ?? 20,
+            overflow: 'hidden'
+          }}
+        >
           <CameraView
             cameraRef={cameraRef}
             permissionStatus={permission}
             onRequestPermission={requestPermission}
             isActive={scanningState !== 'feedback'}
           />
-          <View
-            style={{
-              marginTop: 12,
-              borderRadius: 16,
-              borderWidth: 1,
-              borderColor: theme.palette.divider ?? 'rgba(255,255,255,0.15)',
-              backgroundColor: theme.palette.card,
-              paddingHorizontal: 12,
-              paddingVertical: 10
-            }}
-          >
-            <Text style={{ color: theme.palette.textSecondary, fontSize: 12 }}>
-              AI 引擎：
-              {classifierStatus === 'ready'
-                ? '已就绪'
-                : classifierStatus === 'loading'
-                  ? '预热中'
-                  : '未就绪'}
-              {classifierMeta?.knowledgeCount
-                ? ` · 向量 ${classifierMeta.knowledgeCount}`
-                : ''}
-            </Text>
-            {classifierError ? (
-              <Text
-                style={{
-                  color: theme.palette.danger ?? '#ff8a8a',
-                  fontSize: 11,
-                  marginTop: 4
-                }}
-              >
-                {classifierError}
-              </Text>
-            ) : null}
-          </View>
-          <CameraControls
-            onCapture={handleCapture}
-            onHistory={() => router.push('/(modals)/history')}
-            disabled={
-              scanningState === 'analyzing' || classifierStatus === 'loading'
-            }
-            analyzing={scanningState === 'analyzing'}
-          />
         </View>
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, marginTop: spacing.md ?? 14 }}>
           <ResultCard
             result={lastResult}
             onConfirm={() => {
@@ -162,15 +139,17 @@ export default function VerifyScreen() {
             </Text>
           ) : null}
           {showCorrection ? (
-            <View style={{ marginTop: 24 }}>
+            <View style={{ marginTop: spacing.lg ?? 20 }}>
               <Text
                 style={{
                   color: theme.palette.textSecondary,
-                  marginBottom: 8,
-                  fontSize: 13
+                  marginBottom: spacing.xs ?? 6,
+                  fontSize: captionType.size,
+                  lineHeight: captionType.lineHeight,
+                  letterSpacing: captionType.letterSpacing
                 }}
               >
-                纠正分类
+                Correct category
               </Text>
               <TrashSegmentedControl
                 options={CORRECTION_OPTIONS.map((option) => ({
@@ -181,19 +160,66 @@ export default function VerifyScreen() {
                 onChange={setCorrectionCategory}
               />
               <TrashInput
-                label="备注（可选）"
-                placeholder="为什么要纠正？"
+                label="Notes (optional)"
+                placeholder="Why are you correcting this?"
                 value={correctionNote}
                 onChangeText={setCorrectionNote}
                 autoCapitalize="sentences"
               />
               <TrashButton
-                title="提交纠正"
+                title="Submit correction"
                 onPress={handleCorrectionSubmit}
                 loading={scanningState === 'feedback'}
                 disabled={scanningState === 'feedback'}
               />
             </View>
+          ) : null}
+        </View>
+        <View style={{ marginTop: 'auto', paddingTop: spacing.sm ?? 10 }}>
+          <CameraControls
+            onCapture={handleCapture}
+            onHistory={() => router.push('/(modals)/history')}
+            disabled={
+              scanningState === 'analyzing' || classifierStatus === 'loading'
+            }
+            analyzing={scanningState === 'analyzing'}
+            style={{ marginTop: 0 }}
+          />
+          <Text
+            style={{
+              marginTop: spacing.xs ?? 6,
+              textAlign: 'center',
+              color: theme.palette.textSecondary,
+              opacity: 0.66,
+              fontSize: Math.max(10, captionType.size - 1),
+              lineHeight: captionType.lineHeight,
+              letterSpacing: captionType.letterSpacing
+            }}
+          >
+            AI recognition:
+            {classifierStatus === 'ready'
+              ? ' Ready'
+              : classifierStatus === 'loading'
+                ? ' Warming up'
+                : ' Not ready'}
+            {classifierMeta?.knowledgeCount
+              ? ` · vectors ${classifierMeta.knowledgeCount}`
+              : ''}
+          </Text>
+          {classifierError ? (
+            <Text
+              style={{
+                marginTop: 2,
+                textAlign: 'center',
+                color: theme.palette.danger ?? '#ff8a8a',
+                opacity: 0.82,
+                fontSize: Math.max(10, captionType.size - 1),
+                lineHeight: captionType.lineHeight,
+                letterSpacing: captionType.letterSpacing
+              }}
+            >
+              {classifierError}
+            </Text>
           ) : null}
         </View>
       </View>

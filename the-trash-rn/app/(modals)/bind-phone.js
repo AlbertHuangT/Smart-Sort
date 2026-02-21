@@ -16,14 +16,14 @@ export default function BindPhoneModal() {
 
   const sendCode = async () => {
     if (!phone) {
-      setStatus('请输入手机号');
+      setStatus('Please enter phone number');
       return;
     }
     setStatus('');
     setSending(true);
     try {
       await accountService.requestPhoneOtp(phone);
-      setStatus('验证码已发送，请查收短信');
+      setStatus('Verification code sent. Please check your SMS');
     } catch (error) {
       setStatus(error.message);
     } finally {
@@ -37,7 +37,7 @@ export default function BindPhoneModal() {
     try {
       await accountService.bindPhone({ phone, code });
       await refreshSession();
-      setStatus('绑定成功');
+      setStatus('Linked successfully');
     } catch (error) {
       setStatus(error.message);
     } finally {
@@ -46,16 +46,16 @@ export default function BindPhoneModal() {
   };
 
   return (
-    <ModalSheet title="绑定手机">
+    <ModalSheet title="Link Phone">
       <TrashInput
-        label="手机号"
+        label="Phone"
         value={phone}
         onChangeText={setPhone}
-        placeholder="6505551234（无需 +1）"
+        placeholder="6505551234 (no +1 required)"
         keyboardType="phone-pad"
       />
       <TrashInput
-        label="验证码"
+        label="Code"
         value={code}
         onChangeText={setCode}
         placeholder="123456"
@@ -65,12 +65,12 @@ export default function BindPhoneModal() {
         <Text className="text-white/70 text-xs mb-3">{status}</Text>
       ) : null}
       <TrashButton
-        title={sending ? '发送中…' : '发送验证码'}
+        title={sending ? 'Sending...' : 'Send Code'}
         onPress={sendCode}
         disabled={sending}
       />
       <TrashButton
-        title={binding ? '绑定中…' : '绑定手机'}
+        title={binding ? 'Binding...' : 'Link Phone'}
         onPress={handleBind}
         disabled={binding}
         style={{ marginTop: 12 }}

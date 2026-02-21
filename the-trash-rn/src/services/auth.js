@@ -51,7 +51,9 @@ export const authService = {
   },
   async signInWithEmail({ email, password }) {
     if (!email || !password) {
-      throw new AppError('请输入邮箱和密码', { code: ERROR_CODES.VALIDATION });
+      throw new AppError('Please enter email and password', {
+        code: ERROR_CODES.VALIDATION
+      });
     }
     if (hasSupabaseConfig()) {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -61,7 +63,7 @@ export const authService = {
       if (error) {
         throw fromSupabaseError(error, {
           code: ERROR_CODES.AUTH,
-          message: '邮箱或密码错误'
+          message: 'Incorrect email or password'
         });
       }
       return {
@@ -73,17 +75,21 @@ export const authService = {
   },
   async signUpWithEmail({ email, password }) {
     if (!email || !password) {
-      throw new AppError('请输入邮箱和密码', { code: ERROR_CODES.VALIDATION });
+      throw new AppError('Please enter email and password', {
+        code: ERROR_CODES.VALIDATION
+      });
     }
     if (password.length < 8) {
-      throw new AppError('密码至少 8 位', { code: ERROR_CODES.VALIDATION });
+      throw new AppError('Password must be at least 8 characters', {
+        code: ERROR_CODES.VALIDATION
+      });
     }
     if (hasSupabaseConfig()) {
       const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) {
         throw fromSupabaseError(error, {
           code: ERROR_CODES.AUTH,
-          message: '注册失败，请稍后再试'
+          message: 'Sign-up failed. Please try again later.'
         });
       }
       return {
@@ -99,14 +105,18 @@ export const authService = {
   },
   async signInWithPhone({ phone, code }) {
     if (!phone) {
-      throw new AppError('请输入手机号', { code: ERROR_CODES.VALIDATION });
+      throw new AppError('Please enter phone number', {
+        code: ERROR_CODES.VALIDATION
+      });
     }
     if (!code) {
-      throw new AppError('请输入验证码', { code: ERROR_CODES.VALIDATION });
+      throw new AppError('Please enter verification code', {
+        code: ERROR_CODES.VALIDATION
+      });
     }
     const normalizedPhone = normalizePhoneNumber(phone);
     if (!normalizedPhone) {
-      throw new AppError('手机号格式不正确', {
+      throw new AppError('Invalid phone number format', {
         code: ERROR_CODES.VALIDATION
       });
     }
@@ -119,7 +129,7 @@ export const authService = {
       if (error) {
         throw fromSupabaseError(error, {
           code: ERROR_CODES.AUTH,
-          message: '验证码无效或已过期'
+          message: 'Verification code is invalid or expired'
         });
       }
       return {
@@ -131,16 +141,18 @@ export const authService = {
     }
     return fakeAuthResult({
       phone: normalizedPhone,
-      displayName: `${normalizedPhone} 用户`
+      displayName: `${normalizedPhone} User`
     });
   },
   async requestPhoneCode(phone) {
     if (!phone) {
-      throw new AppError('请输入手机号', { code: ERROR_CODES.VALIDATION });
+      throw new AppError('Please enter phone number', {
+        code: ERROR_CODES.VALIDATION
+      });
     }
     const normalizedPhone = normalizePhoneNumber(phone);
     if (!normalizedPhone) {
-      throw new AppError('手机号格式不正确', {
+      throw new AppError('Invalid phone number format', {
         code: ERROR_CODES.VALIDATION
       });
     }
@@ -151,7 +163,7 @@ export const authService = {
       if (error) {
         throw fromSupabaseError(error, {
           code: ERROR_CODES.AUTH,
-          message: '验证码发送失败'
+          message: 'Failed to send verification code'
         });
       }
     }

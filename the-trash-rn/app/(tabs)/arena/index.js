@@ -41,14 +41,14 @@ export default function ArenaHubScreen() {
   const badges = useMemo(
     () => ({
       daily: `${dailyChallenge.progress}/${dailyChallenge.total}`,
-      duel: `${Object.keys(pendingChallenges).length} 待处理`,
-      streak: `最佳 ${streak.best}`
+      duel: `${Object.keys(pendingChallenges).length} pending`,
+      streak: `Best ${streak.best}`
     }),
     [dailyChallenge, pendingChallenges, streak]
   );
 
   return (
-    <ScreenShell title="竞技场" useScroll={false}>
+    <ScreenShell title="Arena" useScroll={false}>
       <View
         style={{
           borderRadius: radii.card ?? 24,
@@ -66,7 +66,7 @@ export default function ArenaHubScreen() {
             letterSpacing: captionType.letterSpacing
           }}
         >
-          当前进度
+          Current progress
         </Text>
 
         <View
@@ -87,7 +87,7 @@ export default function ArenaHubScreen() {
                 fontWeight: '700'
               }}
             >
-              每日挑战 {badges.daily}
+              Daily Challenge {badges.daily}
             </Text>
             <Text
               style={{
@@ -98,7 +98,7 @@ export default function ArenaHubScreen() {
                 marginTop: 2
               }}
             >
-              实时对战 {badges.duel} · 连胜 {badges.streak}
+              Live Duel {badges.duel} · Streak {badges.streak}
             </Text>
           </View>
         </View>
@@ -124,7 +124,7 @@ export default function ArenaHubScreen() {
                 paddingHorizontal: spacing.md ?? 16,
                 paddingVertical: spacing.md ?? 16,
                 marginLeft: isRightColumn ? (spacing.sm ?? 12) : 0,
-                minHeight: 132
+                minHeight: 116
               }}
               onPress={() => router.push(item.href)}
             >

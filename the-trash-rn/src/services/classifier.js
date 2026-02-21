@@ -1,44 +1,78 @@
 import * as FileSystem from 'expo-file-system';
+import { NativeModules, Platform } from 'react-native';
 
 import knowledgeRows from '../../assets/trash_knowledge.json';
 
 const edgeFunctionUrl = process.env.EXPO_PUBLIC_SUPABASE_EDGE_FUNCTION_URL;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+const classifierMode = process.env.EXPO_PUBLIC_CLASSIFIER_MODE ?? 'local-only';
+const allowSketchFallback =
+  process.env.EXPO_PUBLIC_ALLOW_SKETCH_FALLBACK === '1';
+const parsedThreshold = Number(process.env.EXPO_PUBLIC_CLASSIFIER_THRESHOLD);
+const mobileClipModule = NativeModules?.MobileClipModule ?? null;
 
-const CONFIDENCE_THRESHOLD = 0.1;
+const CONFIDENCE_THRESHOLD =
+  Number.isFinite(parsedThreshold) && parsedThreshold > 0 && parsedThreshold < 1
+    ? parsedThreshold
+    : 0.22;
 const SEARCH_CHUNK_SIZE = 64;
+const LOCAL_SKETCH_SAMPLE_SIZE = 4096;
 
 const CATEGORY_MAP = {
-  recycle: '可回收',
-  recyclable: '可回收',
-  compost: '湿垃圾',
-  compostable: '湿垃圾',
-  landfill: '干垃圾',
-  hazardous: '有害垃圾',
-  ignore: '未识别'
+  recycle: 'Recyclable',
+  recyclable: 'Recyclable',
+  compost: 'Compost',
+  compostable: 'Compost',
+  landfill: 'General Waste',
+  hazardous: 'Hazardous Waste',
+  ignore: 'Unrecognized'
 };
 
 const TIP_MAP = {
-  可回收: '倒空液体并冲洗后投放，可提升回收效率。',
-  湿垃圾: '尽量去除塑料包装后投放到湿垃圾桶。',
-  干垃圾: '无法回收或堆肥的残余垃圾请投放干垃圾。',
-  有害垃圾: '请勿混投，建议投放到有害垃圾专用回收点。',
-  未识别: '请尽量贴近拍摄，并保证光线充足。'
+  Recyclable:
+    'Empty liquids and rinse before recycling to improve recovery quality.',
+  Compost: 'Remove plastic packaging when possible before compost disposal.',
+  'General Waste':
+    'Dispose non-recyclable, non-compostable residue as general waste.',
+  'Hazardous Waste':
+    'Do not mix with other waste. Use a dedicated hazardous-waste drop-off point.',
+  Unrecognized: 'Move closer and ensure good lighting for better recognition.'
 };
 
-const fallbackResult = (message = '当前无法完成智能识别，请稍后重试。') => ({
+const fallbackResult = (
+  message = 'AI recognition is currently unavailable. Please try again later.'
+) => ({
   id: String(Date.now()),
-  item: '识别失败',
-  category: '未识别',
+  item: 'Recognition failed',
+  category: 'Unrecognized',
   confidence: 0,
   timestamp: new Date().toISOString(),
   tips: [message],
   source: 'fallback'
 });
 
+const parseJsonSafely = (value) => {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+};
+
+const isEdgeFunctionMissingError = (error) => {
+  const code = String(error?.code ?? '').toUpperCase();
+  const message = String(error?.message ?? '');
+  const status = Number(error?.status);
+  return (
+    code === 'NOT_FOUND' ||
+    status === 404 ||
+    message.includes('Requested function was not found')
+  );
+};
+
 const normalizeCategory = (value) => {
   const raw = String(value ?? '').trim();
-  if (!raw) return '未识别';
+  if (!raw) return 'Unrecognized';
   const lower = raw.toLowerCase();
   return CATEGORY_MAP[lower] ?? raw;
 };
@@ -53,18 +87,22 @@ const ensureTips = (category, payloadTips = []) => {
     tips.push(normalized);
   });
   if (tips.length) return tips;
-  return [TIP_MAP[category] ?? TIP_MAP.未识别];
+  return [TIP_MAP[category] ?? TIP_MAP.Unrecognized];
 };
 
 const toBase64 = async (photo) => {
-  if (!photo?.path && !photo?.uri) {
-    return null;
-  }
-  const path = photo.path ?? photo.uri;
-  const uri = path.startsWith('file://') ? path : `file://${path}`;
+  const uri = toPhotoUri(photo);
+  if (!uri) return null;
   return FileSystem.readAsStringAsync(uri, {
     encoding: FileSystem.EncodingType.Base64
   });
+};
+
+const toPhotoUri = (photo) => {
+  if (!photo?.path && !photo?.uri) return null;
+  const path = photo.path ?? photo.uri;
+  if (typeof path !== 'string' || !path.length) return null;
+  return path.startsWith('file://') ? path : `file://${path}`;
 };
 
 const parseEmbedding = (payload) => {
@@ -91,9 +129,37 @@ const dot = (a, b) => {
   return sum;
 };
 
+const toLocalSketchEmbedding = (base64, targetDimension) => {
+  if (!base64 || !targetDimension) return null;
+  const sampleSize = Math.min(base64.length, LOCAL_SKETCH_SAMPLE_SIZE);
+  if (!sampleSize) return null;
+  const step = Math.max(1, Math.floor(base64.length / sampleSize));
+  const projected = new Float32Array(targetDimension);
+
+  let cursor = 0;
+  for (let index = 0; index < sampleSize; index += 1) {
+    const code = base64.charCodeAt(cursor);
+    const mixed = ((index + 1) * 1103515245 + (code + 11) * 12345) >>> 0;
+    const bucket = mixed % targetDimension;
+    const sign = mixed & 1 ? 1 : -1;
+    const magnitude = 0.2 + (code % 31) / 31;
+    projected[bucket] += sign * magnitude;
+    cursor = Math.min(base64.length - 1, cursor + step);
+  }
+
+  return projected;
+};
+
 const toNormalizedVector = (vector) => {
-  if (!Array.isArray(vector) || vector.length === 0) return null;
-  const numeric = vector.map((value) => Number(value)).filter(Number.isFinite);
+  if (
+    (!Array.isArray(vector) && !ArrayBuffer.isView(vector)) ||
+    vector.length === 0
+  ) {
+    return null;
+  }
+  const numeric = Array.from(vector, (value) => Number(value)).filter(
+    Number.isFinite
+  );
   if (!numeric.length) return null;
   let sumSquare = 0;
   for (let idx = 0; idx < numeric.length; idx += 1) {
@@ -134,6 +200,15 @@ class ClassifierService {
     this.knowledgeBase = [];
     this.dimension = 0;
     this.initializationError = null;
+    this.edgeUnavailableReason = null;
+    this.edgeDisabled = false;
+    this.edgeMissingWarned = false;
+    this.nativeEmbedWarned = false;
+    this.nativeUnavailableReason = null;
+    this.nativeEmbeddingAvailable =
+      Platform.OS === 'ios' &&
+      typeof mobileClipModule?.embedImage === 'function';
+    this.mode = classifierMode;
     this._initPromise = null;
   }
 
@@ -144,7 +219,10 @@ class ClassifierService {
       loading: this.loading,
       knowledgeCount: this.knowledgeBase.length,
       dimension: this.dimension,
-      initializationError: this.initializationError
+      initializationError: this.initializationError,
+      nativeEmbeddingAvailable: this.nativeEmbeddingAvailable,
+      nativeUnavailableReason: this.nativeUnavailableReason,
+      mode: this.mode
     };
   }
 
@@ -166,7 +244,7 @@ class ClassifierService {
     try {
       const parsed = knowledgeRows;
       if (!Array.isArray(parsed) || !parsed.length) {
-        throw new Error('知识库为空');
+        throw new Error('Knowledge base is empty');
       }
 
       const normalizedRows = [];
@@ -177,13 +255,13 @@ class ClassifierService {
         normalizedRows.push({
           id: `${row?.label ?? 'item'}-${index}`,
           label: row?.label ?? 'Unknown Item',
-          category: normalizeCategory(row?.category ?? '未识别'),
+          category: normalizeCategory(row?.category ?? 'Unrecognized'),
           embedding: normalizedEmbedding
         });
       }
 
       if (!normalizedRows.length) {
-        throw new Error('知识库向量归一化失败');
+        throw new Error('Failed to normalize knowledge-base vectors');
       }
 
       this.dimension = normalizedRows[0].embedding.length;
@@ -195,7 +273,7 @@ class ClassifierService {
     } catch (error) {
       this.ready = false;
       this.initializationError =
-        error instanceof Error ? error.message : '初始化失败';
+        error instanceof Error ? error.message : 'Initialization failed';
       console.warn('[classifier] initialize failed', error);
       throw error;
     }
@@ -214,16 +292,59 @@ class ClassifierService {
   async classify(photo) {
     await this.warmup();
 
+    const nativePayload = await this.classifyWithNativeEmbedding(photo);
+    if (nativePayload) {
+      return nativePayload;
+    }
+
+    if (allowSketchFallback) {
+      const localPayload = await this.classifyWithLocalProjection(photo);
+      if (localPayload) {
+        return localPayload;
+      }
+    } else if (Platform.OS === 'ios' && !this.nativeEmbeddingAvailable) {
+      this.nativeUnavailableReason =
+        this.nativeUnavailableReason ??
+        'Native MobileCLIP module is unavailable in this build. Rebuild iOS app with `pnpm --dir the-trash-rn expo run:ios`.';
+    }
+
+    const allowEdge =
+      this.mode === 'hybrid' ||
+      this.mode === 'edge-first' ||
+      this.mode === 'local-first';
+    if (!allowEdge) {
+      return fallbackResult(
+        this.nativeUnavailableReason ??
+          this.initializationError ??
+          'Local embedding projection failed. Verify camera capture permissions and photo access.'
+      );
+    }
+
     let remotePayload = null;
     try {
       remotePayload = await this.classifyWithEdge(photo);
     } catch (error) {
-      console.warn('[classifier] edge classify failed', error);
+      if (isEdgeFunctionMissingError(error)) {
+        this.edgeDisabled = true;
+        this.edgeUnavailableReason =
+          'Supabase Edge Function "classify" was not found. Deploy it or update EXPO_PUBLIC_SUPABASE_EDGE_FUNCTION_URL.';
+        if (!this.edgeMissingWarned) {
+          this.edgeMissingWarned = true;
+          console.warn('[classifier] edge classify disabled', {
+            code: error?.code,
+            status: error?.status,
+            message: error?.message,
+            hint: this.edgeUnavailableReason
+          });
+        }
+      } else {
+        console.warn('[classifier] edge classify failed', error);
+      }
     }
 
     if (remotePayload?.embedding?.length) {
       const localMatch = await this.findBestMatch(remotePayload.embedding);
-      if (localMatch) {
+      if (localMatch?.accepted) {
         return {
           id: remotePayload.id ?? localMatch.id,
           item: localMatch.item,
@@ -242,7 +363,7 @@ class ClassifierService {
       );
       return {
         id: remotePayload.id ?? String(Date.now()),
-        item: remotePayload.item ?? remotePayload.label ?? '未知物品',
+        item: remotePayload.item ?? remotePayload.label ?? 'Unknown item',
         category,
         confidence: Number(remotePayload.confidence ?? 0.4),
         timestamp: remotePayload.timestamp ?? new Date().toISOString(),
@@ -252,18 +373,71 @@ class ClassifierService {
     }
 
     return fallbackResult(
-      this.initializationError ??
-        'Edge 分类不可用，且未收到可用于本地检索的 embedding。'
+      this.edgeUnavailableReason ??
+        this.initializationError ??
+        'Edge classification is unavailable and no embedding was returned for local retrieval.'
     );
   }
 
+  async classifyWithNativeEmbedding(photo) {
+    if (!this.nativeEmbeddingAvailable || !photo) return null;
+    const imageUri = toPhotoUri(photo);
+    if (!imageUri) return null;
+
+    try {
+      const payload = await mobileClipModule.embedImage(imageUri);
+      const embedding = parseEmbedding(payload);
+      if (!embedding?.length) return null;
+      const localMatch = await this.findBestMatch(embedding);
+      if (!localMatch?.accepted) return null;
+      this.nativeUnavailableReason = null;
+      return {
+        id: localMatch.id ?? String(Date.now()),
+        item: localMatch.item,
+        category: localMatch.category,
+        confidence: localMatch.confidence,
+        timestamp: new Date().toISOString(),
+        tips: ensureTips(localMatch.category, []),
+        source: 'local-mobileclip-image'
+      };
+    } catch (error) {
+      this.nativeUnavailableReason =
+        error?.message ?? 'Native MobileCLIP embedding failed';
+      if (!this.nativeEmbedWarned) {
+        this.nativeEmbedWarned = true;
+        console.warn('[classifier] native mobileclip embed failed', error);
+      }
+      return null;
+    }
+  }
+
+  async classifyWithLocalProjection(photo) {
+    if (!photo || !this.dimension) return null;
+    const imageBase64 = await toBase64(photo);
+    if (!imageBase64) return null;
+    const embedding = toLocalSketchEmbedding(imageBase64, this.dimension);
+    if (!embedding) return null;
+    const localMatch = await this.findBestMatch(embedding);
+    if (!localMatch?.accepted) return null;
+
+    return {
+      id: localMatch.id ?? String(Date.now()),
+      item: localMatch.item,
+      category: localMatch.category,
+      confidence: localMatch.confidence,
+      timestamp: new Date().toISOString(),
+      tips: ensureTips(localMatch.category, []),
+      source: 'local-byte-projection'
+    };
+  }
+
   async classifyWithEdge(photo) {
-    if (!edgeFunctionUrl || !supabaseAnonKey || !photo) {
+    if (this.edgeDisabled || !edgeFunctionUrl || !supabaseAnonKey || !photo) {
       return null;
     }
     const imageBase64 = await toBase64(photo);
     if (!imageBase64) {
-      throw new Error('未读取到照片');
+      throw new Error('Failed to read photo');
     }
     const response = await fetch(edgeFunctionUrl, {
       method: 'POST',
@@ -281,9 +455,17 @@ class ClassifierService {
     });
     if (!response.ok) {
       const message = await response.text();
-      throw new Error(message || 'Edge Function 调用失败');
+      const parsed = parseJsonSafely(message);
+      const error = new Error(
+        parsed?.message ?? message ?? 'Edge Function request failed'
+      );
+      error.code = parsed?.code;
+      error.status = response.status;
+      throw error;
     }
     const payload = await response.json();
+    this.edgeDisabled = false;
+    this.edgeUnavailableReason = null;
     const embedding = parseEmbedding(payload);
     return {
       ...payload,

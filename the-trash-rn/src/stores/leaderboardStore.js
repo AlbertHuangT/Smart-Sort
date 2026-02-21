@@ -56,7 +56,7 @@ export const useLeaderboardStore = create(
             myCommunities: [],
             selectedCommunityId: null,
             loadingCommunities: false,
-            error: messageFromError(error, '加载社群失败')
+            error: messageFromError(error, 'Failed to load communities')
           });
           return null;
         }
@@ -89,7 +89,7 @@ export const useLeaderboardStore = create(
             entries: [],
             myRanking: null,
             loading: false,
-            error: messageFromError(error, '加载排行榜失败')
+            error: messageFromError(error, 'Failed to load leaderboard')
           });
         }
       },
@@ -114,7 +114,7 @@ export const useLeaderboardStore = create(
           });
         } catch (error) {
           const appError = toAppError(error, {
-            message: '同步通讯录失败'
+            message: 'Failed to sync contacts'
           });
           console.warn('[leaderboard] sync contacts failed', appError);
           set({

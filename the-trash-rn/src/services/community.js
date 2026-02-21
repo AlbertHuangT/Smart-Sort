@@ -30,7 +30,7 @@ const rpc = async (fn, args = {}) => {
   const { data, error } = await supabase.rpc(fn, args);
   if (error) {
     throw fromSupabaseError(error, {
-      message: '请求失败，请稍后再试'
+      message: 'Request failed. Please try again later.'
     });
   }
   return data;
@@ -94,7 +94,7 @@ const getCityCoordinates = async (cityName) => {
     .maybeSingle();
   if (error) {
     throw fromSupabaseError(error, {
-      message: '读取城市坐标失败'
+      message: 'Failed to load city coordinates'
     });
   }
   return {
@@ -114,7 +114,7 @@ export const communityService = {
       .order('city', { ascending: true });
     if (error) {
       throw fromSupabaseError(error, {
-        message: '加载城市失败'
+        message: 'Failed to load cities'
       });
     }
 
@@ -188,7 +188,7 @@ export const communityService = {
       .order('member_count', { ascending: false });
     if (error) {
       throw fromSupabaseError(error, {
-        message: '加载社群失败'
+        message: 'Failed to load communities'
       });
     }
     return (data ?? []).map(formatGroup);
@@ -196,7 +196,9 @@ export const communityService = {
 
   async createEvent(payload) {
     if (!hasSupabaseConfig()) {
-      throw new AppError('请先连接 Supabase', { code: ERROR_CODES.BACKEND });
+      throw new AppError('Please connect to Supabase first', {
+        code: ERROR_CODES.BACKEND
+      });
     }
     const eventDate = payload.startTime
       ? new Date(payload.startTime)
@@ -217,12 +219,12 @@ export const communityService = {
       p_icon_name: payload.iconName ?? 'calendar'
     });
     if (!data?.success) {
-      throw new AppError(data?.message ?? '创建活动失败', {
+      throw new AppError(data?.message ?? 'Failed to create event', {
         code: ERROR_CODES.BACKEND
       });
     }
     if (!data?.event_id) {
-      throw new AppError('活动创建成功但未返回活动 ID', {
+      throw new AppError('Event created but no event ID was returned', {
         code: ERROR_CODES.BACKEND
       });
     }
@@ -236,7 +238,9 @@ export const communityService = {
 
   async createCommunity(payload) {
     if (!hasSupabaseConfig()) {
-      throw new AppError('请先连接 Supabase', { code: ERROR_CODES.BACKEND });
+      throw new AppError('Please connect to Supabase first', {
+        code: ERROR_CODES.BACKEND
+      });
     }
     const cityName = payload.city ?? payload.cityName ?? payload.cityId;
     const baseId = slugify(`${payload.name}-${cityName}`);
@@ -251,7 +255,7 @@ export const communityService = {
       p_longitude: toNumber(payload.longitude)
     });
     if (!data?.success) {
-      throw new AppError(data?.message ?? '创建社群失败', {
+      throw new AppError(data?.message ?? 'Failed to create community', {
         code: ERROR_CODES.BACKEND
       });
     }
@@ -267,7 +271,7 @@ export const communityService = {
       .maybeSingle();
     if (error) {
       throw fromSupabaseError(error, {
-        message: '加载社群详情失败'
+        message: 'Failed to load community details'
       });
     }
     return data ? formatGroup(data) : null;
@@ -284,7 +288,7 @@ export const communityService = {
       .maybeSingle();
     if (error) {
       throw fromSupabaseError(error, {
-        message: '加载活动详情失败'
+        message: 'Failed to load event details'
       });
     }
     return data ? formatEvent(data) : null;
@@ -297,7 +301,7 @@ export const communityService = {
       p_message: null
     });
     if (!result?.success) {
-      throw new AppError(result?.message ?? '加入社群失败', {
+      throw new AppError(result?.message ?? 'Failed to join community', {
         code: ERROR_CODES.BACKEND
       });
     }
@@ -310,7 +314,7 @@ export const communityService = {
       p_event_id: id
     });
     if (!result?.success) {
-      throw new AppError(result?.message ?? '报名失败', {
+      throw new AppError(result?.message ?? 'Failed to RSVP', {
         code: ERROR_CODES.BACKEND
       });
     }
@@ -338,7 +342,7 @@ export const communityService = {
     } catch (error) {
       console.warn(
         '[communityService] adminDashboard failed',
-        messageFromError(error, '加载管理数据失败')
+        messageFromError(error, 'Failed to load admin data')
       );
       return { requests: [], members: [], logs: [] };
     }

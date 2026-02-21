@@ -32,7 +32,7 @@ export const useCommunityStore = create((set, get) => ({
       set({ eventsLoading: false });
       console.warn(
         '[communityStore] loadEvents failed',
-        messageFromError(error, '加载活动失败')
+        messageFromError(error, 'Failed to load events')
       );
     }
   },
@@ -46,7 +46,7 @@ export const useCommunityStore = create((set, get) => ({
       set({ groupsLoading: false });
       console.warn(
         '[communityStore] loadGroups failed',
-        messageFromError(error, '加载社群失败')
+        messageFromError(error, 'Failed to load communities')
       );
     }
   },
@@ -60,7 +60,7 @@ export const useCommunityStore = create((set, get) => ({
     } catch (error) {
       console.warn(
         '[communityStore] refreshEvent failed',
-        messageFromError(error, '刷新活动失败')
+        messageFromError(error, 'Failed to refresh events')
       );
       return null;
     }
@@ -77,7 +77,7 @@ export const useCommunityStore = create((set, get) => ({
     } catch (error) {
       console.warn(
         '[communityStore] refreshCommunity failed',
-        messageFromError(error, '刷新社群失败')
+        messageFromError(error, 'Failed to refresh communities')
       );
       return null;
     }
@@ -85,7 +85,9 @@ export const useCommunityStore = create((set, get) => ({
   async createEvent(payload) {
     const event = await communityService.createEvent(payload);
     if (!event) {
-      throw new AppError('创建活动失败', { code: ERROR_CODES.BACKEND });
+      throw new AppError('Failed to create event', {
+        code: ERROR_CODES.BACKEND
+      });
     }
     set((state) => {
       const shouldInsert = state.activeCityId === resolveCityKey(event.cityId);
@@ -100,7 +102,9 @@ export const useCommunityStore = create((set, get) => ({
   async createCommunity(payload) {
     const community = await communityService.createCommunity(payload);
     if (!community) {
-      throw new AppError('创建社群失败', { code: ERROR_CODES.BACKEND });
+      throw new AppError('Failed to create community', {
+        code: ERROR_CODES.BACKEND
+      });
     }
     set((state) => ({
       groups: [community, ...state.groups],

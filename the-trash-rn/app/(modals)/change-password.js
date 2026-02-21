@@ -13,14 +13,14 @@ export default function ChangePasswordModal() {
 
   const handleSave = async () => {
     if (password !== confirm) {
-      setStatus('两次输入不一致');
+      setStatus('The two passwords do not match');
       return;
     }
     setSaving(true);
     setStatus('');
     try {
       await accountService.changePassword(password);
-      setStatus('密码已更新');
+      setStatus('Password updated');
       setPassword('');
       setConfirm('');
     } catch (error) {
@@ -31,26 +31,26 @@ export default function ChangePasswordModal() {
   };
 
   return (
-    <ModalSheet title="修改密码">
+    <ModalSheet title="Change Password">
       <TrashInput
-        label="新密码"
+        label="New password"
         value={password}
         onChangeText={setPassword}
-        placeholder="不少于 8 位"
+        placeholder="At least 8 characters"
         secureTextEntry
       />
       <TrashInput
-        label="确认密码"
+        label="Confirm password"
         value={confirm}
         onChangeText={setConfirm}
-        placeholder="再次输入"
+        placeholder="Enter again"
         secureTextEntry
       />
       {status ? (
         <Text className="text-white/70 text-xs mb-3">{status}</Text>
       ) : null}
       <TrashButton
-        title={saving ? '保存中…' : '保存'}
+        title={saving ? 'Saving...' : 'Save'}
         onPress={handleSave}
         disabled={saving}
       />

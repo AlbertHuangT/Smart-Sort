@@ -20,7 +20,9 @@ export default function UpgradeGuestModal() {
       await accountService.upgradeGuest({ email, password });
       const session = await refreshSession();
       setStatus(
-        session ? '升级成功，已完成登录' : '账号创建成功，请查收验证邮件'
+        session
+          ? 'Upgrade successful. Signed in'
+          : 'Account created successfully. Please verify via email'
       );
       setEmail('');
       setPassword('');
@@ -32,29 +34,29 @@ export default function UpgradeGuestModal() {
   };
 
   return (
-    <ModalSheet title="升级账号">
+    <ModalSheet title="Upgrade Account">
       <Text className="text-white/70 text-sm mb-4">
-        游客进度只保存在本地。升级后可同步到
-        Supabase，并开启对战、排行榜等功能。
+        Guest progress is stored locally only. After upgrade, it can sync to
+        Supabase and unlock duels, leaderboards, and more.
       </Text>
       <TrashInput
-        label="邮箱"
+        label="Email"
         value={email}
         onChangeText={setEmail}
         placeholder="you@example.com"
       />
       <TrashInput
-        label="密码"
+        label="Password"
         value={password}
         onChangeText={setPassword}
-        placeholder="不少于 8 位"
+        placeholder="At least 8 characters"
         secureTextEntry
       />
       {status ? (
         <Text className="text-white/70 text-xs mb-3">{status}</Text>
       ) : null}
       <TrashButton
-        title={loading ? '提交中…' : '使用邮箱注册'}
+        title={loading ? 'Submitting...' : 'Sign up with Email'}
         onPress={handleUpgrade}
         disabled={loading}
       />

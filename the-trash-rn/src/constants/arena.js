@@ -1,32 +1,32 @@
 export const ARENA_MODES = [
   {
     key: 'classic',
-    title: '经典模式',
-    description: '限时 10 题竞技',
+    title: 'Classic Mode',
+    description: 'Timed 10-question challenge',
     href: '/(tabs)/arena/classic'
   },
   {
     key: 'speed',
-    title: '极速分类',
-    description: '60 秒冲分',
+    title: 'Speed Sort',
+    description: 'Score sprint in 60 seconds',
     href: '/(tabs)/arena/speed-sort'
   },
   {
     key: 'streak',
-    title: '连胜模式',
-    description: '容错 0 的硬核挑战',
+    title: 'Streak Mode',
+    description: 'Hardcore zero-miss challenge',
     href: '/(tabs)/arena/streak'
   },
   {
     key: 'daily',
-    title: '每日挑战',
-    description: '每日 1 次超稀有奖励',
+    title: 'Daily Challenge',
+    description: 'One ultra-rare reward per day',
     href: '/(tabs)/arena/daily-challenge'
   },
   {
     key: 'duel',
-    title: '实时对战',
-    description: '1v1 邀请好友',
+    title: 'Live Duel',
+    description: '1v1 invite your friends',
     href: '/(tabs)/arena/duel/lobby'
   }
 ];

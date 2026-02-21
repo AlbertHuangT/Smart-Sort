@@ -11,9 +11,9 @@ import {
 import { useCommunityStore } from 'src/stores/communityStore';
 
 const TABS = [
-  { value: 'requests', label: '申请' },
-  { value: 'members', label: '成员' },
-  { value: 'logs', label: '日志' }
+  { value: 'requests', label: 'Requests' },
+  { value: 'members', label: 'Members' },
+  { value: 'logs', label: 'Logs' }
 ];
 
 export default function AdminPanelModal() {
@@ -31,7 +31,7 @@ export default function AdminPanelModal() {
   const [tab, setTab] = useState('requests');
   const [memberId, setMemberId] = useState('');
   const [amount, setAmount] = useState('10');
-  const [reason, setReason] = useState('贡献表现');
+  const [reason, setReason] = useState('Contribution');
 
   useEffect(() => {
     if (communityId) {
@@ -51,12 +51,15 @@ export default function AdminPanelModal() {
       setMemberId('');
       setAmount('10');
     } catch (error) {
-      Alert.alert('操作失败', error.message ?? '暂不可用');
+      Alert.alert(
+        'Operation failed',
+        error.message ?? 'Temporarily unavailable'
+      );
     }
   };
 
   return (
-    <ModalSheet title="社群后台">
+    <ModalSheet title="Community Admin">
       <TrashSegmentedControl options={TABS} value={tab} onChange={setTab} />
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -65,7 +68,7 @@ export default function AdminPanelModal() {
         {tab === 'requests' && (
           <View>
             {dashboard.requests.length === 0 ? (
-              <Text className="text-white/60 text-sm">暂无待审批申请</Text>
+              <Text className="text-white/60 text-sm">No pending requests</Text>
             ) : (
               dashboard.requests.map((request) => (
                 <View
@@ -80,7 +83,7 @@ export default function AdminPanelModal() {
                   </Text>
                   <View className="flex-row gap-3">
                     <TrashButton
-                      title="通过"
+                      title="Approve"
                       onPress={() =>
                         processRequest({
                           communityId,
@@ -91,7 +94,7 @@ export default function AdminPanelModal() {
                       style={{ flex: 1 }}
                     />
                     <TrashButton
-                      title="拒绝"
+                      title="Reject"
                       variant="outline"
                       onPress={() =>
                         processRequest({
@@ -123,27 +126,30 @@ export default function AdminPanelModal() {
                   <Text className="text-white/50 text-xs">{member.role}</Text>
                 </View>
                 <Text className="text-white/60 text-xs mb-3">
-                  积分 {member.points ?? 0}
+                  Points {member.points ?? 0}
                 </Text>
                 <View className="flex-row gap-3">
                   <TrashButton
-                    title="+10 分"
+                    title="+10 pts"
                     onPress={async () => {
                       try {
                         await grantCredits({
                           communityId,
                           memberId: member.id,
                           amount: 10,
-                          reason: '贡献'
+                          reason: 'Contribution'
                         });
                       } catch (error) {
-                        Alert.alert('操作失败', error.message ?? '暂不可用');
+                        Alert.alert(
+                          'Operation failed',
+                          error.message ?? 'Temporarily unavailable'
+                        );
                       }
                     }}
                     style={{ flex: 1 }}
                   />
                   <TrashButton
-                    title="移除"
+                    title="Remove"
                     variant="outline"
                     onPress={() =>
                       removeMember({ communityId, memberId: member.id })
@@ -155,28 +161,28 @@ export default function AdminPanelModal() {
             ))}
             <View className="rounded-3xl border border-white/10 p-4 mt-4">
               <Text className="text-white font-semibold mb-2">
-                手动发放积分
+                Manual point grant
               </Text>
               <TrashInput
-                label="成员 ID"
+                label="Member ID"
                 value={memberId}
                 onChangeText={setMemberId}
                 placeholder="mem-1"
               />
               <TrashInput
-                label="积分"
+                label="Points"
                 value={amount}
                 onChangeText={setAmount}
                 keyboardType="number-pad"
                 placeholder="10"
               />
               <TrashInput
-                label="原因"
+                label="Reason"
                 value={reason}
                 onChangeText={setReason}
-                placeholder="详细说明"
+                placeholder="Detailed note"
               />
-              <TrashButton title="发放" onPress={handleGrantCredits} />
+              <TrashButton title="Grant" onPress={handleGrantCredits} />
             </View>
           </View>
         )}
@@ -192,7 +198,7 @@ export default function AdminPanelModal() {
               </View>
             ))}
             {dashboard.logs.length === 0 && (
-              <Text className="text-white/60 text-sm">暂无日志</Text>
+              <Text className="text-white/60 text-sm">No logs yet</Text>
             )}
           </View>
         )}

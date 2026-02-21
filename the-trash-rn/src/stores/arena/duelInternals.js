@@ -46,7 +46,7 @@ export const hasDuelCountdown = (duelId) => duelCountdownTimers.has(duelId);
 export const createDuelState = (duelId, submit) => ({
   id: duelId,
   status: 'loading',
-  opponent: '等待对手',
+  opponent: 'Waiting for opponent',
   countdown: 0,
   countdownStartAtServerMs: null,
   questions: [],

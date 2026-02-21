@@ -19,55 +19,65 @@ export default function AccountModal() {
   const equippedBadge = badges.find((badge) => badge.id === equippedBadgeId);
 
   return (
-    <ModalSheet title="账户">
+    <ModalSheet title="Account">
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 80 }}
       >
         <View className="bg-white/5 rounded-3xl border border-white/10 p-4 mb-4">
           <Text className="text-white text-xl font-semibold">
-            {profile?.displayName ?? '游客'}
+            {profile?.displayName ?? 'Guest'}
           </Text>
           <Text className="text-white/70 text-sm">
-            等级 {profile?.level ?? 1}
+            Level {profile?.level ?? 1}
           </Text>
           <Text className="text-white/70 text-xs mt-1">
-            徽章：{equippedBadge?.title ?? '未佩戴'} · 积分 {points}
+            Badge: {equippedBadge?.title ?? 'None'} · Points {points}
           </Text>
         </View>
         <Pressable
           onPress={() => router.push('/(modals)/account-settings')}
           className="rounded-3xl border border-white/10 p-4 mb-3"
         >
-          <Text className="text-white font-semibold">账户设置</Text>
-          <Text className="text-white/60 text-xs">登录、隐私、安全</Text>
+          <Text className="text-white font-semibold">Account Settings</Text>
+          <Text className="text-white/60 text-xs">
+            Sign-in, privacy, security
+          </Text>
         </Pressable>
         <Pressable
           onPress={() => router.push('/(modals)/theme-picker')}
           className="rounded-3xl border border-white/10 p-4 mb-3"
         >
-          <Text className="text-white font-semibold">主题 · {themeName}</Text>
+          <Text className="text-white font-semibold">Theme · {themeName}</Text>
           <Text className="text-white/60 text-xs">{themeLabels}</Text>
         </Pressable>
         <Pressable
           onPress={() => router.push('/(modals)/badges')}
           className="rounded-3xl border border-white/10 p-4 mb-3"
         >
-          <Text className="text-white font-semibold">成就与徽章</Text>
-          <Text className="text-white/60 text-xs">查看并佩戴解锁的徽章</Text>
+          <Text className="text-white font-semibold">
+            Achievements & Badges
+          </Text>
+          <Text className="text-white/60 text-xs">
+            View and equip unlocked badges
+          </Text>
         </Pressable>
         <Pressable
           onPress={() => router.push('/(modals)/rewards')}
           className="rounded-3xl border border-white/10 p-4 mb-3"
         >
-          <Text className="text-white font-semibold">积分奖励</Text>
-          <Text className="text-white/60 text-xs">使用积分兑换礼品</Text>
+          <Text className="text-white font-semibold">Rewards</Text>
+          <Text className="text-white/60 text-xs">
+            Redeem gifts with points
+          </Text>
         </Pressable>
         <Pressable
           onPress={cycleTheme}
           className="rounded-3xl bg-white/5 p-4 mb-6"
         >
-          <Text className="text-brand-neon font-semibold">随机切换主题</Text>
+          <Text className="text-brand-neon font-semibold">
+            Randomly switch theme
+          </Text>
         </Pressable>
       </ScrollView>
     </ModalSheet>

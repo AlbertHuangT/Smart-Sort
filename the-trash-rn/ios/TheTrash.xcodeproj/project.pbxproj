@@ -14,6 +14,9 @@
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
 		B18059E884C0ABDD17F3DC3D /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAC715A2D49A985799AEE119 /* ExpoModulesProvider.swift */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
+		C1A200011A2B3C4D5E6F7001 /* MobileClipModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A200011A2B3C4D5E6F7101 /* MobileClipModule.swift */; };
+		C1A200011A2B3C4D5E6F7002 /* MobileClipModuleBridge.m in Sources */ = {isa = PBXBuildFile; fileRef = C1A200011A2B3C4D5E6F7102 /* MobileClipModuleBridge.m */; };
+		C1A200011A2B3C4D5E6F7003 /* MobileCLIPImage.mlpackage in Resources */ = {isa = PBXBuildFile; fileRef = C1A200011A2B3C4D5E6F7103 /* MobileCLIPImage.mlpackage */; };
 		F95BEAA71BBE4BF915E8D377 /* libPods-TheTrash.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 597FFC7A7E7AEEA50DE81927 /* libPods-TheTrash.a */; };
 		FAB71089568F4DD3BDA5B312 /* noop-file.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B1B1101B4A44B099B4AEFA6 /* noop-file.swift */; };
 /* End PBXBuildFile section */
@@ -30,6 +33,9 @@
 		8507A66A9FA7471C87755385 /* TheTrash-Bridging-Header.h */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.c.h; name = "TheTrash-Bridging-Header.h"; path = "TheTrash/TheTrash-Bridging-Header.h"; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = TheTrash/SplashScreen.storyboard; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
+		C1A200011A2B3C4D5E6F7101 /* MobileClipModule.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MobileClipModule.swift; path = TheTrash/MobileClipModule.swift; sourceTree = "<group>"; };
+		C1A200011A2B3C4D5E6F7102 /* MobileClipModuleBridge.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = MobileClipModuleBridge.m; path = TheTrash/MobileClipModuleBridge.m; sourceTree = "<group>"; };
+		C1A200011A2B3C4D5E6F7103 /* MobileCLIPImage.mlpackage */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder; name = MobileCLIPImage.mlpackage; path = MobileCLIPImage.mlpackage; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F1FF5E31BA428F8F71E445F0 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = TheTrash/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		F5927F4907DFD6B1EF739B29 /* Pods-TheTrash.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TheTrash.debug.xcconfig"; path = "Target Support Files/Pods-TheTrash/Pods-TheTrash.debug.xcconfig"; sourceTree = "<group>"; };
@@ -55,7 +61,10 @@
 				BB2F792B24A3F905000567C9 /* Supporting */,
 				13B07FAF1A68108700A75B9A /* AppDelegate.h */,
 				13B07FB01A68108700A75B9A /* AppDelegate.mm */,
+				C1A200011A2B3C4D5E6F7101 /* MobileClipModule.swift */,
+				C1A200011A2B3C4D5E6F7102 /* MobileClipModuleBridge.m */,
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
+				C1A200011A2B3C4D5E6F7201 /* Models */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				13B07FB71A68108700A75B9A /* main.m */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
@@ -64,6 +73,15 @@
 				F1FF5E31BA428F8F71E445F0 /* PrivacyInfo.xcprivacy */,
 			);
 			name = TheTrash;
+			sourceTree = "<group>";
+		};
+		C1A200011A2B3C4D5E6F7201 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				C1A200011A2B3C4D5E6F7103 /* MobileCLIPImage.mlpackage */,
+			);
+			name = Models;
+			path = TheTrash/Models;
 			sourceTree = "<group>";
 		};
 		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
@@ -203,6 +221,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
+				C1A200011A2B3C4D5E6F7003 /* MobileCLIPImage.mlpackage in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
 				1DC378E7CC495414F8007CED /* PrivacyInfo.xcprivacy in Resources */,
@@ -328,7 +347,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				13B07FBC1A68108700A75B9A /* AppDelegate.mm in Sources */,
+				C1A200011A2B3C4D5E6F7002 /* MobileClipModuleBridge.m in Sources */,
 				13B07FC11A68108700A75B9A /* main.m in Sources */,
+				C1A200011A2B3C4D5E6F7001 /* MobileClipModule.swift in Sources */,
 				B18059E884C0ABDD17F3DC3D /* ExpoModulesProvider.swift in Sources */,
 				FAB71089568F4DD3BDA5B312 /* noop-file.swift in Sources */,
 			);

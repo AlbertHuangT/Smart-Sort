@@ -10,7 +10,7 @@ export default function ThemePickerModal() {
   const { themeName, setTheme } = useThemeStore();
 
   return (
-    <ModalSheet title="选择主题">
+    <ModalSheet title="Choose Theme">
       <View className="gap-3">
         {Object.entries(THEMES).map(([key, config]) => (
           <Pressable
@@ -48,7 +48,7 @@ export default function ThemePickerModal() {
                     fontWeight: '700'
                   }}
                 >
-                  当前
+                  Current
                 </Text>
               ) : null}
             </View>
@@ -63,12 +63,12 @@ export default function ThemePickerModal() {
             </Text>
             <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
               {[
-                config.accents.blue,
-                config.accents.green,
-                config.accents.orange
-              ].map((color) => (
+                { slot: 'blue', color: config.accents.blue },
+                { slot: 'green', color: config.accents.green },
+                { slot: 'orange', color: config.accents.orange }
+              ].map(({ slot, color }) => (
                 <View
-                  key={color}
+                  key={slot}
                   style={{
                     width: 16,
                     height: 16,

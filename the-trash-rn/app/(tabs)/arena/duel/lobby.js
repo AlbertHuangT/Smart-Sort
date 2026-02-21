@@ -5,8 +5,23 @@ import { FlatList, Pressable, Text, View } from 'react-native';
 import ScreenShell from 'src/components/layout/ScreenShell';
 import { TrashButton } from 'src/components/themed';
 import { useArenaStore } from 'src/stores/arenaStore';
+import { useTheme } from 'src/theme/ThemeProvider';
 
 export default function DuelLobbyScreen() {
+  const theme = useTheme();
+  const spacing = theme.spacing ?? {};
+  const radii = theme.radii ?? {};
+  const labelType = theme.typography?.label ?? {
+    size: 14,
+    lineHeight: 19,
+    letterSpacing: 0.18
+  };
+  const captionType = theme.typography?.caption ?? {
+    size: 12,
+    lineHeight: 17,
+    letterSpacing: 0.14
+  };
+
   const pendingChallenges = useArenaStore((state) => state.pendingChallenges);
   const refreshChallenges = useArenaStore((state) => state.refreshChallenges);
   const challenges = Object.values(pendingChallenges);
@@ -16,15 +31,21 @@ export default function DuelLobbyScreen() {
   }, [refreshChallenges]);
 
   return (
-    <ScreenShell title="实时对战大厅" useScroll={false}>
-      <View className="flex-row gap-3 mb-4">
+    <ScreenShell title="Live Duel Lobby" useScroll={false}>
+      <View
+        style={{
+          flexDirection: 'row',
+          gap: spacing.sm ?? 10,
+          marginBottom: spacing.md ?? 14
+        }}
+      >
         <TrashButton
-          title="邀请好友"
+          title="Invite Friends"
           onPress={() => router.push('/(modals)/challenge-invite')}
           style={{ flex: 1 }}
         />
         <TrashButton
-          title="刷新"
+          title="Refresh"
           variant="outline"
           onPress={refreshChallenges}
           style={{ flex: 1 }}
@@ -34,21 +55,65 @@ export default function DuelLobbyScreen() {
       <FlatList
         data={challenges}
         keyExtractor={(item) => item.id}
+        contentContainerStyle={{ paddingBottom: spacing.xxl ?? 36 }}
         ListEmptyComponent={() => (
-          <View className="rounded-3xl border border-white/10 bg-white/5 p-5 items-center">
-            <Text className="text-white/60">暂时没有待处理挑战</Text>
+          <View
+            style={{
+              borderRadius: radii.card ?? 20,
+              borderWidth: 1,
+              borderColor: theme.tabBar.border,
+              backgroundColor: theme.palette.card,
+              paddingHorizontal: spacing.lg ?? 20,
+              paddingVertical: spacing.lg ?? 20,
+              alignItems: 'center'
+            }}
+          >
+            <Text
+              style={{
+                color: theme.palette.textSecondary,
+                fontSize: labelType.size,
+                lineHeight: labelType.lineHeight,
+                letterSpacing: labelType.letterSpacing
+              }}
+            >
+              No pending challenges right now
+            </Text>
           </View>
         )}
         renderItem={({ item }) => (
           <Pressable
-            className="rounded-3xl border border-white/10 bg-white/5 p-4 mb-3"
+            style={{
+              borderRadius: radii.card ?? 20,
+              borderWidth: 1,
+              borderColor: theme.tabBar.border,
+              backgroundColor: theme.palette.card,
+              paddingHorizontal: spacing.md ?? 14,
+              paddingVertical: spacing.md ?? 14,
+              marginBottom: spacing.sm ?? 10
+            }}
             onPress={() => router.push(`/(modals)/challenge-accept/${item.id}`)}
           >
-            <Text className="text-white font-semibold">
-              {item.opponentName ?? item.opponent ?? '未知对手'}
+            <Text
+              style={{
+                color: theme.palette.textPrimary,
+                fontWeight: '700',
+                fontSize: labelType.size,
+                lineHeight: labelType.lineHeight,
+                letterSpacing: labelType.letterSpacing
+              }}
+            >
+              {item.opponentName ?? item.opponent ?? 'Unknown opponent'}
             </Text>
-            <Text className="text-white/60 text-xs mt-1">
-              状态 {item.status ?? 'pending'}
+            <Text
+              style={{
+                color: theme.palette.textSecondary,
+                fontSize: captionType.size,
+                lineHeight: captionType.lineHeight,
+                letterSpacing: captionType.letterSpacing,
+                marginTop: 2
+              }}
+            >
+              Status {item.status ?? 'pending'}
             </Text>
           </Pressable>
         )}

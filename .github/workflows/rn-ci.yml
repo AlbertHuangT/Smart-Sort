@@ -10,8 +10,6 @@ on:
       - "Makefile"
       - "README.md"
       - ".github/workflows/rn-ci.yml"
-    paths-ignore:
-      - "legacy/**"
   workflow_dispatch:
 
 jobs:

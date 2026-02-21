@@ -52,9 +52,9 @@ export default function LocationPickerModal() {
   };
 
   const permissionLabel = useMemo(() => {
-    if (permissionStatus === 'granted') return '定位权限已开启';
-    if (permissionStatus === 'denied') return '定位权限未开启';
-    return '可授权后自动定位到最近城市';
+    if (permissionStatus === 'granted') return 'Location permission enabled';
+    if (permissionStatus === 'denied') return 'Location permission disabled';
+    return 'Grant permission to auto-locate the nearest city';
   }, [permissionStatus]);
 
   const handleLocate = async () => {
@@ -68,7 +68,7 @@ export default function LocationPickerModal() {
   const showLoadingState = loading && cities.length === 0 && !locating;
 
   return (
-    <ModalSheet title="选择城市">
+    <ModalSheet title="Select City">
       <View
         style={{
           borderRadius: 20,
@@ -86,7 +86,7 @@ export default function LocationPickerModal() {
             fontSize: 15
           }}
         >
-          当前城市：{currentCity?.name ?? '未选择'}
+          Current city: {currentCity?.name ?? 'Not selected'}
         </Text>
         <Text
           style={{
@@ -132,7 +132,7 @@ export default function LocationPickerModal() {
               fontSize: 13
             }}
           >
-            {locating ? '定位中…' : '使用当前位置'}
+            {locating ? 'Locating...' : 'Use Current Location'}
           </Text>
         </Pressable>
       </View>
@@ -144,14 +144,14 @@ export default function LocationPickerModal() {
           marginBottom: 8
         }}
       >
-        手动选择城市
+        Choose City Manually
       </Text>
 
       {showLoadingState ? (
         <View className="flex-1 items-center justify-center py-12">
           <ActivityIndicator color={theme.accents.blue} />
           <Text style={{ color: theme.palette.textSecondary, marginTop: 12 }}>
-            加载城市列表…
+            Loading city list...
           </Text>
         </View>
       ) : (
@@ -167,7 +167,7 @@ export default function LocationPickerModal() {
           ListEmptyComponent={() => (
             <View className="items-center py-8">
               <Text style={{ color: theme.palette.textSecondary }}>
-                暂无城市数据，先试试“使用当前位置”
+                No city data yet. Try "Use Current Location" first.
               </Text>
             </View>
           )}
@@ -213,7 +213,7 @@ export default function LocationPickerModal() {
                   <Text
                     style={{ color: theme.palette.textSecondary, fontSize: 11 }}
                   >
-                    点击切换到该城市
+                    Tap to switch to this city
                   </Text>
                 </View>
               </View>
@@ -225,7 +225,7 @@ export default function LocationPickerModal() {
                     fontWeight: '700'
                   }}
                 >
-                  当前
+                  Current
                 </Text>
               ) : (
                 <Feather

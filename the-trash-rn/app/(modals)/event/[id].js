@@ -6,7 +6,7 @@ import ModalSheet from 'src/components/layout/ModalSheet';
 import { useCommunityStore } from 'src/stores/communityStore';
 
 const formatTime = (isoString) => {
-  if (!isoString) return '待定时间';
+  if (!isoString) return 'TBD';
   try {
     return new Date(isoString).toLocaleString('zh-CN', {
       month: 'short',
@@ -46,14 +46,14 @@ export default function EventDetailModal() {
   };
 
   return (
-    <ModalSheet title={event?.title ?? '活动'}>
+    <ModalSheet title={event?.title ?? 'Events'}>
       <ScrollView contentContainerStyle={{ paddingBottom: 48 }}>
         <Text className="text-white/60 text-xs mb-2">
-          {formatTime(event?.startTime)} · {event?.venue ?? '待定地点'}
+          {formatTime(event?.startTime)} · {event?.venue ?? 'TBD venue'}
         </Text>
         <Text className="text-white/70 text-sm mb-6">{event?.description}</Text>
         <Text className="text-white/60 text-xs mb-2">
-          已报名 {event?.attendees ?? 0}/{event?.quota ?? 0}
+          Registered {event?.attendees ?? 0}/{event?.quota ?? 0}
         </Text>
         <Pressable
           onPress={handleRsvp}
@@ -61,7 +61,7 @@ export default function EventDetailModal() {
           className="bg-brand-neon rounded-3xl py-3 items-center"
         >
           <Text className="text-black font-semibold">
-            {rsvping ? '报名中…' : '我要参加'}
+            {rsvping ? 'Registering...' : 'Join event'}
           </Text>
         </Pressable>
       </ScrollView>

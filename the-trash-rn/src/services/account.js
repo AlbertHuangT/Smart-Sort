@@ -14,7 +14,7 @@ const getCurrentSession = async () => {
   if (error) {
     throw fromSupabaseError(error, {
       code: ERROR_CODES.AUTH,
-      message: '读取登录状态失败'
+      message: 'Failed to read auth state'
     });
   }
   return data.session ?? null;
@@ -23,10 +23,14 @@ const getCurrentSession = async () => {
 export const accountService = {
   async requestPhoneOtp(phone) {
     if (!phone)
-      throw new AppError('请输入手机号', { code: ERROR_CODES.VALIDATION });
+      throw new AppError('Please enter phone number', {
+        code: ERROR_CODES.VALIDATION
+      });
     const normalizedPhone = normalizePhoneNumber(phone);
     if (!normalizedPhone) {
-      throw new AppError('手机号格式不正确', { code: ERROR_CODES.VALIDATION });
+      throw new AppError('Invalid phone number format', {
+        code: ERROR_CODES.VALIDATION
+      });
     }
     if (hasSupabaseConfig()) {
       const session = await getCurrentSession();
@@ -36,20 +40,22 @@ export const accountService = {
       if (error)
         throw fromSupabaseError(error, {
           code: ERROR_CODES.AUTH,
-          message: '发送手机验证码失败'
+          message: 'Failed to send phone verification code'
         });
     }
     return true;
   },
   async bindPhone({ phone, code }) {
     if (!phone || !code) {
-      throw new AppError('请输入手机号和验证码', {
+      throw new AppError('Please enter phone number and verification code', {
         code: ERROR_CODES.VALIDATION
       });
     }
     const normalizedPhone = normalizePhoneNumber(phone);
     if (!normalizedPhone) {
-      throw new AppError('手机号格式不正确', { code: ERROR_CODES.VALIDATION });
+      throw new AppError('Invalid phone number format', {
+        code: ERROR_CODES.VALIDATION
+      });
     }
     if (hasSupabaseConfig()) {
       const session = await getCurrentSession();
@@ -61,7 +67,7 @@ export const accountService = {
       if (error)
         throw fromSupabaseError(error, {
           code: ERROR_CODES.AUTH,
-          message: '手机验证码校验失败'
+          message: 'Phone verification failed'
         });
     }
     return true;
@@ -69,7 +75,9 @@ export const accountService = {
   async requestEmailOtp(email) {
     const normalizedEmail = resolveEmail(email);
     if (!normalizedEmail) {
-      throw new AppError('请输入邮箱', { code: ERROR_CODES.VALIDATION });
+      throw new AppError('Please enter email', {
+        code: ERROR_CODES.VALIDATION
+      });
     }
     if (hasSupabaseConfig()) {
       const session = await getCurrentSession();
@@ -79,7 +87,7 @@ export const accountService = {
       if (error)
         throw fromSupabaseError(error, {
           code: ERROR_CODES.AUTH,
-          message: '发送邮箱验证码失败'
+          message: 'Failed to send email verification code'
         });
     }
     return true;
@@ -87,7 +95,7 @@ export const accountService = {
   async bindEmail({ email, code }) {
     const normalizedEmail = resolveEmail(email);
     if (!normalizedEmail || !code) {
-      throw new AppError('请输入邮箱和验证码', {
+      throw new AppError('Please enter email and verification code', {
         code: ERROR_CODES.VALIDATION
       });
     }
@@ -101,21 +109,23 @@ export const accountService = {
       if (error)
         throw fromSupabaseError(error, {
           code: ERROR_CODES.AUTH,
-          message: '邮箱验证码校验失败'
+          message: 'Email verification failed'
         });
     }
     return true;
   },
   async changePassword(password) {
     if (!password || password.length < 8) {
-      throw new AppError('密码至少 8 位', { code: ERROR_CODES.VALIDATION });
+      throw new AppError('Password must be at least 8 characters', {
+        code: ERROR_CODES.VALIDATION
+      });
     }
     if (hasSupabaseConfig()) {
       const { error } = await supabase.auth.updateUser({ password });
       if (error)
         throw fromSupabaseError(error, {
           code: ERROR_CODES.AUTH,
-          message: '修改密码失败'
+          message: 'Failed to change password'
         });
     }
     return true;
@@ -123,10 +133,14 @@ export const accountService = {
   async upgradeGuest({ email, password }) {
     const normalizedEmail = resolveEmail(email);
     if (!normalizedEmail || !password) {
-      throw new AppError('请输入邮箱和密码', { code: ERROR_CODES.VALIDATION });
+      throw new AppError('Please enter email and password', {
+        code: ERROR_CODES.VALIDATION
+      });
     }
     if (password.length < 8) {
-      throw new AppError('密码至少 8 位', { code: ERROR_CODES.VALIDATION });
+      throw new AppError('Password must be at least 8 characters', {
+        code: ERROR_CODES.VALIDATION
+      });
     }
     if (hasSupabaseConfig()) {
       const session = await getCurrentSession();
@@ -136,7 +150,7 @@ export const accountService = {
       if (error)
         throw fromSupabaseError(error, {
           code: ERROR_CODES.AUTH,
-          message: '升级账号失败'
+          message: 'Failed to upgrade account'
         });
     }
     return true;

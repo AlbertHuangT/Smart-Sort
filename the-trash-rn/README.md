@@ -31,8 +31,18 @@ pnpm install
 
 - `EXPO_PUBLIC_SUPABASE_URL`
 - `EXPO_PUBLIC_SUPABASE_ANON_KEY`
-- `EXPO_PUBLIC_SUPABASE_EDGE_FUNCTION_URL`
 - `EXPO_PUBLIC_RECORDER_BUCKET`
+
+可选配置（AI 识别模式）：
+
+- `EXPO_PUBLIC_CLASSIFIER_MODE=local-only`（默认，纯本地）
+- `EXPO_PUBLIC_CLASSIFIER_MODE=hybrid`（本地优先 + Edge 回退）
+- `EXPO_PUBLIC_CLASSIFIER_MODE=edge-first`（优先 Edge）
+- `EXPO_PUBLIC_CLASSIFIER_MODE=local-first`（先本地再 Edge）
+
+当模式包含 Edge 时才需要：
+
+- `EXPO_PUBLIC_SUPABASE_EDGE_FUNCTION_URL`
 
 ## 3) iOS 真机安装开发构建（无 99 美元账号）
 

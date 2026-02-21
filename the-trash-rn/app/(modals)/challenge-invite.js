@@ -14,7 +14,7 @@ export default function ChallengeInviteModal() {
   }, [loadFriends]);
 
   return (
-    <ModalSheet title="发起挑战">
+    <ModalSheet title="Invite Challenge">
       <FlatList
         data={friends}
         keyExtractor={(item) => item.id}
@@ -23,14 +23,14 @@ export default function ChallengeInviteModal() {
             <View>
               <Text className="text-white font-semibold">{item.name}</Text>
               <Text className="text-white/60 text-xs">
-                最近分数 {item.score ?? 0}
+                Recent score {item.score ?? 0}
               </Text>
             </View>
             <Pressable
               onPress={() => sendInvite(item.id)}
               className="px-4 py-2 rounded-2xl bg-brand-neon"
             >
-              <Text className="text-black font-semibold">邀请</Text>
+              <Text className="text-black font-semibold">Invite</Text>
             </Pressable>
           </View>
         )}

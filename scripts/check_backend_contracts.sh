@@ -60,7 +60,9 @@ extract_rn_rpcs() {
 
   (
     rg -o --no-filename --pcre2 '\.rpc\(\s*["'"'"'`][A-Za-z0-9_]+' "$RN_DIR" || true
+    rg -o --no-filename --pcre2 '(?<![A-Za-z0-9_])rpc\(\s*["'"'"'`][A-Za-z0-9_]+' "$RN_DIR" || true
   ) | sed -E 's/.*\.rpc\(\s*["'"'"'`]([A-Za-z0-9_]+).*/\1/' \
+    | sed -E 's/.*rpc\(\s*["'"'"'`]([A-Za-z0-9_]+).*/\1/' \
     | tr 'A-Z' 'a-z' \
     | sort -u
 }

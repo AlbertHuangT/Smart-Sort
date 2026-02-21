@@ -17,7 +17,7 @@ const mapCommunityEntry = (item, currentUserId) => {
   return {
     id: entryId ? String(entryId) : String(item.username ?? Math.random()),
     name: item.username ?? item.display_name ?? 'Anonymous',
-    community: item.community_name ?? '社区',
+    community: item.community_name ?? 'Community',
     score: Number(item.credits ?? item.score ?? 0),
     badgeIcon: item.achievement_icon ?? null,
     isMe: currentUserId ? String(entryId) === String(currentUserId) : false
@@ -27,7 +27,7 @@ const mapCommunityEntry = (item, currentUserId) => {
 const mapFriendEntry = (item, currentUserId) => ({
   id: String(item.id),
   name: item.username ?? 'Anonymous',
-  community: item.phone ?? item.email ?? '通讯录好友',
+  community: item.phone ?? item.email ?? 'Contact',
   score: Number(item.credits ?? 0),
   isMe: currentUserId ? String(item.id) === String(currentUserId) : false
 });
@@ -45,7 +45,7 @@ const getCurrentUserId = async () => {
   if (error) {
     throw fromSupabaseError(error, {
       code: ERROR_CODES.AUTH,
-      message: '读取用户信息失败'
+      message: 'Failed to read user profile'
     });
   }
   return data.user?.id ?? null;
@@ -64,9 +64,12 @@ const requestContactsPermission = async ({
 const readContactsPayload = async ({ allowPermissionPrompt = true } = {}) => {
   const granted = await requestContactsPermission({ allowPermissionPrompt });
   if (!granted) {
-    throw new AppError('需要通讯录权限后才能同步好友榜', {
-      code: ERROR_CODES.CONTACTS_PERMISSION_REQUIRED
-    });
+    throw new AppError(
+      'Contacts permission is required to sync friends leaderboard',
+      {
+        code: ERROR_CODES.CONTACTS_PERMISSION_REQUIRED
+      }
+    );
   }
 
   const contacts = await Contacts.getAll();
@@ -90,7 +93,7 @@ const readContactsPayload = async ({ allowPermissionPrompt = true } = {}) => {
   const minimizedPhones = Array.from(phones).slice(0, CONTACT_PHONE_LIMIT);
 
   if (!minimizedEmails.length && !minimizedPhones.length) {
-    throw new AppError('通讯录里没有可匹配的邮箱或手机号', {
+    throw new AppError('No matchable email or phone found in contacts', {
       code: ERROR_CODES.CONTACTS_EMPTY
     });
   }
@@ -116,7 +119,7 @@ const fetchFriendsLeaderboard = async ({
   });
   if (error) {
     throw fromSupabaseError(error, {
-      message: '同步好友榜失败'
+      message: 'Failed to sync friends leaderboard'
     });
   }
   const currentUserId = await getCurrentUserId();
@@ -133,7 +136,7 @@ const fetchCommunityLeaderboard = async (communityId) => {
   });
   if (error) {
     throw fromSupabaseError(error, {
-      message: '加载社群排行榜失败'
+      message: 'Failed to load community leaderboard'
     });
   }
   const currentUserId = await getCurrentUserId();
@@ -148,7 +151,7 @@ export const leaderboardService = {
     const { data, error } = await supabase.rpc('get_my_communities');
     if (error) {
       throw fromSupabaseError(error, {
-        message: '加载我的社群失败'
+        message: 'Failed to load my communities'
       });
     }
     return (data ?? []).map(mapMyCommunity);

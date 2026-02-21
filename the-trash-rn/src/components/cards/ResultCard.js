@@ -79,7 +79,7 @@ function ResultCard({ result, onConfirm, onCorrect }) {
             letterSpacing: bodyType.letterSpacing
           }}
         >
-          拍照后会显示 AI 识别结果。
+          AI recognition results appear after taking a photo.
         </Text>
       </View>
     );
@@ -132,7 +132,7 @@ function ResultCard({ result, onConfirm, onCorrect }) {
             marginBottom: theme.spacing?.md ?? 16
           }}
         >
-          推荐投放：{result.category}
+          Recommended bin: {result.category}
         </Text>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
           <Text
@@ -141,7 +141,7 @@ function ResultCard({ result, onConfirm, onCorrect }) {
               fontSize: theme.typography?.caption?.size ?? 12
             }}
           >
-            可信度 {Math.round((result.confidence ?? 0) * 100)}%
+            Confidence {Math.round((result.confidence ?? 0) * 100)}%
           </Text>
           <Text
             style={{
@@ -149,7 +149,7 @@ function ResultCard({ result, onConfirm, onCorrect }) {
               fontSize: theme.typography?.caption?.size ?? 12
             }}
           >
-            向右确认 · 向左纠正
+            Swipe right to confirm · swipe left to correct
           </Text>
         </View>
       </Animated.View>

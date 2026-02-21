@@ -23,7 +23,7 @@ export const useTrashStore = create(
       classifierError: null,
       requestPermission: async () => {
         const status = await Camera.getCameraPermissionStatus();
-        if (status === 'authorized') {
+        if (status === 'granted' || status === 'authorized') {
           set({ permission: status });
           return status;
         }
@@ -54,7 +54,7 @@ export const useTrashStore = create(
           set({
             classifierStatus: 'error',
             classifierMeta: classifierService.getStatus(),
-            classifierError: error?.message ?? 'AI 初始化失败'
+            classifierError: error?.message ?? 'AI initialization failed'
           });
           throw error;
         }

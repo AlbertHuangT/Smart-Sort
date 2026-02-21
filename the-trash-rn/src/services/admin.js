@@ -36,14 +36,16 @@ export const adminService = {
     const data = await rpc('review_join_application', {
       p_application_id: requestId,
       p_approve: Boolean(approve),
-      p_rejection_reason: approve ? null : '管理员审核拒绝'
+      p_rejection_reason: approve ? null : 'Rejected by admin review'
     });
     return Boolean(data?.success);
   },
 
   async grantCredits() {
     if (!hasSupabaseConfig()) return false;
-    throw new Error('批量积分发放需基于活动，当前面板暂不支持此操作');
+    throw new Error(
+      'Bulk credit grants must be tied to an event. This panel does not support that yet.'
+    );
   },
 
   async removeMember({ communityId, memberId }) {
@@ -51,7 +53,7 @@ export const adminService = {
     const data = await rpc('remove_community_member', {
       p_community_id: communityId,
       p_user_id: memberId,
-      p_reason: '管理员操作'
+      p_reason: 'Admin operation'
     });
     return Boolean(data?.success);
   }

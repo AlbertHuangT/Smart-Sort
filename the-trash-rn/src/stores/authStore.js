@@ -71,7 +71,7 @@ export const useAuthStore = create((set, get) => ({
         status: 'guest',
         session: null,
         profile: null,
-        error: messageFromError(error, '初始化登录状态失败')
+        error: messageFromError(error, 'Failed to initialize auth state')
       });
     }
   },
@@ -93,7 +93,7 @@ export const useAuthStore = create((set, get) => ({
     } catch (error) {
       set({
         authenticating: false,
-        error: messageFromError(error, '登录失败')
+        error: messageFromError(error, 'Sign-in failed')
       });
       throw error;
     }
@@ -128,7 +128,7 @@ export const useAuthStore = create((set, get) => ({
     } catch (error) {
       set({
         authenticating: false,
-        error: messageFromError(error, '注册失败')
+        error: messageFromError(error, 'Sign-up failed')
       });
       throw error;
     }
@@ -151,7 +151,7 @@ export const useAuthStore = create((set, get) => ({
     } catch (error) {
       set({
         authenticating: false,
-        error: messageFromError(error, '手机登录失败')
+        error: messageFromError(error, 'Phone sign-in failed')
       });
       throw error;
     }
@@ -163,7 +163,9 @@ export const useAuthStore = create((set, get) => ({
       set({ error: null });
       return true;
     } catch (error) {
-      set({ error: messageFromError(error, '验证码发送失败') });
+      set({
+        error: messageFromError(error, 'Failed to send verification code')
+      });
       throw error;
     }
   },
@@ -184,7 +186,7 @@ export const useAuthStore = create((set, get) => ({
       set(toGuestState(shouldKeepGuest ? current.profile : null));
       return null;
     } catch (error) {
-      const message = messageFromError(error, '刷新登录状态失败');
+      const message = messageFromError(error, 'Failed to refresh auth state');
       set({ error: message });
       throw error;
     }
@@ -193,7 +195,7 @@ export const useAuthStore = create((set, get) => ({
   signInAsGuest: () =>
     set({
       status: 'guest',
-      profile: { id: 'guest', displayName: '游客', level: 1 },
+      profile: { id: 'guest', displayName: 'Guest', level: 1 },
       session: null,
       error: null
     }),

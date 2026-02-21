@@ -1,15 +1,29 @@
 import { View } from 'react-native';
 
+import { useTheme } from 'src/theme/ThemeProvider';
+
 export default function TimerBar({ progress = 1, variant = 'info' }) {
-  const color = variant === 'warning' ? '#ffae35' : '#32f5ff';
+  const theme = useTheme();
+  const spacing = theme.spacing ?? {};
+  const radii = theme.radii ?? {};
+  const color =
+    variant === 'warning' ? theme.accents.orange : theme.accents.blue;
   return (
-    <View className="h-3 bg-white/10 rounded-full overflow-hidden mb-4">
+    <View
+      style={{
+        height: 8,
+        backgroundColor: theme.palette.overlay ?? theme.palette.elevated,
+        borderRadius: radii.pill ?? 999,
+        overflow: 'hidden',
+        marginBottom: spacing.md ?? 14
+      }}
+    >
       <View
         style={{
           width: `${Math.max(0, Math.min(1, progress)) * 100}%`,
-          backgroundColor: color
+          backgroundColor: color,
+          height: '100%'
         }}
-        className="h-full"
       />
     </View>
   );

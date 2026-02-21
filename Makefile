@@ -1,6 +1,6 @@
 RN_DIR := the-trash-rn
 
-.PHONY: install start ios android pods lint format contracts contracts-strict migrations-check migrations-check-strict migrations-sync doctor legacy-open
+.PHONY: install start ios android pods lint format contracts contracts-strict migrations-check migrations-check-strict migrations-sync doctor
 
 install:
 	pnpm --dir "$(RN_DIR)" install
@@ -9,10 +9,10 @@ start:
 	pnpm --dir "$(RN_DIR)" exec expo start --dev-client --clear
 
 ios:
-	pnpm --dir "$(RN_DIR)" run ios
+	pnpm --dir "$(RN_DIR)" exec expo run:ios
 
 android:
-	pnpm --dir "$(RN_DIR)" run android
+	pnpm --dir "$(RN_DIR)" exec expo run:android
 
 pods:
 	pnpm --dir "$(RN_DIR)" run pods:install
@@ -41,6 +41,3 @@ migrations-sync:
 doctor:
 	bash scripts/check_backend_contracts.sh --strict
 	bash scripts/check_migration_mirror.sh --strict
-
-legacy-open:
-	open "legacy/swift-ios/The Trash.xcodeproj"

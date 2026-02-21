@@ -14,28 +14,22 @@ import { THEMES } from 'src/theme/themes';
 
 const quickLinks = [
   {
-    title: '账户设置',
-    subtitle: '手机号、邮箱、密码',
+    title: 'Account Settings',
+    subtitle: 'Phone, email, and password',
     href: '/(modals)/account-settings',
     icon: 'settings'
   },
   {
-    title: '成就徽章',
-    subtitle: '查看已获得的徽章',
+    title: 'Badges',
+    subtitle: 'View earned badges',
     href: '/(modals)/badges',
     icon: 'award'
   },
   {
-    title: '积分奖励',
-    subtitle: '兑换可用奖励',
+    title: 'Rewards',
+    subtitle: 'Redeem available rewards',
     href: '/(modals)/rewards',
     icon: 'gift'
-  },
-  {
-    title: '历史记录',
-    subtitle: '识别与挑战记录',
-    href: '/(modals)/history',
-    icon: 'clock'
   }
 ];
 
@@ -52,9 +46,9 @@ export default function ProfileScreen() {
   const unlockedBadges = badges.filter((badge) => badge.unlocked).length;
   const activeTheme = THEMES[themeName] ?? THEMES.neon;
   const metrics = [
-    { label: '累计识别', value: stats?.scans ?? 0 },
-    { label: '竞技场胜场', value: stats?.arenaWins ?? 0 },
-    { label: '已解锁徽章', value: unlockedBadges }
+    { label: 'Total scans', value: stats?.scans ?? 0 },
+    { label: 'Arena wins', value: stats?.arenaWins ?? 0 },
+    { label: 'Badges unlocked', value: unlockedBadges }
   ];
 
   useEffect(() => {
@@ -62,7 +56,7 @@ export default function ProfileScreen() {
   }, [hydrate]);
 
   return (
-    <ScreenShell title="个人主页" useScroll={false}>
+    <ScreenShell title="Profile" useScroll={false}>
       <ScrollView
         decelerationRate={theme.scroll?.decelerationRate ?? 'normal'}
         contentContainerStyle={{ paddingBottom: 48 }}
@@ -80,12 +74,12 @@ export default function ProfileScreen() {
           <View style={styles.rowBetween}>
             <View style={{ flex: 1 }}>
               <Text style={[styles.name, { color: theme.palette.textPrimary }]}>
-                {profile?.displayName ?? '游客'}
+                {profile?.displayName ?? 'Guest'}
               </Text>
               <Text
                 style={[styles.contact, { color: theme.palette.textSecondary }]}
               >
-                {profile?.email ?? profile?.phone ?? '未绑定联系方式'}
+                {profile?.email ?? profile?.phone ?? 'No contact linked'}
               </Text>
             </View>
             <Pressable
@@ -99,7 +93,7 @@ export default function ProfileScreen() {
                   fontWeight: '600'
                 }}
               >
-                编辑
+                Edit
               </Text>
             </Pressable>
           </View>
@@ -111,7 +105,7 @@ export default function ProfileScreen() {
               ]}
             >
               <Text style={{ color: theme.palette.textPrimary, fontSize: 12 }}>
-                等级 {profile?.level ?? 1}
+                Level {profile?.level ?? 1}
               </Text>
             </View>
             <View
@@ -121,82 +115,9 @@ export default function ProfileScreen() {
               ]}
             >
               <Text style={{ color: theme.palette.textPrimary, fontSize: 12 }}>
-                积分 {points}
+                Points {points}
               </Text>
             </View>
-          </View>
-        </View>
-
-        <View
-          style={[
-            styles.card,
-            {
-              backgroundColor: theme.palette.card,
-              borderColor: theme.tabBar.border
-            }
-          ]}
-        >
-          <View style={styles.rowBetween}>
-            <View style={{ flex: 1 }}>
-              <Text
-                style={[
-                  styles.sectionTitle,
-                  { color: theme.palette.textPrimary }
-                ]}
-              >
-                主题外观
-              </Text>
-              <Text
-                style={[
-                  styles.sectionHint,
-                  { color: theme.palette.textSecondary }
-                ]}
-              >
-                {activeTheme.description}
-              </Text>
-            </View>
-            <View
-              style={[styles.themeTag, { borderColor: theme.accents.green }]}
-            >
-              <Text
-                style={{
-                  color: theme.accents.green,
-                  fontSize: 12,
-                  fontWeight: '700'
-                }}
-              >
-                {activeTheme.label}
-              </Text>
-            </View>
-          </View>
-          <View style={styles.paletteRow}>
-            {[
-              activeTheme.accents.blue,
-              activeTheme.accents.green,
-              activeTheme.accents.orange
-            ].map((color) => (
-              <View
-                key={color}
-                style={[
-                  styles.colorDot,
-                  { backgroundColor: color, borderColor: theme.tabBar.border }
-                ]}
-              />
-            ))}
-          </View>
-          <View style={styles.themeActions}>
-            <TrashButton
-              title="切换下一个"
-              variant="secondary"
-              onPress={cycleTheme}
-              style={{ flex: 1 }}
-            />
-            <TrashButton
-              title="更多主题"
-              variant="outline"
-              onPress={() => router.push('/(modals)/theme-picker')}
-              style={{ flex: 1 }}
-            />
           </View>
         </View>
 
@@ -212,7 +133,7 @@ export default function ProfileScreen() {
           <Text
             style={[styles.sectionTitle, { color: theme.palette.textPrimary }]}
           >
-            我的数据
+            My stats
           </Text>
           <View style={styles.metricsRow}>
             {metrics.map((item) => (
@@ -293,16 +214,61 @@ export default function ProfileScreen() {
             />
           </Pressable>
         ))}
+
+        <Pressable
+          key="theme-entry"
+          style={[
+            styles.linkCard,
+            {
+              borderColor: theme.tabBar.border,
+              backgroundColor: theme.palette.card
+            }
+          ]}
+          onPress={() => router.push('/(modals)/theme-picker')}
+          onLongPress={cycleTheme}
+        >
+          <View style={styles.linkLeft}>
+            <View
+              style={[
+                styles.linkIconWrap,
+                { backgroundColor: `${theme.accents.green}1f` }
+              ]}
+            >
+              <Feather name="aperture" size={16} color={theme.accents.green} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  color: theme.palette.textPrimary,
+                  fontWeight: '600'
+                }}
+              >
+                Theme · {activeTheme.label}
+              </Text>
+              <Text
+                numberOfLines={1}
+                style={{ color: theme.palette.textSecondary, fontSize: 12 }}
+              >
+                {activeTheme.description}
+              </Text>
+            </View>
+          </View>
+          <Feather
+            name="chevron-right"
+            size={18}
+            color={theme.palette.textSecondary}
+          />
+        </Pressable>
         {status === 'authenticated' ? (
           <TrashButton
-            title="退出登录"
+            title="Sign Out"
             variant="outline"
             onPress={signOut}
             style={{ marginTop: 8 }}
           />
         ) : (
           <TrashButton
-            title="去登录/注册"
+            title="Go to Sign In / Sign Up"
             onPress={() => router.replace('/')}
             style={{ marginTop: 8 }}
           />

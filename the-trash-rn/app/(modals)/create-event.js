@@ -20,11 +20,17 @@ export default function CreateEventModal() {
 
   const handleSubmit = async () => {
     if (!currentCity) {
-      Alert.alert('请选择城市', '请先在活动页选择城市。');
+      Alert.alert(
+        'Please select a city',
+        'Please select a city on the Events page first.'
+      );
       return;
     }
     if (!title.trim() || !description.trim()) {
-      Alert.alert('信息不完整', '请填写标题和描述');
+      Alert.alert(
+        'Incomplete information',
+        'Please fill in title and description'
+      );
       return;
     }
     try {
@@ -42,52 +48,52 @@ export default function CreateEventModal() {
       });
       router.back();
     } catch (error) {
-      Alert.alert('创建失败', error.message ?? '请稍后再试');
+      Alert.alert('Create failed', error.message ?? 'Please try again later');
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <ModalSheet title="创建活动">
+    <ModalSheet title="Create Event">
       <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
         <Text className="text-white/60 text-xs mb-2">
-          城市 · {currentCity?.name ?? '未选择'}
+          City · {currentCity?.name ?? 'Not selected'}
         </Text>
         <TrashInput
-          label="标题"
-          placeholder="例如：周末净滩"
+          label="Title"
+          placeholder="e.g. Weekend Beach Cleanup"
           value={title}
           onChangeText={setTitle}
         />
         <TrashInput
-          label="活动时间 (ISO)"
+          label="Event Time (ISO)"
           placeholder="2024-06-22T14:00"
           value={startTime}
           onChangeText={setStartTime}
         />
         <TrashInput
-          label="地点"
-          placeholder="静安区市民中心"
+          label="Location"
+          placeholder="Jing'an District Civic Center"
           value={venue}
           onChangeText={setVenue}
         />
         <TrashInput
-          label="名额"
+          label="Capacity"
           placeholder="80"
           value={quota}
           onChangeText={setQuota}
           keyboardType="number-pad"
         />
         <TrashInput
-          label="描述"
-          placeholder="介绍一下活动亮点"
+          label="Description"
+          placeholder="Describe the event highlights"
           value={description}
           onChangeText={setDescription}
           multiline
         />
         <TrashButton
-          title="发布"
+          title="Publish"
           onPress={handleSubmit}
           loading={submitting}
           disabled={submitting}

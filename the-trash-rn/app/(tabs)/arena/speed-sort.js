@@ -5,8 +5,22 @@ import TimerBar from 'src/components/arena/TimerBar';
 import ScreenShell from 'src/components/layout/ScreenShell';
 import { TrashButton } from 'src/components/themed';
 import { useArenaStore } from 'src/stores/arenaStore';
+import { useTheme } from 'src/theme/ThemeProvider';
 
 export default function SpeedSortScreen() {
+  const theme = useTheme();
+  const spacing = theme.spacing ?? {};
+  const bodyType = theme.typography?.body ?? {
+    size: 15,
+    lineHeight: 22,
+    letterSpacing: 0.12
+  };
+  const captionType = theme.typography?.caption ?? {
+    size: 12,
+    lineHeight: 17,
+    letterSpacing: 0.14
+  };
+
   const speed = useArenaStore((state) => state.speed);
   const startSpeedSort = useArenaStore((state) => state.startSpeedSort);
   const answerSpeedSort = useArenaStore((state) => state.answerSpeedSort);
@@ -15,17 +29,60 @@ export default function SpeedSortScreen() {
   const progress = speed.total ? speed.remaining / speed.total : 0;
 
   return (
-    <ScreenShell title="极速分类" useScroll={false}>
-      <View className="flex-row justify-between items-center mb-4">
+    <ScreenShell title="Speed Sort" useScroll={false}>
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: spacing.md ?? 14
+        }}
+      >
         <View>
-          <Text className="text-white text-3xl font-bold">{speed.score}</Text>
-          <Text className="text-white/60 text-xs">得分</Text>
+          <Text
+            style={{
+              color: theme.palette.textPrimary,
+              fontSize: bodyType.size + 14,
+              lineHeight: bodyType.lineHeight + 14,
+              fontWeight: '700',
+              letterSpacing: bodyType.letterSpacing
+            }}
+          >
+            {speed.score}
+          </Text>
+          <Text
+            style={{
+              color: theme.palette.textSecondary,
+              fontSize: captionType.size,
+              lineHeight: captionType.lineHeight,
+              letterSpacing: captionType.letterSpacing
+            }}
+          >
+            Score
+          </Text>
         </View>
-        <View className="items-end">
-          <Text className="text-white text-xl font-semibold">
+        <View style={{ alignItems: 'flex-end' }}>
+          <Text
+            style={{
+              color: theme.palette.textPrimary,
+              fontSize: bodyType.size + 4,
+              lineHeight: bodyType.lineHeight + 4,
+              fontWeight: '600',
+              letterSpacing: bodyType.letterSpacing
+            }}
+          >
             {speed.remaining}s
           </Text>
-          <Text className="text-white/60 text-xs">剩余时间</Text>
+          <Text
+            style={{
+              color: theme.palette.textSecondary,
+              fontSize: captionType.size,
+              lineHeight: captionType.lineHeight,
+              letterSpacing: captionType.letterSpacing
+            }}
+          >
+            Time left
+          </Text>
         </View>
       </View>
       <TimerBar
@@ -33,13 +90,21 @@ export default function SpeedSortScreen() {
         variant={speed.remaining < 15 ? 'warning' : 'info'}
       />
       {speed.state === 'idle' ? (
-        <TrashButton title="开始 60 秒冲刺" onPress={startSpeedSort} />
+        <TrashButton title="Start 60s Sprint" onPress={startSpeedSort} />
       ) : speed.state === 'finished' ? (
         <View>
-          <Text className="text-white/80 text-sm mb-4">
-            时间到！本轮得分 {speed.score}
+          <Text
+            style={{
+              color: theme.palette.textSecondary,
+              fontSize: bodyType.size,
+              lineHeight: bodyType.lineHeight,
+              letterSpacing: bodyType.letterSpacing,
+              marginBottom: spacing.md ?? 14
+            }}
+          >
+            Time is up! Score this round: {speed.score}
           </Text>
-          <TrashButton title="再玩一次" onPress={startSpeedSort} />
+          <TrashButton title="Play Again" onPress={startSpeedSort} />
         </View>
       ) : (
         <QuizCard
@@ -50,10 +115,10 @@ export default function SpeedSortScreen() {
       )}
       {speed.state === 'playing' ? (
         <TrashButton
-          title="提前结束"
+          title="End Early"
           variant="outline"
           onPress={stopSpeedSort}
-          style={{ marginTop: 20 }}
+          style={{ marginTop: spacing.lg ?? 20 }}
         />
       ) : null}
     </ScreenShell>

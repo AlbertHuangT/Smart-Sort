@@ -39,7 +39,7 @@ export const toAppError = (error, fallback = {}) => {
 
   const message = normalizeMessage(
     error,
-    fallback.message ?? '请求失败，请稍后再试'
+    fallback.message ?? 'Request failed. Please try again later.'
   );
   return new AppError(message, {
     code: fallback.code ?? ERROR_CODES.UNKNOWN,
@@ -50,7 +50,9 @@ export const toAppError = (error, fallback = {}) => {
 
 export const fromSupabaseError = (error, fallback = {}) =>
   toAppError(error, {
-    message: fallback.message ?? '服务暂时不可用，请稍后重试',
+    message:
+      fallback.message ??
+      'Service is temporarily unavailable. Please retry later.',
     code: fallback.code ?? ERROR_CODES.BACKEND,
     meta: {
       ...(fallback.meta ?? {}),
@@ -62,5 +64,5 @@ export const fromSupabaseError = (error, fallback = {}) =>
 
 export const messageFromError = (
   error,
-  fallbackMessage = '操作失败，请稍后再试'
+  fallbackMessage = 'Operation failed. Please try again later.'
 ) => toAppError(error, { message: fallbackMessage }).message;

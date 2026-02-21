@@ -17,11 +17,11 @@ export default function CreateCommunityModal() {
 
   const handleCreate = async () => {
     if (!currentCity) {
-      Alert.alert('请选择城市', '请先选择城市');
+      Alert.alert('Please select a city', 'Please select a city first');
       return;
     }
     if (!name.trim()) {
-      Alert.alert('信息不完整', '请输入社群名称');
+      Alert.alert('Incomplete information', 'Please enter a community name');
       return;
     }
     try {
@@ -37,33 +37,33 @@ export default function CreateCommunityModal() {
       });
       router.back();
     } catch (error) {
-      Alert.alert('创建失败', error.message ?? '请稍后再试');
+      Alert.alert('Create failed', error.message ?? 'Please try again later');
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <ModalSheet title="创建社群">
+    <ModalSheet title="Create Community">
       <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
         <Text className="text-white/60 text-xs mb-2">
-          城市 · {currentCity?.name ?? '未选择'}
+          City · {currentCity?.name ?? 'Not selected'}
         </Text>
         <TrashInput
-          label="名称"
-          placeholder="虹口环保队"
+          label="Name"
+          placeholder="Hongkou Eco Team"
           value={name}
           onChangeText={setName}
         />
         <TrashInput
-          label="简介"
-          placeholder="介绍社群的使命与成员"
+          label="Bio"
+          placeholder="Describe your community mission and members"
           value={description}
           onChangeText={setDescription}
           multiline
         />
         <TrashButton
-          title="创建"
+          title="Create"
           onPress={handleCreate}
           loading={submitting}
           disabled={submitting}

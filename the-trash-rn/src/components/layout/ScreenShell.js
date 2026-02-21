@@ -8,6 +8,7 @@ export default function ScreenShell({ title, children, useScroll = true }) {
   const { top, bottom } = useSafeAreaInsets();
   const theme = useTheme();
   const spacing = theme.spacing ?? {};
+  const contentMaxWidth = theme.sizes?.contentMaxWidth ?? 680;
   const titleType = theme.typography?.title ?? {
     size: 28,
     lineHeight: 34,
@@ -16,9 +17,15 @@ export default function ScreenShell({ title, children, useScroll = true }) {
 
   const baseStyle = {
     flex: 1,
-    paddingTop: top + (spacing.screenTop ?? 48),
-    paddingBottom: bottom + (spacing.lg ?? 24),
-    paddingHorizontal: spacing.screenHorizontal ?? 24
+    paddingTop: top + (spacing.screenTop ?? 36),
+    paddingBottom: bottom + (spacing.screenBottom ?? spacing.lg ?? 24),
+    paddingHorizontal: spacing.screenHorizontal ?? 20
+  };
+
+  const contentWidthStyle = {
+    width: '100%',
+    maxWidth: contentMaxWidth,
+    alignSelf: 'center'
   };
 
   const content = (
@@ -45,7 +52,9 @@ export default function ScreenShell({ title, children, useScroll = true }) {
     return (
       <View style={{ flex: 1, backgroundColor: theme.palette.background }}>
         <ThemeBackdrop />
-        <View style={baseStyle}>{content}</View>
+        <View style={baseStyle}>
+          <View style={[contentWidthStyle, { flex: 1 }]}>{content}</View>
+        </View>
       </View>
     );
   }
@@ -56,10 +65,13 @@ export default function ScreenShell({ title, children, useScroll = true }) {
       <ScrollView
         style={baseStyle}
         decelerationRate={theme.scroll?.decelerationRate ?? 'normal'}
-        contentContainerStyle={{ paddingBottom: spacing.xxl ?? 40 }}
+        contentContainerStyle={{
+          paddingBottom: spacing.xxl ?? 36,
+          alignItems: 'center'
+        }}
         showsVerticalScrollIndicator={false}
       >
-        {content}
+        <View style={contentWidthStyle}>{content}</View>
       </ScrollView>
     </View>
   );

@@ -13,7 +13,7 @@ export default function StreakLeaderboardModal() {
   }, [loadLeaderboards]);
 
   return (
-    <ModalSheet title="连胜排行">
+    <ModalSheet title="Streak Leaderboard">
       <FlatList
         data={streakLeaderboard}
         keyExtractor={(item) => item.id}

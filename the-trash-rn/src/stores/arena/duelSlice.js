@@ -121,7 +121,7 @@ export const createDuelArenaSlice = (set, get) => {
         set((state) => {
           const duels = patchDuel(state, duelId, {
             status: 'lobby',
-            error: '无法加载对战题目'
+            error: 'Unable to load duel questions'
           });
           return duels ? { duels } : {};
         });
@@ -346,7 +346,10 @@ export const createDuelArenaSlice = (set, get) => {
                 duel.status === 'playing' || duel.status === 'countdown'
                   ? duel.status
                   : 'lobby',
-              opponent: pending?.opponentName ?? duel.opponent ?? '等待对手',
+              opponent:
+                pending?.opponentName ??
+                duel.opponent ??
+                'Waiting for opponent',
               channelName,
               challengerId,
               opponentId,
@@ -356,7 +359,7 @@ export const createDuelArenaSlice = (set, get) => {
               currentIndex: duel.currentIndex ?? 0,
               currentQuestion:
                 duel.currentQuestion ?? (hasQuestions ? questions[0] : null),
-              error: hasQuestions ? null : '题目尚未准备完成',
+              error: hasQuestions ? null : 'Questions are not ready yet',
               send: realtime.send,
               sendReady: realtime.sendReady,
               sendAnswerSubmitted: realtime.sendAnswerSubmitted,
@@ -644,7 +647,7 @@ export const createDuelArenaSlice = (set, get) => {
         set((state) => {
           const duels = patchDuel(state, duelId, {
             submitting: false,
-            error: error?.message ?? '提交答案失败'
+            error: error?.message ?? 'Failed to submit answer'
           });
           return duels ? { duels } : {};
         });
@@ -701,7 +704,8 @@ export const createDuelArenaSlice = (set, get) => {
           finalizing: false,
           awaitingResult: true,
           status: 'waiting-result',
-          error: '等待对手完成结算，稍后会自动同步结果。'
+          error:
+            'Waiting for opponent settlement. Results will sync automatically soon.'
         });
         return duels ? { duels } : {};
       });

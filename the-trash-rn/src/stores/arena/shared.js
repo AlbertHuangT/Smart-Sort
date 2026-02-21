@@ -35,7 +35,7 @@ export const initialStreak = {
 
 export const initialDailyChallenge = {
   id: null,
-  prompt: '加载中…',
+  prompt: 'Loading...',
   progress: 0,
   total: 0,
   reward: null,

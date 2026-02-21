@@ -16,7 +16,7 @@ export default function ModalSheet({ title, children }) {
         <View className="flex-row items-center justify-between mb-4">
           <Text className="text-white font-semibold text-xl">{title}</Text>
           <Pressable onPress={() => router.back()}>
-            <Text className="text-white/60 text-sm">关闭</Text>
+            <Text className="text-white/60 text-sm">Close</Text>
           </Pressable>
         </View>
         {children}

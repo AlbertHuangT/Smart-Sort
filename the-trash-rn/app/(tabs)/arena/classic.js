@@ -5,8 +5,28 @@ import QuizCard from 'src/components/arena/QuizCard';
 import ScreenShell from 'src/components/layout/ScreenShell';
 import { TrashButton } from 'src/components/themed';
 import { useArenaStore } from 'src/stores/arenaStore';
+import { useTheme } from 'src/theme/ThemeProvider';
 
 export default function ClassicArenaScreen() {
+  const theme = useTheme();
+  const spacing = theme.spacing ?? {};
+  const radii = theme.radii ?? {};
+  const bodyType = theme.typography?.body ?? {
+    size: 15,
+    lineHeight: 22,
+    letterSpacing: 0.12
+  };
+  const labelType = theme.typography?.label ?? {
+    size: 14,
+    lineHeight: 19,
+    letterSpacing: 0.18
+  };
+  const captionType = theme.typography?.caption ?? {
+    size: 12,
+    lineHeight: 17,
+    letterSpacing: 0.14
+  };
+
   const classic = useArenaStore((state) => state.classic);
   const startClassic = useArenaStore((state) => state.startClassic);
   const answerClassic = useArenaStore((state) => state.answerClassic);
@@ -18,32 +38,97 @@ export default function ClassicArenaScreen() {
   }, [classic.state, startClassic]);
 
   return (
-    <ScreenShell title="经典模式" useScroll={false}>
-      <View className="flex-row justify-between items-center mb-4">
+    <ScreenShell title="Classic Mode" useScroll={false}>
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: spacing.md ?? 14
+        }}
+      >
         <View>
-          <Text className="text-white text-3xl font-bold">{classic.score}</Text>
-          <Text className="text-white/60 text-xs">分数</Text>
+          <Text
+            style={{
+              color: theme.palette.textPrimary,
+              fontSize: bodyType.size + 14,
+              lineHeight: bodyType.lineHeight + 14,
+              fontWeight: '700',
+              letterSpacing: bodyType.letterSpacing
+            }}
+          >
+            {classic.score}
+          </Text>
+          <Text
+            style={{
+              color: theme.palette.textSecondary,
+              fontSize: captionType.size,
+              lineHeight: captionType.lineHeight,
+              letterSpacing: captionType.letterSpacing
+            }}
+          >
+            Score
+          </Text>
         </View>
-        <View className="items-end">
-          <Text className="text-white text-xl font-semibold">
-            第 {classic.questionIndex ?? 0} 题
+        <View style={{ alignItems: 'flex-end' }}>
+          <Text
+            style={{
+              color: theme.palette.textPrimary,
+              fontSize: bodyType.size + 4,
+              lineHeight: bodyType.lineHeight + 4,
+              fontWeight: '600',
+              letterSpacing: bodyType.letterSpacing
+            }}
+          >
+            Question {classic.questionIndex ?? 0}
           </Text>
           {classic.lastAnswerCorrect != null ? (
             <Text
-              className={`text-xs ${classic.lastAnswerCorrect ? 'text-green-300' : 'text-red-300'}`}
+              style={{
+                color: classic.lastAnswerCorrect
+                  ? theme.accents.green
+                  : (theme.palette.danger ?? '#fca5a5'),
+                fontSize: captionType.size,
+                lineHeight: captionType.lineHeight,
+                letterSpacing: captionType.letterSpacing
+              }}
             >
-              {classic.lastAnswerCorrect ? '答对 +10' : '答错 0 分'}
+              {classic.lastAnswerCorrect ? 'Correct +10' : 'Wrong 0 pts'}
             </Text>
           ) : null}
         </View>
       </View>
       {classic.state === 'finished' ? (
-        <View className="rounded-3xl border border-white/10 bg-white/5 p-6">
-          <Text className="text-white font-semibold text-lg mb-1">
-            本轮已结束
+        <View
+          style={{
+            borderRadius: radii.card ?? 20,
+            borderWidth: 1,
+            borderColor: theme.tabBar.border,
+            backgroundColor: theme.palette.card,
+            padding: theme.components?.card?.padding ?? spacing.lg ?? 20
+          }}
+        >
+          <Text
+            style={{
+              color: theme.palette.textPrimary,
+              fontWeight: '700',
+              fontSize: bodyType.size + 2,
+              lineHeight: bodyType.lineHeight + 2,
+              letterSpacing: bodyType.letterSpacing,
+              marginBottom: 2
+            }}
+          >
+            Round completed
           </Text>
-          <Text className="text-white/70 text-sm">
-            最终得分 {classic.score}
+          <Text
+            style={{
+              color: theme.palette.textSecondary,
+              fontSize: labelType.size,
+              lineHeight: labelType.lineHeight,
+              letterSpacing: labelType.letterSpacing
+            }}
+          >
+            Final score {classic.score}
           </Text>
         </View>
       ) : (
@@ -54,10 +139,10 @@ export default function ClassicArenaScreen() {
         />
       )}
       <TrashButton
-        title="换一批题目"
+        title="Load New Questions"
         onPress={startClassic}
         variant="outline"
-        style={{ marginTop: 24 }}
+        style={{ marginTop: spacing.lg ?? 20 }}
       />
     </ScreenShell>
   );

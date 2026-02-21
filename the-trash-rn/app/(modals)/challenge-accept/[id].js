@@ -34,11 +34,11 @@ export default function ChallengeAcceptModal() {
   };
 
   return (
-    <ModalSheet title="接受挑战">
+    <ModalSheet title="Accept Challenge">
       <View className="gap-4">
         <Text className="text-white/70">
-          {challenge?.opponentName ?? challenge?.opponent ?? '有好友'} 向你发起{' '}
-          {challenge?.mode ?? 'duel'} 对战。
+          {challenge?.opponentName ?? challenge?.opponent ?? 'A friend'} has
+          challenged you to a {challenge?.mode ?? 'duel'} duel.
         </Text>
         <Pressable
           className="bg-brand-neon rounded-3xl py-3 items-center"
@@ -46,7 +46,7 @@ export default function ChallengeAcceptModal() {
           disabled={accepting}
         >
           <Text className="text-black font-semibold">
-            {accepting ? '加入中…' : '加入房间'}
+            {accepting ? 'Joining...' : 'Join Room'}
           </Text>
         </Pressable>
       </View>

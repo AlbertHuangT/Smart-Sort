@@ -16,14 +16,14 @@ export default function BindEmailModal() {
 
   const sendCode = async () => {
     if (!email) {
-      setStatus('请输入邮箱');
+      setStatus('Please enter email');
       return;
     }
     setStatus('');
     setSending(true);
     try {
       await accountService.requestEmailOtp(email);
-      setStatus('验证码已发送，请查收邮件');
+      setStatus('Verification code sent. Please check your email');
     } catch (error) {
       setStatus(error.message);
     } finally {
@@ -37,7 +37,7 @@ export default function BindEmailModal() {
     try {
       await accountService.bindEmail({ email, code });
       await refreshSession();
-      setStatus('绑定成功');
+      setStatus('Linked successfully');
     } catch (error) {
       setStatus(error.message);
     } finally {
@@ -46,16 +46,16 @@ export default function BindEmailModal() {
   };
 
   return (
-    <ModalSheet title="绑定邮箱">
+    <ModalSheet title="Link Email">
       <TrashInput
-        label="邮箱"
+        label="Email"
         value={email}
         onChangeText={setEmail}
         placeholder="you@example.com"
         keyboardType="email-address"
       />
       <TrashInput
-        label="验证码"
+        label="Code"
         value={code}
         onChangeText={setCode}
         placeholder="123456"
@@ -65,12 +65,12 @@ export default function BindEmailModal() {
         <Text className="text-white/70 text-xs mb-3">{status}</Text>
       ) : null}
       <TrashButton
-        title={sending ? '发送中…' : '发送验证码'}
+        title={sending ? 'Sending...' : 'Send Code'}
         onPress={sendCode}
         disabled={sending}
       />
       <TrashButton
-        title={binding ? '绑定中…' : '绑定邮箱'}
+        title={binding ? 'Binding...' : 'Link Email'}
         onPress={handleBind}
         disabled={binding}
         style={{ marginTop: 12 }}

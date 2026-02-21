@@ -71,7 +71,7 @@ export const achievementService = {
   },
 
   async redeemReward() {
-    throw new Error('积分兑换功能暂未开放');
+    throw new Error('Reward redemption is not available yet');
   },
 
   async checkAndGrant(payload) {
@@ -92,7 +92,7 @@ export const achievementService = {
       if (result?.granted && result?.achievement_id) {
         unlocked.push({
           id: result.achievement_id,
-          title: result.name ?? '新成就',
+          title: result.name ?? 'New Achievement',
           description: result.description ?? '',
           icon: result.icon_name ?? 'award'
         });

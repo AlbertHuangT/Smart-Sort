@@ -17,9 +17,9 @@ export default function BadgesModal() {
   const unlockedCount = badges.filter((badge) => badge.unlocked).length;
 
   return (
-    <ModalSheet title="成就">
+    <ModalSheet title="Achievements">
       <Text className="text-white/60 text-xs mb-3">
-        已解锁 {unlockedCount}/{badges.length}
+        Unlocked {unlockedCount}/{badges.length}
       </Text>
       <FlatList
         data={badges}
@@ -42,10 +42,10 @@ export default function BadgesModal() {
             </View>
             {item.unlocked ? (
               <Text className="text-brand-neon text-xs">
-                {equippedBadgeId === item.id ? '佩戴中' : '点击佩戴'}
+                {equippedBadgeId === item.id ? 'Equipped' : 'Tap to equip'}
               </Text>
             ) : (
-              <Text className="text-white/40 text-xs">待解锁</Text>
+              <Text className="text-white/40 text-xs">Locked</Text>
             )}
           </Pressable>
         )}

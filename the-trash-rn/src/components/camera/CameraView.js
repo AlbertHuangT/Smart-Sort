@@ -10,16 +10,18 @@ export default function CameraView({
   onRequestPermission,
   isActive = true
 }) {
-  const device = useCameraDevice('back');
+  const backDevice = useCameraDevice('back');
+  const frontDevice = useCameraDevice('front');
+  const device = backDevice ?? frontDevice;
   const theme = useTheme();
   const status = permissionStatus ?? 'unknown';
-  const needsPermission = status !== 'authorized';
+  const needsPermission = !['granted', 'authorized'].includes(status);
 
   const permissionCopy = useMemo(() => {
     if (status === 'denied' || status === 'restricted') {
-      return '相机权限已被拒绝，请在设置中开启。';
+      return 'Camera permission was denied. Enable it in system settings.';
     }
-    return '需要相机权限才能开始扫描。';
+    return 'Camera permission is required to start scanning.';
   }, [status]);
 
   if (needsPermission) {
@@ -55,7 +57,9 @@ export default function CameraView({
             borderRadius: 16
           }}
         >
-          <Text style={{ color: '#05101f', fontWeight: '700' }}>授予权限</Text>
+          <Text style={{ color: '#05101f', fontWeight: '700' }}>
+            Grant permission
+          </Text>
         </Pressable>
       </View>
     );
@@ -82,7 +86,8 @@ export default function CameraView({
             marginTop: 8
           }}
         >
-          加载相机…
+          No camera device found. Use a physical device or enable a simulator
+          camera.
         </Text>
       </View>
     );

@@ -1,33 +1,35 @@
 const SPACING = {
   xxs: 4,
-  xs: 8,
-  sm: 12,
-  md: 16,
-  lg: 24,
-  xl: 32,
-  xxl: 40,
-  xxxl: 48,
-  screenHorizontal: 24,
-  screenTop: 56,
-  screenBottom: 44,
-  sectionGap: 48,
-  stackGap: 24,
-  fieldGap: 24
+  xs: 6,
+  sm: 10,
+  md: 14,
+  lg: 20,
+  xl: 28,
+  xxl: 36,
+  xxxl: 44,
+  screenHorizontal: 20,
+  screenTop: 36,
+  screenBottom: 28,
+  sectionGap: 28,
+  stackGap: 18,
+  fieldGap: 16
 };
 
 const RADII = {
-  card: 24,
-  button: 16,
-  input: 16,
-  segmented: 18,
+  card: 20,
+  button: 14,
+  input: 14,
+  segmented: 14,
   pill: 999
 };
 
 const SIZES = {
-  buttonHeight: 52,
-  inputMinHeight: 56,
-  segmentedMinHeight: 52,
-  inlineActionWidth: 136
+  buttonHeight: 48,
+  inputMinHeight: 52,
+  segmentedMinHeight: 44,
+  inlineActionWidth: 132,
+  contentMaxWidth: 680,
+  proseMaxWidth: 540
 };
 
 const MOTION = {
@@ -64,46 +66,46 @@ const MOTION = {
 
 const TYPOGRAPHY = {
   display: {
-    size: 42,
-    lineHeight: 48,
-    letterSpacing: -1
+    size: 34,
+    lineHeight: 40,
+    letterSpacing: -0.82
   },
   title: {
-    size: 32,
-    lineHeight: 38,
-    letterSpacing: -0.62
+    size: 28,
+    lineHeight: 34,
+    letterSpacing: -0.48
   },
   body: {
-    size: 16,
-    lineHeight: 25,
-    letterSpacing: 0.14
+    size: 15,
+    lineHeight: 22,
+    letterSpacing: 0.12
   },
   label: {
     size: 14,
-    lineHeight: 20,
-    letterSpacing: 0.22
+    lineHeight: 19,
+    letterSpacing: 0.18
   },
   caption: {
-    size: 13,
-    lineHeight: 19,
-    letterSpacing: 0.2
+    size: 12,
+    lineHeight: 17,
+    letterSpacing: 0.14
   }
 };
 
 const COMPONENTS = {
   card: {
-    padding: 24
+    padding: 18
   },
   button: {
-    horizontalPadding: 18,
-    verticalPadding: 13
+    horizontalPadding: 16,
+    verticalPadding: 11
   },
   input: {
-    horizontalPadding: 16,
-    verticalPadding: 14
+    horizontalPadding: 14,
+    verticalPadding: 11
   },
   segmented: {
-    padding: 6
+    padding: 4
   },
   resultCard: {
     swipeThreshold: 110
@@ -211,7 +213,7 @@ const makeTheme = (config) => ({
 export const THEMES = {
   neumorphic: makeTheme({
     label: 'Neumorphic',
-    description: '拟物柔光 · 双源光影 + 柔和材质',
+    description: 'Soft skeuomorphism · dual light and gentle material depth',
     palette: {
       background: '#0b121b',
       card: '#141f2c',
@@ -242,7 +244,7 @@ export const THEMES = {
       dark: '#02060b'
     },
     materialModel: 'industrial-tactile',
-    interactionLexicon: '挤压、弹性、凹凸回弹',
+    interactionLexicon: 'squash, elasticity, and tactile rebound',
     animationConfig: {
       type: 'tactile',
       cardEnterSpring: {
@@ -335,7 +337,7 @@ export const THEMES = {
 
   paper: makeTheme({
     label: 'Paper',
-    description: '牛皮纸纹理 · 温暖层次 + 柔雾阴影',
+    description: 'kraft texture · warm layers with soft haze shadows',
     palette: {
       background: '#1a140e',
       card: '#2a1f16',
@@ -366,7 +368,7 @@ export const THEMES = {
       dark: '#0b0704'
     },
     materialModel: 'analogue-paper',
-    interactionLexicon: '阻尼、摩擦、油墨渗透',
+    interactionLexicon: 'damping, friction, and ink diffusion',
     animationConfig: {
       type: 'analogue-damped',
       cardEnterSpring: {
@@ -462,7 +464,7 @@ export const THEMES = {
 
   neon: makeTheme({
     label: 'Neon Glass',
-    description: '霓虹玻璃 · 高对比分层 + 柔光辉晕',
+    description: 'neon glass · high-contrast layers with glow bloom',
     palette: {
       background: '#040814',
       card: '#13203a',
@@ -493,7 +495,7 @@ export const THEMES = {
       dark: '#000000'
     },
     materialModel: 'light-signal',
-    interactionLexicon: '脉冲、瞬时、能量轨迹',
+    interactionLexicon: 'pulse, instant response, and energy trails',
     animationConfig: {
       type: 'pulse',
       cardEnterSpring: {
@@ -612,7 +614,7 @@ export const THEMES = {
 
   eco: makeTheme({
     label: 'Eco Green',
-    description: '环保森林 · 自然渐层 + 通透绿光',
+    description: 'eco forest · natural gradients with translucent green glow',
     palette: {
       background: '#06140e',
       card: '#1f4331',
@@ -643,7 +645,7 @@ export const THEMES = {
       dark: '#030907'
     },
     materialModel: 'organic',
-    interactionLexicon: '缓慢、生长、顺滑过渡',
+    interactionLexicon: 'slow, growing, and smooth transitions',
     animationConfig: {
       type: 'organic-grow',
       cardEnterSpring: {

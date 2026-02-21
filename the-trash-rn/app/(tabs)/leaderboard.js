@@ -15,13 +15,30 @@ import { useLeaderboardStore } from 'src/stores/leaderboardStore';
 import { useTheme } from 'src/theme/ThemeProvider';
 
 const FILTERS = [
-  { value: 'community', label: '社群' },
-  { value: 'friends', label: '好友' }
+  { value: 'community', label: 'Community' },
+  { value: 'friends', label: 'Friends' }
 ];
 
 export default function LeaderboardScreen() {
   const [filter, setFilter] = useState('community');
   const theme = useTheme();
+  const spacing = theme.spacing ?? {};
+  const radii = theme.radii ?? {};
+  const bodyType = theme.typography?.body ?? {
+    size: 15,
+    lineHeight: 22,
+    letterSpacing: 0.12
+  };
+  const labelType = theme.typography?.label ?? {
+    size: 14,
+    lineHeight: 19,
+    letterSpacing: 0.18
+  };
+  const captionType = theme.typography?.caption ?? {
+    size: 12,
+    lineHeight: 17,
+    letterSpacing: 0.14
+  };
 
   const entries = useLeaderboardStore((state) => state.entries);
   const load = useLeaderboardStore((state) => state.load);
@@ -91,18 +108,45 @@ export default function LeaderboardScreen() {
     );
   };
 
+  const sectionCardStyle = {
+    borderRadius: radii.card ?? 20,
+    borderWidth: 1,
+    borderColor: theme.tabBar.border,
+    backgroundColor: theme.palette.card,
+    paddingHorizontal: spacing.md ?? 14,
+    paddingVertical: spacing.sm ?? 10,
+    marginBottom: spacing.sm ?? 10
+  };
+
   return (
     <ScreenShell title="排行榜" useScroll={false}>
-      <View className="flex-row justify-between items-center mb-4">
-        <TrashSegmentedControl
-          options={FILTERS}
-          value={filter}
-          onChange={setFilter}
-          style={{ marginBottom: 0, marginRight: 12, flex: 1 }}
-        />
-        {filter === 'friends' ? (
+      <TrashSegmentedControl
+        options={FILTERS}
+        value={filter}
+        onChange={setFilter}
+        style={{
+          width: '100%',
+          marginBottom: filter === 'friends' ? (spacing.xs ?? 6) : 0
+        }}
+        optionStyle={{ minHeight: 48 }}
+      />
+      {filter === 'friends' ? (
+        <View
+          style={{
+            alignItems: 'flex-end',
+            marginBottom: spacing.md ?? 14
+          }}
+        >
           <Pressable onPress={handleContactsSync} disabled={syncingContacts}>
-            <Text style={{ color: theme.accents.blue, fontSize: 13 }}>
+            <Text
+              style={{
+                color: theme.accents.blue,
+                fontSize: labelType.size,
+                lineHeight: labelType.lineHeight,
+                letterSpacing: labelType.letterSpacing,
+                fontWeight: '600'
+              }}
+            >
               {syncingContacts
                 ? '同步中…'
                 : contactsSyncOptIn
@@ -110,28 +154,29 @@ export default function LeaderboardScreen() {
                   : '启用通讯录好友榜'}
             </Text>
           </Pressable>
-        ) : null}
-      </View>
+        </View>
+      ) : null}
 
       {filter === 'friends' && !contactsSyncOptIn ? (
-        <View
-          style={{
-            borderRadius: 18,
-            borderWidth: 1,
-            borderColor: theme.tabBar.border,
-            backgroundColor: theme.palette.card,
-            padding: 12,
-            marginBottom: 10
-          }}
-        >
-          <Text style={{ color: theme.palette.textPrimary, fontWeight: '700' }}>
+        <View style={sectionCardStyle}>
+          <Text
+            style={{
+              color: theme.palette.textPrimary,
+              fontWeight: '700',
+              fontSize: labelType.size,
+              lineHeight: labelType.lineHeight,
+              letterSpacing: labelType.letterSpacing
+            }}
+          >
             好友榜需要通讯录授权
           </Text>
           <Text
             style={{
               color: theme.palette.textSecondary,
-              fontSize: 12,
-              marginTop: 6
+              fontSize: captionType.size,
+              lineHeight: captionType.lineHeight,
+              letterSpacing: captionType.letterSpacing,
+              marginTop: spacing.xs ?? 6
             }}
           >
             仅上传去重后的邮箱和手机号，不上传联系人姓名。你可随时关闭授权。
@@ -140,31 +185,30 @@ export default function LeaderboardScreen() {
             title="同意并同步"
             variant="outline"
             onPress={handleContactsSync}
-            style={{ marginTop: 10 }}
+            style={{ marginTop: spacing.sm ?? 10 }}
           />
         </View>
       ) : null}
 
       {filter === 'friends' && contactsSyncOptIn && contactsLastSyncedAt ? (
-        <View
-          style={{
-            borderRadius: 14,
-            borderWidth: 1,
-            borderColor: theme.tabBar.border,
-            backgroundColor: theme.palette.card,
-            paddingHorizontal: 12,
-            paddingVertical: 10,
-            marginBottom: 10
-          }}
-        >
-          <Text style={{ color: theme.palette.textSecondary, fontSize: 12 }}>
+        <View style={sectionCardStyle}>
+          <Text
+            style={{
+              color: theme.palette.textSecondary,
+              fontSize: captionType.size,
+              lineHeight: captionType.lineHeight,
+              letterSpacing: captionType.letterSpacing
+            }}
+          >
             上次同步：{new Date(contactsLastSyncedAt).toLocaleString()}
           </Text>
           {contactsLastSyncStats ? (
             <Text
               style={{
                 color: theme.palette.textSecondary,
-                fontSize: 12,
+                fontSize: captionType.size,
+                lineHeight: captionType.lineHeight,
+                letterSpacing: captionType.letterSpacing,
                 marginTop: 2
               }}
             >
@@ -176,17 +220,15 @@ export default function LeaderboardScreen() {
       ) : null}
 
       {filter === 'community' ? (
-        <View
-          style={{
-            borderRadius: 18,
-            borderWidth: 1,
-            borderColor: theme.tabBar.border,
-            backgroundColor: theme.palette.card,
-            padding: 12,
-            marginBottom: 10
-          }}
-        >
-          <Text style={{ color: theme.palette.textSecondary, fontSize: 12 }}>
+        <View style={sectionCardStyle}>
+          <Text
+            style={{
+              color: theme.palette.textSecondary,
+              fontSize: captionType.size,
+              lineHeight: captionType.lineHeight,
+              letterSpacing: captionType.letterSpacing
+            }}
+          >
             当前社群
           </Text>
           <Text
@@ -194,7 +236,10 @@ export default function LeaderboardScreen() {
               color: theme.palette.textPrimary,
               fontWeight: '700',
               marginTop: 2,
-              marginBottom: 8
+              marginBottom: spacing.xs ?? 6,
+              fontSize: bodyType.size,
+              lineHeight: bodyType.lineHeight,
+              letterSpacing: bodyType.letterSpacing
             }}
           >
             {selectedCommunityName}
@@ -207,14 +252,14 @@ export default function LeaderboardScreen() {
               horizontal
               keyExtractor={(item) => item.id}
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: 8 }}
+              contentContainerStyle={{ gap: spacing.xs ?? 6 }}
               renderItem={({ item }) => {
                 const active = item.id === selectedCommunityId;
                 return (
                   <Pressable
                     onPress={() => setCommunity(item.id)}
                     style={{
-                      borderRadius: 999,
+                      borderRadius: radii.pill ?? 999,
                       borderWidth: 1,
                       borderColor: active
                         ? theme.accents.green
@@ -222,8 +267,8 @@ export default function LeaderboardScreen() {
                       backgroundColor: active
                         ? `${theme.accents.green}1f`
                         : theme.palette.background,
-                      paddingVertical: 8,
-                      paddingHorizontal: 12
+                      paddingVertical: spacing.xs ?? 6,
+                      paddingHorizontal: spacing.sm ?? 10
                     }}
                   >
                     <Text
@@ -231,7 +276,9 @@ export default function LeaderboardScreen() {
                         color: active
                           ? theme.accents.green
                           : theme.palette.textPrimary,
-                        fontSize: 12,
+                        fontSize: captionType.size,
+                        lineHeight: captionType.lineHeight,
+                        letterSpacing: captionType.letterSpacing,
                         fontWeight: '600'
                       }}
                     >
@@ -242,7 +289,14 @@ export default function LeaderboardScreen() {
               }}
             />
           ) : (
-            <Text style={{ color: theme.palette.textSecondary, fontSize: 12 }}>
+            <Text
+              style={{
+                color: theme.palette.textSecondary,
+                fontSize: captionType.size,
+                lineHeight: captionType.lineHeight,
+                letterSpacing: captionType.letterSpacing
+              }}
+            >
               你还没有加入任何社群，请先到社区页加入社群。
             </Text>
           )}
@@ -252,17 +306,22 @@ export default function LeaderboardScreen() {
       {error ? (
         <View
           style={{
-            borderRadius: 14,
+            borderRadius: radii.input ?? 14,
             borderWidth: 1,
             borderColor: theme.palette.danger ?? '#f87171',
             backgroundColor: 'rgba(248,113,113,0.12)',
-            paddingHorizontal: 12,
-            paddingVertical: 10,
-            marginBottom: 10
+            paddingHorizontal: spacing.md ?? 14,
+            paddingVertical: spacing.sm ?? 10,
+            marginBottom: spacing.sm ?? 10
           }}
         >
           <Text
-            style={{ color: theme.palette.danger ?? '#fca5a5', fontSize: 12 }}
+            style={{
+              color: theme.palette.danger ?? '#fca5a5',
+              fontSize: captionType.size,
+              lineHeight: captionType.lineHeight,
+              letterSpacing: captionType.letterSpacing
+            }}
           >
             {error}
           </Text>
@@ -273,12 +332,27 @@ export default function LeaderboardScreen() {
         data={entries}
         keyExtractor={(item) => item.id}
         style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: spacing.xxl ?? 36 }}
         ListEmptyComponent={() => (
-          <View className="items-center justify-center py-12">
+          <View
+            style={{
+              alignItems: 'center',
+              justifyContent: 'center',
+              paddingVertical: spacing.xxxl ?? 44
+            }}
+          >
             {loading ? (
               <ActivityIndicator color={theme.accents.blue} />
             ) : (
-              <Text className="text-white/60">
+              <Text
+                style={{
+                  color: theme.palette.textSecondary,
+                  fontSize: labelType.size,
+                  lineHeight: labelType.lineHeight,
+                  letterSpacing: labelType.letterSpacing,
+                  textAlign: 'center'
+                }}
+              >
                 {filter === 'community'
                   ? '该社群暂无可显示的排名数据。'
                   : contactsSyncOptIn
@@ -288,32 +362,133 @@ export default function LeaderboardScreen() {
             )}
           </View>
         )}
-        ItemSeparatorComponent={() => <View className="h-px bg-white/10" />}
+        ItemSeparatorComponent={() => (
+          <View
+            style={{
+              height: 1,
+              backgroundColor: theme.tabBar.border
+            }}
+          />
+        )}
         renderItem={({ item }) => (
-          <View className="py-4 flex-row items-center gap-3">
-            <Text className="text-white/60 w-10 text-right">#{item.rank}</Text>
-            <View className="flex-1">
-              <Text className="text-white font-semibold">{item.name}</Text>
-              <Text className="text-white/60 text-xs">{item.community}</Text>
+          <View
+            style={{
+              paddingVertical: spacing.md ?? 14,
+              flexDirection: 'row',
+              alignItems: 'center'
+            }}
+          >
+            <Text
+              style={{
+                color: theme.palette.textSecondary,
+                width: 36,
+                textAlign: 'right',
+                fontSize: labelType.size,
+                lineHeight: labelType.lineHeight,
+                letterSpacing: labelType.letterSpacing
+              }}
+            >
+              #{item.rank}
+            </Text>
+            <View style={{ flex: 1, marginLeft: spacing.sm ?? 10 }}>
+              <Text
+                style={{
+                  color: theme.palette.textPrimary,
+                  fontWeight: '600',
+                  fontSize: bodyType.size,
+                  lineHeight: bodyType.lineHeight,
+                  letterSpacing: bodyType.letterSpacing
+                }}
+              >
+                {item.name}
+              </Text>
+              <Text
+                style={{
+                  color: theme.palette.textSecondary,
+                  fontSize: captionType.size,
+                  lineHeight: captionType.lineHeight,
+                  letterSpacing: captionType.letterSpacing
+                }}
+              >
+                {item.community}
+              </Text>
             </View>
-            <Text className="text-brand-amber font-semibold">{item.score}</Text>
+            <Text
+              style={{
+                color: theme.accents.orange,
+                fontWeight: '700',
+                fontSize: bodyType.size,
+                lineHeight: bodyType.lineHeight,
+                letterSpacing: bodyType.letterSpacing
+              }}
+            >
+              {item.score}
+            </Text>
           </View>
         )}
       />
 
-      <View className="mt-4 rounded-3xl border border-white/20 bg-white/5 p-4">
-        <Text className="text-white/60 text-xs mb-1">我的排名</Text>
+      <View
+        style={[
+          sectionCardStyle,
+          {
+            marginTop: spacing.sm ?? 10
+          }
+        ]}
+      >
+        <Text
+          style={{
+            color: theme.palette.textSecondary,
+            fontSize: captionType.size,
+            lineHeight: captionType.lineHeight,
+            letterSpacing: captionType.letterSpacing,
+            marginBottom: 2
+          }}
+        >
+          我的排名
+        </Text>
         {myRanking?.rank ? (
-          <View className="flex-row items-center justify-between">
-            <Text className="text-white font-semibold">
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}
+          >
+            <Text
+              style={{
+                color: theme.palette.textPrimary,
+                fontWeight: '600',
+                fontSize: labelType.size,
+                lineHeight: labelType.lineHeight,
+                letterSpacing: labelType.letterSpacing
+              }}
+            >
               #{myRanking.rank} · {myRanking.name}
             </Text>
-            <Text className="text-brand-neon font-semibold">
+            <Text
+              style={{
+                color: theme.accents.blue,
+                fontWeight: '700',
+                fontSize: bodyType.size,
+                lineHeight: bodyType.lineHeight,
+                letterSpacing: bodyType.letterSpacing
+              }}
+            >
               {myRanking.score}
             </Text>
           </View>
         ) : (
-          <Text className="text-white/70">当前榜单未上榜</Text>
+          <Text
+            style={{
+              color: theme.palette.textSecondary,
+              fontSize: labelType.size,
+              lineHeight: labelType.lineHeight,
+              letterSpacing: labelType.letterSpacing
+            }}
+          >
+            当前榜单未上榜
+          </Text>
         )}
       </View>
 
@@ -321,7 +496,7 @@ export default function LeaderboardScreen() {
         title="刷新榜单"
         variant="ghost"
         onPress={() => load(filter)}
-        style={{ marginTop: 12 }}
+        style={{ marginTop: spacing.sm ?? 10 }}
       />
     </ScreenShell>
   );

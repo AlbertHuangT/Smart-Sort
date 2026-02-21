@@ -5,17 +5,17 @@ import ModalSheet from 'src/components/layout/ModalSheet';
 import { useAuthStore } from 'src/stores/authStore';
 
 const items = [
-  { title: '绑定手机', href: '/(modals)/bind-phone' },
-  { title: '绑定邮箱', href: '/(modals)/bind-email' },
-  { title: '修改密码', href: '/(modals)/change-password' },
-  { title: '升级账号', href: '/(modals)/upgrade-guest' }
+  { title: 'Link Phone', href: '/(modals)/bind-phone' },
+  { title: 'Link Email', href: '/(modals)/bind-email' },
+  { title: 'Change Password', href: '/(modals)/change-password' },
+  { title: 'Upgrade Account', href: '/(modals)/upgrade-guest' }
 ];
 
 export default function AccountSettingsModal() {
   const signOut = useAuthStore((state) => state.signOut);
 
   return (
-    <ModalSheet title="账户设置">
+    <ModalSheet title="Account Settings">
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 48 }}
@@ -34,7 +34,7 @@ export default function AccountSettingsModal() {
           className="rounded-3xl bg-red-500/20 border border-red-500/40 p-4"
         >
           <Text className="text-red-200 font-semibold text-center">
-            退出登录
+            Sign Out
           </Text>
         </Pressable>
       </ScrollView>

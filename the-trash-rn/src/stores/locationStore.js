@@ -87,7 +87,10 @@ const withCityInList = (cities, city) => {
 
 const buildFallbackCity = (coords, geocode) => {
   const name =
-    geocode?.city ?? geocode?.subregion ?? geocode?.district ?? '当前位置';
+    geocode?.city ??
+    geocode?.subregion ??
+    geocode?.district ??
+    'Current location';
   const state = geocode?.region ?? null;
   const id = [name, state]
     .filter(Boolean)
@@ -171,7 +174,9 @@ export const useLocationStore = create(
           const status = permission.status ?? 'undetermined';
           set({ permissionStatus: status });
           if (!permission.granted) {
-            throw new Error('未开启定位权限，请在系统设置中允许定位后重试。');
+            throw new Error(
+              'Location permission is disabled. Enable it in system settings and try again.'
+            );
           }
 
           const position = await Location.getCurrentPositionAsync({
@@ -202,7 +207,8 @@ export const useLocationStore = create(
           }));
           return nextCity;
         } catch (error) {
-          const message = error instanceof Error ? error.message : '定位失败';
+          const message =
+            error instanceof Error ? error.message : 'Location failed';
           set({ locating: false, error: message });
           throw new Error(message);
         }

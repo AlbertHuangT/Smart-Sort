@@ -26,7 +26,7 @@ describe('errors utils', () => {
   test('fromSupabaseError preserves status and uses backend code by default', () => {
     const error = fromSupabaseError(
       { message: 'db down', status: 500 },
-      { message: '服务失败' }
+      { message: 'Service failed' }
     );
     expect(error).toBeInstanceOf(AppError);
     expect(error.message).toBe('db down');

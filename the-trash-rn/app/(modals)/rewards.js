@@ -15,14 +15,16 @@ export default function RewardsModal() {
   }, [load]);
 
   return (
-    <ModalSheet title="奖励">
-      <Text className="text-white/60 text-xs mb-3">当前积分：{points}</Text>
+    <ModalSheet title="Rewards">
+      <Text className="text-white/60 text-xs mb-3">
+        Current points: {points}
+      </Text>
       <FlatList
         data={rewards}
         keyExtractor={(item) => item.id}
         ListEmptyComponent={() => (
           <Text className="text-white/60 text-xs">
-            当前版本暂未开放积分兑换。
+            Point redemption is not available in this version yet.
           </Text>
         )}
         renderItem={({ item }) => {
@@ -31,7 +33,7 @@ export default function RewardsModal() {
             <View className="rounded-3xl border border-white/10 p-4 mb-3">
               <Text className="text-white font-semibold">{item.title}</Text>
               <Text className="text-white/60 text-xs mb-2">
-                {item.points} 分
+                {item.points} pts
               </Text>
               <Pressable
                 onPress={() => redeem(item.id)}
@@ -44,7 +46,11 @@ export default function RewardsModal() {
                 }}
               >
                 <Text className="text-black font-semibold">
-                  {item.redeemed ? '已兑换' : disabled ? '积分不足' : '兑换'}
+                  {item.redeemed
+                    ? 'Redeemed'
+                    : disabled
+                      ? 'Insufficient points'
+                      : 'Redeem'}
                 </Text>
               </Pressable>
             </View>

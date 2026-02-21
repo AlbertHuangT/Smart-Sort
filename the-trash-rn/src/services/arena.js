@@ -1,15 +1,18 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { hasSupabaseConfig } from 'src/services/config';
-import { AppError, ERROR_CODES, fromSupabaseError } from 'src/utils/errors';
+import {
+  AppError,
+  ERROR_CODES,
+  fromSupabaseError,
+  messageFromError
+} from 'src/utils/errors';
 
 import { supabase } from './supabase';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
-// Fallback quiz options (English) — these match the quiz_questions.correct_category
-// schema, NOT the classifier's Chinese category names (可回收/湿垃圾/干垃圾/有害垃圾).
 const QUIZ_OPTIONS = ['Recyclable', 'Compostable', 'Hazardous', 'Landfill'];
 const SPEED_DURATION = 60;
 const CLASSIC_SESSIONS_STORAGE_KEY = 'the-trash/arena/classic-sessions-v1';
@@ -49,7 +52,7 @@ const rpc = async (fn, args = {}) => {
   const { data, error } = await supabase.rpc(fn, args);
   if (error) {
     throw fromSupabaseError(error, {
-      message: '请求竞技场服务失败'
+      message: 'Arena service request failed'
     });
   }
   return data;
@@ -60,7 +63,7 @@ const getCurrentUserId = async () => {
   if (error) {
     throw fromSupabaseError(error, {
       code: ERROR_CODES.AUTH,
-      message: '读取用户信息失败'
+      message: 'Failed to read user profile'
     });
   }
   return data.user?.id ?? null;
@@ -179,9 +182,12 @@ export const arenaService = {
     await ensureSessionsHydrated();
     const questions = hasSupabaseConfig() ? await fetchQuestionBatch(10) : [];
     if (!questions.length) {
-      throw new AppError('题库为空，请先检查 Supabase 题目数据', {
-        code: ERROR_CODES.BACKEND
-      });
+      throw new AppError(
+        'Question bank is empty. Check Supabase question data first.',
+        {
+          code: ERROR_CODES.BACKEND
+        }
+      );
     }
     const sessionId = `classic-${Date.now()}`;
     classicSessions.set(sessionId, { questions, index: 0 });
@@ -196,7 +202,7 @@ export const arenaService = {
     await ensureSessionsHydrated();
     const session = classicSessions.get(sessionId);
     if (!session) {
-      throw new AppError('经典模式会话不存在，请重新开始', {
+      throw new AppError('Classic session is missing. Please restart.', {
         code: ERROR_CODES.VALIDATION
       });
     }
@@ -225,7 +231,7 @@ export const arenaService = {
     await ensureSessionsHydrated();
     const questions = hasSupabaseConfig() ? await fetchQuestionBatch(80) : [];
     if (!questions.length) {
-      throw new AppError('没有可用题目，无法开始极速模式', {
+      throw new AppError('No available questions. Cannot start Speed Sort.', {
         code: ERROR_CODES.BACKEND
       });
     }
@@ -243,7 +249,7 @@ export const arenaService = {
     await ensureSessionsHydrated();
     const session = speedSessions.get(sessionId);
     if (!session) {
-      throw new AppError('极速模式会话不存在，请重新开始', {
+      throw new AppError('Speed Sort session is missing. Please restart.', {
         code: ERROR_CODES.VALIDATION
       });
     }
@@ -267,7 +273,7 @@ export const arenaService = {
     if (!hasSupabaseConfig()) {
       return {
         id: null,
-        prompt: '请先配置 Supabase',
+        prompt: 'Please configure Supabase first',
         progress: 0,
         total: 0,
         reward: null,
@@ -283,10 +289,12 @@ export const arenaService = {
     const progress = data?.already_played ? total : 0;
     return {
       id: data?.challenge_id ?? null,
-      prompt: total ? `今日挑战 ${total} 题` : '今日暂无挑战',
+      prompt: total
+        ? `Daily challenge: ${total} questions`
+        : 'No daily challenge today',
       progress,
       total,
-      reward: '完成后自动结算积分',
+      reward: 'Points are settled automatically after completion',
       alreadyPlayed: Boolean(data?.already_played),
       questions
     };
@@ -323,7 +331,7 @@ export const arenaService = {
       .limit(1);
     if (error) {
       throw fromSupabaseError(error, {
-        message: '加载连击数据失败'
+        message: 'Failed to load streak data'
       });
     }
     return {
@@ -357,13 +365,13 @@ export const arenaService = {
       daily: (daily ?? []).map((item) => ({
         id: item.user_id ?? String(item.rank),
         name: item.display_name ?? 'Anonymous',
-        city: `答对 ${item.correct_count ?? 0} 题`,
+        city: `${item.correct_count ?? 0} correct`,
         score: item.score ?? 0
       })),
       streak: (streak ?? []).map((item) => ({
         id: item.user_id ?? String(item.display_name),
         name: item.display_name ?? 'Anonymous',
-        community: `总场次 ${item.total_games ?? 0}`,
+        community: `${item.total_games ?? 0} total matches`,
         streak: item.best_streak ?? 0
       }))
     };
@@ -409,26 +417,27 @@ export const arenaService = {
 
   async sendInvite(friendId) {
     if (!hasSupabaseConfig()) {
-      throw new AppError('请先连接 Supabase', { code: ERROR_CODES.BACKEND });
+      throw new AppError('Please connect to Supabase first', {
+        code: ERROR_CODES.BACKEND
+      });
     }
     const data = await rpc('create_arena_challenge', {
       p_opponent_id: friendId
     });
-    if (!data?.challenge_id) {
-      throw new AppError('创建对战失败', { code: ERROR_CODES.BACKEND });
-    }
     return {
-      id: data.challenge_id,
+      id: data?.challenge_id,
       opponentId: friendId,
       mode: 'duel',
-      status: data.status ?? 'pending',
-      channelName: data.channel_name
+      status: data?.status ?? 'pending',
+      channelName: data?.channel_name
     };
   },
 
   async acceptChallenge(challengeId) {
     if (!hasSupabaseConfig()) {
-      throw new AppError('请先连接 Supabase', { code: ERROR_CODES.BACKEND });
+      throw new AppError('Please connect to Supabase first', {
+        code: ERROR_CODES.BACKEND
+      });
     }
     const data = await rpc('accept_arena_challenge', {
       p_challenge_id: challengeId
@@ -479,11 +488,19 @@ export const arenaService = {
   },
 
   async completeDuel(challengeId) {
-    if (!hasSupabaseConfig()) {
+    if (!hasSupabaseConfig) {
       return null;
     }
-    return rpc('complete_arena_challenge', {
-      p_challenge_id: challengeId
-    });
+    try {
+      return await rpc('complete_arena_challenge', {
+        p_challenge_id: challengeId
+      });
+    } catch (error) {
+      console.warn(
+        '[arenaService] complete duel failed',
+        messageFromError(error, 'Failed to finish duel')
+      );
+      return null;
+    }
   }
 };

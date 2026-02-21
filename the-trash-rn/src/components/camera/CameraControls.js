@@ -7,18 +7,23 @@ export default function CameraControls({
   onCapture,
   onHistory,
   disabled = false,
-  analyzing = false
+  analyzing = false,
+  style
 }) {
   const theme = useTheme();
+  const spacing = theme.spacing ?? {};
 
   return (
     <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginTop: 16
-      }}
+      style={[
+        {
+          flexDirection: 'row',
+          alignItems: 'flex-end',
+          justifyContent: 'space-between',
+          marginTop: spacing.lg ?? 20
+        },
+        style
+      ]}
     >
       <Pressable
         onPress={onHistory}
@@ -29,7 +34,8 @@ export default function CameraControls({
           borderWidth: 1,
           borderColor: 'rgba(255,255,255,0.2)',
           alignItems: 'center',
-          justifyContent: 'center'
+          justifyContent: 'center',
+          marginBottom: 14
         }}
       >
         <Feather name="clock" color={theme.palette.textPrimary} size={20} />
@@ -59,7 +65,7 @@ export default function CameraControls({
           />
         )}
       </Pressable>
-      <View style={{ width: 48, height: 48 }} />
+      <View style={{ width: 48, height: 48, marginBottom: 14 }} />
     </View>
   );
 }

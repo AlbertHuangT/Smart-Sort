@@ -14,14 +14,15 @@ export default function ChallengeListModal() {
   }, [refreshChallenges]);
 
   return (
-    <ModalSheet title="挑战列表">
+    <ModalSheet title="Challenge List">
       <FlatList
         data={items}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View className="py-3 border-b border-white/10">
             <Text className="text-white font-semibold">
-              {item.opponentName ?? item.opponent ?? '未知对手'} · {item.mode}
+              {item.opponentName ?? item.opponent ?? 'Unknown opponent'} ·{' '}
+              {item.mode}
             </Text>
             <Text className="text-white/50 text-xs">{item.status}</Text>
           </View>

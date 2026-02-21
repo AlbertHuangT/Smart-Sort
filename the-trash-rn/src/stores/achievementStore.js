@@ -92,7 +92,7 @@ export const useAchievementStore = create((set, get) => ({
       history: [
         {
           id: `reward-${rewardId}-${Date.now()}`,
-          title: `兑换 ${reward.title}`,
+          title: `Redeem ${reward.title}`,
           timestamp: new Date().toISOString(),
           kind: 'reward'
         },

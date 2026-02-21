@@ -13,7 +13,7 @@ export default function DailyLeaderboardModal() {
   }, [loadLeaderboards]);
 
   return (
-    <ModalSheet title="每日排行">
+    <ModalSheet title="Daily Leaderboard">
       <FlatList
         data={dailyLeaderboard}
         keyExtractor={(item) => item.id}

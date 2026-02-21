@@ -18,17 +18,17 @@ import { useLocationStore } from 'src/stores/locationStore';
 import { useTheme } from 'src/theme/ThemeProvider';
 
 const VIEW_OPTIONS = [
-  { value: 'list', label: '列表' },
-  { value: 'map', label: '地图' }
+  { value: 'list', label: 'List' },
+  { value: 'map', label: 'Map' }
 ];
 
 const SECTION_OPTIONS = [
-  { value: 'events', label: '活动' },
-  { value: 'groups', label: '社群' }
+  { value: 'events', label: 'Events' },
+  { value: 'groups', label: 'Community' }
 ];
 
 const formatTime = (isoString) => {
-  if (!isoString) return '待定时间';
+  if (!isoString) return 'TBD';
   try {
     return new Date(isoString).toLocaleString('zh-CN', {
       month: 'short',
@@ -165,29 +165,29 @@ export default function CommunityScreen() {
   );
 
   return (
-    <ScreenShell title="社区" useScroll={false}>
-      <View style={{ marginBottom: spacing.sectionGap ?? 48 }}>
+    <ScreenShell title="Community" useScroll={false}>
+      <View style={{ marginBottom: spacing.md ?? 14 }}>
         <View
           style={{
-            borderRadius: radii.card ?? 24,
+            borderRadius: radii.card ?? 20,
             backgroundColor: theme.palette.elevated,
-            paddingHorizontal: spacing.lg ?? 24,
-            paddingVertical: spacing.lg ?? 24
+            paddingHorizontal: spacing.md ?? 14,
+            paddingVertical: spacing.md ?? 14
           }}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <View
               style={{
-                width: 36,
-                height: 36,
-                borderRadius: 12,
+                width: 30,
+                height: 30,
+                borderRadius: 10,
                 alignItems: 'center',
                 justifyContent: 'center',
                 backgroundColor: `${theme.accents.blue}1f`,
-                marginRight: spacing.md ?? 16
+                marginRight: spacing.sm ?? 10
               }}
             >
-              <Feather name="map-pin" size={16} color={theme.accents.blue} />
+              <Feather name="map-pin" size={14} color={theme.accents.blue} />
             </View>
             <View style={{ flex: 1 }}>
               <Text
@@ -200,25 +200,25 @@ export default function CommunityScreen() {
                   marginBottom: 2
                 }}
               >
-                当前定位
+                Current location
               </Text>
               <Text
                 style={{
                   color: theme.palette.textPrimary,
                   fontWeight: '700',
-                  fontSize: bodyType.size + 2,
-                  lineHeight: bodyType.lineHeight + 2,
+                  fontSize: bodyType.size + 1,
+                  lineHeight: bodyType.lineHeight + 1,
                   letterSpacing: bodyType.letterSpacing
                 }}
               >
-                {currentCity?.name ?? '尚未选择城市'}
+                {currentCity?.name ?? 'No city selected'}
               </Text>
             </View>
           </View>
 
           <Text
             style={{
-              marginTop: spacing.sm ?? 12,
+              marginTop: spacing.xs ?? 6,
               color: theme.palette.textSecondary,
               fontSize: captionType.size,
               lineHeight: captionType.lineHeight,
@@ -226,19 +226,17 @@ export default function CommunityScreen() {
             }}
           >
             {currentCity
-              ? '活动与社群内容已按当前城市筛选。'
-              : '点击“使用当前位置”并授权定位，或手动选择城市。'}
+              ? 'Events and communities are filtered by your current city.'
+              : 'Tap "Use current location" and grant permission, or select a city manually.'}
           </Text>
 
           <View
             style={{
-              marginTop: spacing.fieldGap ?? 24,
-              flexDirection: 'row',
-              alignItems: 'center'
+              marginTop: spacing.sm ?? 10
             }}
           >
             <TrashButton
-              title={locating ? '定位中…' : '使用当前位置'}
+              title={locating ? 'Locating...' : 'Use Current Location'}
               variant="secondary"
               disabled={locating}
               onPress={() => {
@@ -246,15 +244,24 @@ export default function CommunityScreen() {
                   // Error is surfaced by locationStore.
                 });
               }}
-              style={{ flex: 1 }}
+              style={{ width: '100%' }}
             />
-            <View style={{ width: spacing.sm ?? 12 }} />
-            <TrashButton
-              title="手动选择城市"
-              variant="outline"
+            <Pressable
               onPress={() => router.push('/(modals)/location-picker')}
-              style={{ flex: 1 }}
-            />
+              style={{ marginTop: spacing.xs ?? 6, alignSelf: 'flex-start' }}
+            >
+              <Text
+                style={{
+                  color: theme.accents.blue,
+                  fontSize: labelType.size,
+                  lineHeight: labelType.lineHeight,
+                  letterSpacing: labelType.letterSpacing,
+                  fontWeight: '600'
+                }}
+              >
+                Choose City Manually
+              </Text>
+            </Pressable>
           </View>
 
           {permissionStatus === 'denied' ? (
@@ -264,10 +271,11 @@ export default function CommunityScreen() {
                 fontSize: captionType.size,
                 lineHeight: captionType.lineHeight,
                 letterSpacing: captionType.letterSpacing,
-                marginTop: spacing.sm ?? 12
+                marginTop: spacing.xs ?? 6
               }}
             >
-              定位权限已关闭，可在系统设置中开启后继续使用当前位置。
+              Location permission is off. Enable it in system settings to use
+              current location.
             </Text>
           ) : null}
 
@@ -278,7 +286,7 @@ export default function CommunityScreen() {
                 fontSize: captionType.size,
                 lineHeight: captionType.lineHeight,
                 letterSpacing: captionType.letterSpacing,
-                marginTop: spacing.xs ?? 8
+                marginTop: spacing.xs ?? 6
               }}
             >
               {locationError}
@@ -302,14 +310,16 @@ export default function CommunityScreen() {
               options={VIEW_OPTIONS}
               value={viewMode}
               onChange={setViewMode}
+              optionStyle={{ minHeight: 50 }}
+              labelStyle={{ fontSize: bodyType.size, fontWeight: '700' }}
             />
           </View>
 
           <TrashButton
-            title="创建活动"
+            title="Create Event"
             variant="outline"
             onPress={() => router.push('/(modals)/create-event')}
-            style={{ marginBottom: spacing.fieldGap ?? 24 }}
+            style={{ marginBottom: spacing.md ?? 14 }}
           />
 
           {viewMode === 'map' ? (
@@ -361,7 +371,7 @@ export default function CommunityScreen() {
                       letterSpacing: bodyType.letterSpacing
                     }}
                   >
-                    选择城市后即可查看地图上的活动标记。
+                    Select a city to view event markers on the map.
                   </Text>
                 </View>
               )}
@@ -382,7 +392,7 @@ export default function CommunityScreen() {
               ListEmptyComponent={() =>
                 renderEmptyState(
                   eventsLoading,
-                  '当前城市暂无活动，点击上方创建一个吧。'
+                  'No events in the current city yet. Create one above.'
                 )
               }
               renderItem={({ item }) => (
@@ -429,7 +439,7 @@ export default function CommunityScreen() {
                       letterSpacing: captionType.letterSpacing
                     }}
                   >
-                    {item.distance ?? ''} · 已报名 {item.attendees ?? 0}/
+                    {item.distance ?? ''} · Registered {item.attendees ?? 0}/
                     {item.quota ?? 0}
                   </Text>
                 </Pressable>
@@ -440,7 +450,7 @@ export default function CommunityScreen() {
       ) : (
         <>
           <TrashButton
-            title="创建社群"
+            title="Create Community"
             variant="outline"
             onPress={() => router.push('/(modals)/create-community')}
             style={{ marginBottom: spacing.fieldGap ?? 24 }}
@@ -496,8 +506,8 @@ export default function CommunityScreen() {
                       marginTop: 4
                     }}
                   >
-                    {item.memberCount} 人 ·{' '}
-                    {city?.name ?? currentCity?.name ?? '未知城市'}
+                    {item.memberCount} members ·{' '}
+                    {city?.name ?? currentCity?.name ?? 'Unknown city'}
                   </Text>
                 </Pressable>
               );
@@ -505,7 +515,7 @@ export default function CommunityScreen() {
             ListEmptyComponent={() =>
               renderEmptyState(
                 groupsLoading,
-                '该城市暂时没有社群，试着创建一个吧。'
+                'No communities in this city yet. Try creating one.'
               )
             }
           />

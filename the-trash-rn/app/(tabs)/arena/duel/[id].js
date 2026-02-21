@@ -12,31 +12,49 @@ import { useTheme } from 'src/theme/ThemeProvider';
 const WAITING_STATES = new Set(['loading', 'lobby', 'countdown']);
 
 const buildStatusMessage = (duel) => {
-  if (!duel) return '正在创建对战房间…';
+  if (!duel) return 'Creating duel room...';
   if (duel.error) return duel.error;
   if (duel.status === 'countdown') {
-    return `双方已准备，${duel.countdown ?? 0}s 后开始`;
+    return `Both players ready. Starts in ${duel.countdown ?? 0}s.`;
   }
   if (duel.status === 'waiting-result') {
-    return '你已完成作答，等待对手提交并结算结果。';
+    return 'You have finished answering. Waiting for your opponent to submit for settlement.';
   }
   if (duel.status === 'lobby' && duel.myReady && duel.opponentReady) {
-    return '双方已准备，正在同步统一开局时间。';
+    return 'Both players are ready. Syncing a shared start time.';
   }
   if (duel.status === 'finalizing') {
-    return '正在同步双方成绩并结算本场对战…';
+    return 'Syncing both scores and settling this duel...';
   }
   if (duel.status === 'completed') {
-    return '本场对战已结束。';
+    return 'This duel has finished.';
   }
   if (duel.myReady && !duel.opponentReady) {
-    return '你已准备，等待对手准备。';
+    return 'You are ready. Waiting for your opponent to get ready.';
   }
-  return '点击准备后会同步给对手，并在双方准备后自动倒计时。';
+  return 'Tap ready to sync with your opponent. Countdown starts automatically once both are ready.';
 };
 
 export default function DuelScreen() {
   const theme = useTheme();
+  const spacing = theme.spacing ?? {};
+  const radii = theme.radii ?? {};
+  const bodyType = theme.typography?.body ?? {
+    size: 15,
+    lineHeight: 22,
+    letterSpacing: 0.12
+  };
+  const labelType = theme.typography?.label ?? {
+    size: 14,
+    lineHeight: 19,
+    letterSpacing: 0.18
+  };
+  const captionType = theme.typography?.caption ?? {
+    size: 12,
+    lineHeight: 17,
+    letterSpacing: 0.14
+  };
+
   const { id } = useLocalSearchParams();
   const duelId = Array.isArray(id) ? id[0] : id;
 
@@ -60,14 +78,14 @@ export default function DuelScreen() {
   const isCompleted = duel?.status === 'completed';
 
   const actionLabel = useMemo(() => {
-    if (!duel) return '加载中…';
+    if (!duel) return 'Loading...';
     if (duel.myReady && duel.opponentReady) {
       return duel.status === 'countdown'
-        ? `倒计时 ${duel.countdown ?? 0}s`
-        : '即将开始';
+        ? `Countdown ${duel.countdown ?? 0}s`
+        : 'Starting soon';
     }
-    if (duel.myReady) return '等待对手准备';
-    return '我已准备';
+    if (duel.myReady) return 'Waiting for opponent to ready';
+    return 'I am ready';
   }, [duel]);
 
   const myProgress = useMemo(() => {
@@ -82,7 +100,7 @@ export default function DuelScreen() {
   }, [duel]);
 
   return (
-    <ScreenShell title="实时对战" useScroll={false}>
+    <ScreenShell title="Live Duel" useScroll={false}>
       <ArenaHeader
         status={duel?.status}
         opponent={duel?.opponent}
@@ -106,15 +124,22 @@ export default function DuelScreen() {
       ) : (
         <View
           style={{
-            borderRadius: 24,
+            borderRadius: radii.card ?? 20,
             borderWidth: 1,
             borderColor: theme.tabBar.border,
             backgroundColor: theme.palette.card,
-            padding: 16,
-            gap: 10
+            padding: spacing.md ?? 14,
+            gap: spacing.sm ?? 10
           }}
         >
-          <Text style={{ color: theme.palette.textSecondary, fontSize: 13 }}>
+          <Text
+            style={{
+              color: theme.palette.textSecondary,
+              fontSize: labelType.size,
+              lineHeight: labelType.lineHeight,
+              letterSpacing: labelType.letterSpacing
+            }}
+          >
             {message}
           </Text>
 
@@ -124,9 +149,14 @@ export default function DuelScreen() {
             >
               <ActivityIndicator size="small" color={theme.accents.blue} />
               <Text
-                style={{ color: theme.palette.textSecondary, fontSize: 12 }}
+                style={{
+                  color: theme.palette.textSecondary,
+                  fontSize: captionType.size,
+                  lineHeight: captionType.lineHeight,
+                  letterSpacing: captionType.letterSpacing
+                }}
               >
-                正在请求最终结算结果
+                Requesting final settlement result
               </Text>
             </View>
           ) : null}
@@ -134,23 +164,34 @@ export default function DuelScreen() {
           {isCompleted ? (
             <View
               style={{
-                borderRadius: 16,
+                borderRadius: radii.input ?? 14,
                 borderWidth: 1,
                 borderColor: theme.tabBar.border,
                 backgroundColor: theme.palette.background,
-                padding: 12,
+                padding: spacing.sm ?? 10,
                 gap: 4
               }}
             >
               <Text
-                style={{ color: theme.palette.textPrimary, fontWeight: '700' }}
+                style={{
+                  color: theme.palette.textPrimary,
+                  fontWeight: '700',
+                  fontSize: bodyType.size,
+                  lineHeight: bodyType.lineHeight,
+                  letterSpacing: bodyType.letterSpacing
+                }}
               >
-                你的得分：{duel?.score ?? 0}
+                Your score: {duel?.score ?? 0}
               </Text>
               <Text
-                style={{ color: theme.palette.textSecondary, fontSize: 12 }}
+                style={{
+                  color: theme.palette.textSecondary,
+                  fontSize: captionType.size,
+                  lineHeight: captionType.lineHeight,
+                  letterSpacing: captionType.letterSpacing
+                }}
               >
-                对手得分：{duel?.opponentScore ?? 0}
+                Opponent score: {duel?.opponentScore ?? 0}
               </Text>
             </View>
           ) : null}
@@ -174,11 +215,14 @@ export default function DuelScreen() {
       <Text
         style={{
           color: theme.palette.textSecondary,
-          fontSize: 11,
-          marginTop: 12
+          fontSize: captionType.size,
+          lineHeight: captionType.lineHeight,
+          letterSpacing: captionType.letterSpacing,
+          marginTop: spacing.sm ?? 10
         }}
       >
-        实时事件：player_ready / answer_submitted / player_finished / presence。
+        Realtime events: player_ready / answer_submitted / player_finished /
+        presence.
       </Text>
     </ScreenShell>
   );

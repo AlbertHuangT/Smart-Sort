@@ -12,9 +12,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#02070f"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "bundleIdentifier": "com.thetrash.app",
       "supportsTablet": false,
@@ -23,7 +21,7 @@
       },
       "infoPlist": {
         "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to access your camera",
-        "NSLocationWhenInUseUsageDescription": "允许 The Trash 使用你的位置来展示附近活动与社群"
+        "NSLocationWhenInUseUsageDescription": "Allow The Trash to use your location to show nearby events and communities"
       }
     },
     "android": {
@@ -47,7 +45,7 @@
       [
         "./plugins/withReactNativeContacts",
         {
-          "contactsPermission": "允许 The Trash 匹配通讯录好友"
+          "contactsPermission": "Allow The Trash to match your contacts with friends"
         }
       ],
       "expo-font"

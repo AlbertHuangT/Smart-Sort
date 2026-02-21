@@ -35,16 +35,16 @@ export default function CommunityDetailModal() {
   };
 
   return (
-    <ModalSheet title={community?.name ?? '社群详情'}>
+    <ModalSheet title={community?.name ?? 'Community details'}>
       <ScrollView contentContainerStyle={{ paddingBottom: 48 }}>
         <Text className="text-white/60 text-xs mb-2">
-          {cityName ?? '未知城市'}
+          {cityName ?? 'Unknown city'}
         </Text>
         <Text className="text-white/70 text-sm mb-6">
           {community?.description}
         </Text>
         <Text className="text-white/60 text-xs mb-2">
-          成员 {community?.memberCount ?? '--'} 人
+          Members {community?.memberCount ?? '--'}
         </Text>
         <Pressable
           onPress={handleJoin}
@@ -52,7 +52,7 @@ export default function CommunityDetailModal() {
           className="bg-brand-neon rounded-3xl py-3 items-center"
         >
           <Text className="text-black font-semibold">
-            {joining ? '加入中…' : '加入社群'}
+            {joining ? 'Joining...' : 'Join community'}
           </Text>
         </Pressable>
       </ScrollView>
