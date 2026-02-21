@@ -46,3 +46,4 @@ GEMINI.md
 .claude/
 .pnpm-store/
 plan.md
+supabase/migrations_backup/
