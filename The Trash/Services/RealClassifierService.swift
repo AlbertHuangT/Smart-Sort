@@ -6,7 +6,7 @@
 //
 
 import CoreML
-import Vision
+@preconcurrency import Vision
 import UIKit
 import SwiftUI
 import Accelerate
@@ -279,10 +279,12 @@ class RealClassifierService: TrashClassifierService {
             request.imageCropAndScaleOption = .centerCrop
             let handler = VNImageRequestHandler(ciImage: ciImage, orientation: .up)
 
+            nonisolated(unsafe) let unsafeHandler = handler
+            nonisolated(unsafe) let unsafeRequest = request
             DispatchQueue.global(qos: .userInteractive).async {
                 autoreleasepool {
                     do {
-                        try handler.perform([request])
+                        try unsafeHandler.perform([unsafeRequest])
                     } catch {
                         print("❌ [Error] Vision 请求失败: \(error)")
                         continuation.resume(returning: TrashAnalysisResult(
@@ -319,10 +321,6 @@ class RealClassifierService: TrashClassifierService {
         vDSP_vsdiv(imageVector, 1, &normValue, &normalizedImage, 1, vDSP_Length(imageVector.count))
 
         // 🚀 优化：使用并行计算找最佳匹配
-        var bestScore: Float = -1
-        var bestIndex = -1
-
-        // 使用 vDSP 批量计算点积
         var bestScore: Float = -1
         var bestIndex = -1
 

@@ -137,7 +137,7 @@ struct AchievementGrantResult: Codable {
         case iconName = "icon_name"
     }
 
-    init(from decoder: Decoder) throws {
+    nonisolated init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         granted = try container.decode(Bool.self, forKey: .granted)
         reason = try container.decodeIfPresent(String.self, forKey: .reason)
