@@ -275,7 +275,7 @@ struct RejectApplicationSheet: View {
 
                 Section {
                     TrashTextButton(
-                        title: "Reject Application", role: .destructive, variant: .destructive
+                        title: "Reject Application", variant: .destructive
                     ) {
                         onConfirm()
                     }

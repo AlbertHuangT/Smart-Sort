@@ -172,7 +172,7 @@ struct MemberActionSheet: View {
                 if !member.isAdmin {
                     Section {
                         TrashTextButton(
-                            title: "Remove Member", role: .destructive, variant: .destructive
+                            title: "Remove Member", variant: .destructive
                         ) {
                             showRemoveConfirmation = true
                         }
@@ -229,7 +229,7 @@ struct RemoveMemberSheet: View {
 
                 Section {
                     TrashTextButton(
-                        title: "Remove Member", role: .destructive, variant: .destructive
+                        title: "Remove Member", variant: .destructive
                     ) {
                         onConfirm()
                     }
