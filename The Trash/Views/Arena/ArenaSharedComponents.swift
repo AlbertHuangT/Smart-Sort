@@ -16,7 +16,7 @@ struct SharedQuizCard: View {
     let showCorrect: Bool
     let showWrong: Bool
     let isSubmitting: Bool
-    let pointsText: String
+    var pointsText: String = "+10 pts"
     let onAnswer: (String) -> Void
     var timerView: AnyView? = nil
     @Environment(\.trashTheme) private var theme

@@ -282,8 +282,15 @@ struct TrashSectionTitle: View {
 // MARK: - Text Button
 
 struct TrashTextButton: View {
+    enum Variant {
+        case standard
+        case accent
+        case destructive
+    }
+
     let title: String
     var color: Color? = nil
+    var variant: Variant = .standard
     let action: () -> Void
     @Environment(\.trashTheme) private var theme
 
@@ -292,9 +299,18 @@ struct TrashTextButton: View {
             Text(title)
                 .font(theme.typography.subheadline)
                 .fontWeight(.medium)
-                .foregroundColor(color ?? theme.palette.textSecondary)
+                .foregroundColor(resolvedColor)
         }
         .buttonStyle(.plain)
+    }
+
+    private var resolvedColor: Color {
+        if let color { return color }
+        switch variant {
+        case .standard: return theme.palette.textSecondary
+        case .accent: return theme.accents.blue
+        case .destructive: return theme.semanticDanger
+        }
     }
 }
 
