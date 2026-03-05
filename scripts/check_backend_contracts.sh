@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
-swift_rpcs=$(rg -o 'rpc\("[a-zA-Z0-9_]+' -n 'The Trash' \
+swift_rpcs=$(rg -o 'rpc\("[a-zA-Z0-9_]+' -n 'Smart Sort' \
   | sed -E 's/.*rpc\("//' \
   | tr 'A-Z' 'a-z' \
   | sort -u)

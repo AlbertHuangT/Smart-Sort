@@ -1,4 +1,4 @@
-# The Trash Architecture
+S# Smart Sort Architecture
 
 ## 1. System Overview
 
@@ -12,32 +12,32 @@ The app is a SwiftUI iOS client with a local CoreML classifier and Supabase back
 
 ### App shell
 
-- `The Trash/App/The_TrashApp.swift`
+- `Smart Sort/App/Smart_SortApp.swift`
   - App entry, dependency wiring (`AuthViewModel`, `TrashViewModel`, `ThemeManager`)
-- `The Trash/App/ContentView.swift`
+- `Smart Sort/App/ContentView.swift`
   - Root tab shell and custom bottom tab bar
 
 ### Theme abstraction layer
 
-- `The Trash/Theme/TrashTheme.swift` (protocol + semantic tokens)
-- `The Trash/Theme/ThemeComponents.swift` (cross-feature shared controls)
-- `The Trash/Theme/NeumorphicTheme.swift`
-- `The Trash/Theme/VibrantTheme.swift`
-- `The Trash/Theme/EcoSkeuomorphicTheme.swift`
+- `Smart Sort/Theme/TrashTheme.swift` (protocol + semantic tokens)
+- `Smart Sort/Theme/ThemeComponents.swift` (cross-feature shared controls)
+- `Smart Sort/Theme/NeumorphicTheme.swift`
+- `Smart Sort/Theme/VibrantTheme.swift`
+- `Smart Sort/Theme/EcoSkeuomorphicTheme.swift`
 
 ### Feature modules
 
-- Verify: `The Trash/Views/Verify/`
-- Arena: `The Trash/Views/Arena/`
-- Leaderboard: `The Trash/Views/Leaderboard/`
-- Community: `The Trash/Views/Community/`
-- Account/Auth/Admin/Profile: `The Trash/Views/{Account,Auth,Admin,Profile}/`
+- Verify: `Smart Sort/Views/Verify/`
+- Arena: `Smart Sort/Views/Arena/`
+- Leaderboard: `Smart Sort/Views/Leaderboard/`
+- Community: `Smart Sort/Views/Community/`
+- Account/Auth/Admin/Profile: `Smart Sort/Views/{Account,Auth,Admin,Profile}/`
 
 ## 3. Backend Layers
 
 ### Client gateway
 
-- `The Trash/Services/SupabaseManager.swift`
+- `Smart Sort/Services/SupabaseManager.swift`
   - Single Supabase client instance
 
 ### Domain services
@@ -188,7 +188,7 @@ Single source of truth for all backend RPC functions and their Swift callers.
 - **Double-counting bug**: `member_count` / `participant_count` were updated both by triggers and manually in RPC functions. All manual counter updates removed; triggers are now the sole authority.
 - **`get_event_participants` permission**: was open to any authenticated user. Now restricted to event creator or community admin.
 - **Duplicate migrations**: two near-identical `admin_permissions` files and multiple functions redefined 3+ times. Consolidated into 3 clean baseline files.
-- **App-side migration mirror** (`The Trash/migrations/`): deleted. `supabase/migrations/` is the sole source of truth.
+- **App-side migration mirror** (`Smart Sort/migrations/`): deleted. `supabase/migrations/` is the sole source of truth.
 
 ### Validation
 
@@ -198,7 +198,7 @@ Run `scripts/check_backend_contracts.sh` to verify Swift RPC calls match migrati
 
 1. Split service DTOs from domain models (avoid large model files)
 2. Introduce per-feature `Repository` protocol to improve testability
-3. Add `The TrashTests` for ViewModel + Service contract tests
+3. Add `Smart SortTests` for ViewModel + Service contract tests
 4. Add CI step to run `scripts/check_backend_contracts.sh`
 5. **Remove duplicate `ThemeBackground()`** from tab-level views (`VerifyView`, `ArenaHubView`, `LeaderboardView`, `CommunityView`). `ContentView` already renders `ThemeBackgroundView()` at the root. Requires visual QA for `NavigationStack` background propagation.
 6. **Consolidate `ThemeBackground` and `ThemeBackgroundView`** — they are exact duplicates (one in `ThemeComponents.swift`, one in `ThemeBackgroundView.swift`). Keep one, delete the other.
