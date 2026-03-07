@@ -48,12 +48,18 @@ Smart Sort/
 
 supabase/
 └── migrations/
-    ├── 001_core_schema.sql
-    ├── 002_arena.sql
-    └── 003_security_and_rls.sql
+    ├── 20260303100000_001_core_schema.sql
+    ├── 20260303100001_002_arena.sql
+    ├── 20260303100002_003_security_and_rls.sql
+    ├── 20260305100000_004_bug_reports.sql
+    ├── 20260307120000_004_expire_stale_active_arena_challenges.sql
+    ├── 20260307140000_005_quiz_images_bucket.sql
+    ├── 20260307143000_006_self_host_arena_quiz_images.sql
+    └── 20260307152000_007_enforce_stale_duel_expiry_across_rpcs.sql
 
 scripts/
-└── check_backend_contracts.sh
+├── check_backend_contracts.sh
+└── migrate_arena_quiz_images.sh
 
 docs/
 └── ARCHITECTURE.md
@@ -66,8 +72,8 @@ docs/
 关键链路：
 
 1. Verify 链路
-   - `CameraManager` 拍照 -> `RealClassifierService` 本地分类 -> `TrashViewModel` 状态驱动 UI
-   - 用户纠错 -> `FeedbackService` 上传图片与日志 -> 积分与成就触发
+   - `CameraManager` 拍照 -> `PhotoModerationService` 本地模糊/人脸预检 -> `RealClassifierService` 本地分类 -> `TrashViewModel` 状态驱动 UI
+   - 用户纠错 -> `FeedbackService` 上传图片与日志（含人脸照片前端直接拦截上传） -> 积分与成就触发
 
 2. Community/Event 链路
    - `UserSettings` 位置 -> `CommunityService` RPC 拉取社区/活动
@@ -76,6 +82,7 @@ docs/
 3. Arena 链路
    - `ArenaService` 处理挑战创建/应答/提交
    - `DuelRealtimeManager` 通过 Realtime 广播同步对战状态
+   - Arena 图片由 Supabase Storage `quiz-images` 提供，前端统一经过 `ArenaImageLoader`
 
 ## 构建与运行
 
@@ -125,19 +132,17 @@ scripts/check_backend_contracts.sh
 
 用于发现前后端契约漂移。
 
-## 本次代码梳理结论（摘要）
+## 当前后端状态（摘要）
 
-- 已修复全局"页面超宽"问题（主题背景层导致根布局被撑开）
-- 社区页面切换容器改为显式渲染，规避分页容器异常
-- 后端迁移从 20 个增量文件压缩为 3 个基线文件（奥卡姆剃刀）
-- 修复 `member_count`/`participant_count` 双重计数 bug（触发器+RPC 手动更新并存）
-- 收紧 `get_event_participants` 权限（仅管理员/活动创建者可查看）
-- 删除 `Smart Sort/migrations/` 镜像目录，消除同步负担
-- 后端契约检查脚本简化为仅对比 Swift ↔ supabase/migrations
+- Arena 题图已从失效的第三方 Unsplash 外链迁到 Supabase Storage；当前恢复了 21 张活题，11 张死链题目已停用
+- Duel 收件箱会自动过期陈旧的 `accepted` / `in_progress` 挑战；核心 Duel RPC 也统一执行同样的 stale-active 过期校验
+- Arena 图片加载已统一到共享 loader，支持缓存、请求去重、失败态和重试
+- Verify 新增本地照片预检：模糊照片会在识别前拦截；含人脸照片仍可识别，但不能上传反馈
+- `scripts/check_backend_contracts.sh` 仍用于检测 Swift RPC 与 SQL migration 定义是否一致
 
 ## 注意事项
 
-- `supabase/migrations/` 是 SQL 唯一 source of truth（3 个基线文件）
+- `supabase/migrations/` 是 SQL 唯一 source of truth
 - `member_count` 和 `participant_count` 由数据库触发器独占维护，RPC 函数中不得手动更新
 - 若改动 RPC 名称，必须同步更新对应 Service 调用和迁移
 - 运行 `scripts/check_backend_contracts.sh` 可检测前后端契约漂移

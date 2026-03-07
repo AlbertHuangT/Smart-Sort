@@ -1,4 +1,4 @@
-S# Smart Sort Architecture
+# Smart Sort Architecture
 
 ## 1. System Overview
 
@@ -45,16 +45,23 @@ Single theme: **Eco Skeuomorphism** (no runtime switching).
 
 - `CommunityService`: community/event/admin RPC and table access
 - `ArenaService` + `DuelRealtimeManager`: duel and realtime sync
+- `ArenaImageLoader`: shared Arena image cache / dedupe / response validation
 - `FriendService`: contacts sync + leaderboard RPC
 - `FeedbackService`: Storage upload + feedback log insert
+- `PhotoModerationService`: local blur / face checks before Verify submission
 - `AchievementService`: achievements and trigger RPCs
 
 ### SQL source of truth
 
-- `supabase/migrations/` is the **sole** backend schema source (3 baseline files)
-  - `001_core_schema.sql` — tables, triggers, Community/Admin/Profile/Achievement/Leaderboard/Friends RPCs
-  - `002_arena.sql` — Arena tables, solo & duel RPCs, quiz seed data
-  - `003_security_and_rls.sql` — search_path hardening, all RLS policies
+- `supabase/migrations/` is the **sole** backend schema source
+  - `20260303100000_001_core_schema.sql` — tables, triggers, Community/Admin/Profile/Achievement/Leaderboard/Friends RPCs
+  - `20260303100001_002_arena.sql` — Arena tables, solo & duel RPCs, initial quiz seed data
+  - `20260303100002_003_security_and_rls.sql` — search_path hardening, all RLS policies
+  - `20260305100000_004_bug_reports.sql` — bug reports + log upload
+  - `20260307120000_004_expire_stale_active_arena_challenges.sql` — inbox cleanup for stale active duels
+  - `20260307140000_005_quiz_images_bucket.sql` — Arena quiz image bucket bootstrap
+  - `20260307143000_006_self_host_arena_quiz_images.sql` — move recoverable quiz images to Supabase Storage and disable dead seeds
+  - `20260307152000_007_enforce_stale_duel_expiry_across_rpcs.sql` — stale duel expiry enforcement in gameplay RPCs
 
 ### Key design decisions
 
@@ -66,10 +73,16 @@ Single theme: **Eco Skeuomorphism** (no runtime switching).
 ### Verify flow
 
 1. Camera capture (`CameraManager`)
-2. Local classify (`RealClassifierService`)
-3. State update (`TrashViewModel.appState`)
-4. Optional feedback upload (`FeedbackService`)
+2. Local moderation (`PhotoModerationService`)
+3. Local classify (`RealClassifierService`)
+4. State update (`TrashViewModel.appState`)
+5. Optional feedback upload (`FeedbackService`)
 5. Gamification RPC (`increment_credits` + achievements)
+
+Behavior notes:
+- Blurry photos are rejected before classification.
+- Photos containing faces can still be classified locally.
+- Face-containing photos are blocked from feedback upload on the client.
 
 ### Community/Event flow
 
@@ -81,8 +94,13 @@ Single theme: **Eco Skeuomorphism** (no runtime switching).
 ### Arena flow
 
 1. Challenge/create/accept via `ArenaService`
-2. Question/answer submit RPC
-3. Duel realtime broadcast sync via `DuelRealtimeManager`
+2. Quiz images load via `ArenaImageLoader`
+3. Question/answer submit RPC
+4. Duel realtime broadcast sync via `DuelRealtimeManager`
+
+Behavior notes:
+- Quiz images now come from Supabase Storage `quiz-images` for the recovered active seed set.
+- Stale `accepted` / `in_progress` duels expire after 30 minutes of inactivity in both inbox fetch and gameplay RPCs.
 
 ## 5. RPC Function Registry
 
@@ -156,7 +174,7 @@ Single source of truth for all backend RPC functions and their Swift callers.
 | 37 | `submit_daily_challenge` | `DailyChallengeVM` |
 | 38 | `get_daily_leaderboard` | `DailyLeaderboardView` |
 
-### Arena — Duel (002)
+### Arena — Duel (002/004/007)
 
 | # | Function | Swift caller |
 |---|----------|-------------|
@@ -180,7 +198,7 @@ Single source of truth for all backend RPC functions and their Swift callers.
 
 ## 6. Audit Findings (this pass)
 
-### Fixed
+### Fixed / Current
 
 - Global width overflow caused by theme background decorative layers expanding root layout
   - Fixed with container-bound sizing and clipping in theme background wrappers
@@ -190,6 +208,9 @@ Single source of truth for all backend RPC functions and their Swift callers.
 - **`get_event_participants` permission**: was open to any authenticated user. Now restricted to event creator or community admin.
 - **Duplicate migrations**: two near-identical `admin_permissions` files and multiple functions redefined 3+ times. Consolidated into 3 clean baseline files.
 - **App-side migration mirror** (`Smart Sort/migrations/`): deleted. `supabase/migrations/` is the sole source of truth.
+- **Arena image drift**: recoverable quiz images are self-hosted in Supabase Storage; dead third-party seeds are disabled.
+- **Arena stale duel cleanup**: no longer limited to `get_my_challenges`; gameplay RPCs enforce the same expiry rule.
+- **Verify upload moderation**: blurry photos are blocked before inference; face-containing photos are prevented from being uploaded as feedback.
 
 ### Validation
 
