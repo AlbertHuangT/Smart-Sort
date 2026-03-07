@@ -11,12 +11,14 @@ struct DailyChallengeResponse: Codable {
     let challengeId: UUID
     let challengeDate: String
     let alreadyPlayed: Bool
+    let sessionId: UUID?
     let questions: [QuizQuestion]
 
     enum CodingKeys: String, CodingKey {
         case challengeId = "challenge_id"
         case challengeDate = "challenge_date"
         case alreadyPlayed = "already_played"
+        case sessionId = "session_id"
         case questions
     }
 }
@@ -26,33 +28,35 @@ struct DailyChallengeResponse: Codable {
 struct DailyChallengeSubmitResponse: Codable {
     let resultId: UUID
     let pointsAwarded: Int
+    let score: Int?
+    let correctCount: Int?
+    let maxCombo: Int?
 
     enum CodingKeys: String, CodingKey {
         case resultId = "result_id"
         case pointsAwarded = "points_awarded"
+        case score
+        case correctCount = "correct_count"
+        case maxCombo = "max_combo"
     }
 }
 
 // MARK: - Daily Challenge Submit Params
 
 struct DailyChallengeSubmitParams: Sendable {
-    let p_score: Int
-    let p_correct_count: Int
+    let p_session_id: UUID
     let p_time_seconds: Double
-    let p_max_combo: Int
 }
 
 extension DailyChallengeSubmitParams: Encodable {
     nonisolated func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(p_score, forKey: .p_score)
-        try container.encode(p_correct_count, forKey: .p_correct_count)
+        try container.encode(p_session_id, forKey: .p_session_id)
         try container.encode(p_time_seconds, forKey: .p_time_seconds)
-        try container.encode(p_max_combo, forKey: .p_max_combo)
     }
 
     private enum CodingKeys: String, CodingKey {
-        case p_score, p_correct_count, p_time_seconds, p_max_combo
+        case p_session_id, p_time_seconds
     }
 }
 

@@ -19,14 +19,14 @@ struct LoginView: View {
     var body: some View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 24) {
+                VStack(alignment: .leading, spacing: theme.spacing.lg) {
                     heroSection
                     authCard
                     guestButton
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 28)
-                .padding(.bottom, 28)
+                .padding(.horizontal, theme.spacing.lg)
+                .padding(.top, theme.spacing.xl)
+                .padding(.bottom, theme.spacing.xl)
             }
             .trashScreenBackground()
             .navigationBarHidden(true)
@@ -45,13 +45,13 @@ struct LoginView: View {
     }
 
     private var heroSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: theme.spacing.sm) {
             Text("Sort smarter.")
-                .font(.system(size: 34, weight: .bold, design: .rounded))
+                .font(theme.typography.title)
                 .foregroundColor(theme.palette.textPrimary)
 
             Text("Use the camera, earn credits, and join community challenges with a cleaner, faster sign in flow.")
-                .font(.system(size: 16, weight: .medium, design: .rounded))
+                .font(theme.typography.body)
                 .foregroundColor(theme.palette.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -59,7 +59,7 @@ struct LoginView: View {
     }
 
     private var authCard: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: theme.spacing.md) {
             Picker("Login Method", selection: $loginMethod) {
                 Text("Email").tag(0)
                 Text("Phone").tag(1)
@@ -78,33 +78,33 @@ struct LoginView: View {
                 phoneSection
             }
         }
-        .padding(20)
+        .padding(theme.components.sheetPadding)
         .background(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
+            RoundedRectangle(cornerRadius: theme.corners.large, style: .continuous)
                 .fill(theme.surfaceBackground)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    RoundedRectangle(cornerRadius: theme.corners.large, style: .continuous)
                         .stroke(theme.palette.divider.opacity(0.8), lineWidth: 1)
                 )
         )
     }
 
     private var emailSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: theme.spacing.sm) {
             Text(isSignUp ? "Create Account" : "Sign In")
-                .font(.headline)
+                .font(theme.typography.headline)
                 .foregroundColor(theme.palette.textPrimary)
 
             TextField("Email", text: $email)
                 .textInputAutocapitalization(.never)
                 .keyboardType(.emailAddress)
                 .autocorrectionDisabled()
-                .trashInputStyle(cornerRadius: 16)
+                .trashInputStyle()
 
             SecureField("Password", text: $password)
-                .trashInputStyle(cornerRadius: 16)
+                .trashInputStyle()
 
-            Button {
+            TrashButton(baseColor: theme.accents.green, action: {
                 Task {
                     if isSignUp {
                         await authVM.signUp(email: email, password: password)
@@ -112,19 +112,15 @@ struct LoginView: View {
                         await authVM.signIn(email: email, password: password)
                     }
                 }
-            } label: {
+            }) {
                 Group {
                     if authVM.isLoading {
                         ProgressView()
                     } else {
                         Text(isSignUp ? "Create Account" : "Sign In")
-                            .font(.system(size: 17, weight: .semibold, design: .rounded))
                     }
                 }
-                .frame(maxWidth: .infinity, minHeight: 52)
             }
-            .buttonStyle(.borderedProminent)
-            .tint(theme.accents.green)
             .disabled(authVM.isLoading || email.isEmpty || password.isEmpty)
 
             Button(isSignUp ? "Already have an account? Sign In" : "Need an account? Sign Up") {
@@ -137,9 +133,9 @@ struct LoginView: View {
     }
 
     private var phoneSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: theme.spacing.sm) {
             Text(authVM.showOTPInput ? "Verify Phone" : "Phone Login")
-                .font(.headline)
+                .font(theme.typography.headline)
                 .foregroundColor(theme.palette.textPrimary)
 
             if authVM.showOTPInput {
@@ -149,28 +145,24 @@ struct LoginView: View {
 
                 TextField("6-digit code", text: $otpCode)
                     .keyboardType(.numberPad)
-                    .trashInputStyle(cornerRadius: 16)
+                    .trashInputStyle()
 
-                Button {
+                TrashButton(baseColor: theme.accents.green, action: {
                     Task {
                         await authVM.verifyOTP(phone: fullPhoneNumber, token: otpCode)
                         if authVM.session != nil {
                             otpCode = ""
                         }
                     }
-                } label: {
+                }) {
                     Group {
                         if authVM.isLoading {
                             ProgressView()
                         } else {
                             Text("Verify and Continue")
-                                .font(.system(size: 17, weight: .semibold, design: .rounded))
                         }
                     }
-                    .frame(maxWidth: .infinity, minHeight: 52)
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(theme.accents.green)
                 .disabled(authVM.isLoading || otpCode.isEmpty)
 
                 Button("Use a different number", role: .cancel) {
@@ -184,39 +176,35 @@ struct LoginView: View {
             } else {
                 HStack(spacing: 12) {
                     Text("+1")
-                        .font(.system(size: 17, weight: .semibold, design: .rounded))
+                        .font(theme.typography.button)
                         .foregroundColor(theme.palette.textPrimary)
                         .padding(.horizontal, 14)
-                        .frame(height: 50)
+                        .frame(minHeight: theme.components.inputHeight)
                         .background(
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)
                                 .fill(theme.cardBackground)
                                 .overlay(
-                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)
                                         .stroke(theme.palette.divider.opacity(0.85), lineWidth: 1)
                                 )
                         )
 
                     TextField("Phone number", text: $localPhoneNumber)
                         .keyboardType(.phonePad)
-                        .trashInputStyle(cornerRadius: 16)
+                        .trashInputStyle()
                 }
 
-                Button {
+                TrashButton(baseColor: theme.accents.green, action: {
                     Task { await authVM.sendOTP(phone: fullPhoneNumber) }
-                } label: {
+                }) {
                     Group {
                         if authVM.isLoading {
                             ProgressView()
                         } else {
                             Text("Send Verification Code")
-                                .font(.system(size: 17, weight: .semibold, design: .rounded))
                         }
                     }
-                    .frame(maxWidth: .infinity, minHeight: 52)
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(theme.accents.green)
                 .disabled(authVM.isLoading || localPhoneNumber.isEmpty)
             }
 
@@ -227,16 +215,16 @@ struct LoginView: View {
     }
 
     private var guestButton: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: theme.spacing.sm) {
             Text("Just looking around?")
                 .font(.subheadline.weight(.semibold))
                 .foregroundColor(theme.palette.textPrimary)
 
-            Button("Continue as Guest") {
+            TrashButton(baseColor: theme.accents.blue, action: {
                 Task { await authVM.signInAnonymously() }
+            }) {
+                Text("Continue as Guest")
             }
-            .buttonStyle(.bordered)
-            .tint(theme.accents.blue)
             .disabled(authVM.isLoading)
         }
     }

@@ -73,20 +73,19 @@ class AchievementService: ObservableObject {
 
     func createAchievement(communityId: String, name: String, description: String, iconName: String, rarity: AchievementRarity = .common) async -> Bool {
         do {
-            let newItem = Achievement(
-                id: UUID(),
-                name: name,
-                description: description,
-                iconName: iconName,
-                communityId: communityId,
-                isHidden: false,
-                rarity: rarity
-            )
-
-            try await client
-                .from("achievements")
-                .insert(newItem)
+            let _: UUID = try await client
+                .rpc(
+                    "create_community_achievement",
+                    params: [
+                        "p_community_id": communityId,
+                        "p_name": name,
+                        "p_description": description,
+                        "p_icon_name": iconName,
+                        "p_rarity": rarity.rawValue,
+                    ]
+                )
                 .execute()
+                .value
 
             await fetchCommunityAchievements(communityId: communityId)
             return true
@@ -101,15 +100,15 @@ class AchievementService: ObservableObject {
 
     func grantAchievement(userId: UUID, achievementId: UUID, communityId: String) async -> Bool {
         do {
-            let params = AchievementGrantParams(
-                user_id: userId,
-                achievement_id: achievementId,
-                community_id: communityId
-            )
-
-            try await client
-                .from("user_achievements")
-                .insert(params)
+            _ = try await client
+                .rpc(
+                    "grant_community_achievement",
+                    params: [
+                        "p_user_id": userId.uuidString,
+                        "p_achievement_id": achievementId.uuidString,
+                        "p_community_id": communityId,
+                    ]
+                )
                 .execute()
 
             return true
@@ -252,5 +251,4 @@ class AchievementService: ObservableObject {
         lastGrantedAchievement = nil
     }
 }
-
 

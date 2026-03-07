@@ -25,6 +25,10 @@ struct CommunityDetailView: View {
         userSettings.isMember(of: community)
     }
 
+    var isPending: Bool {
+        userSettings.isPending(of: community)
+    }
+
     var isAdmin: Bool {
         community.isAdmin
     }
@@ -32,7 +36,7 @@ struct CommunityDetailView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 16) {
+                VStack(spacing: theme.spacing.md) {
                     headerSection
                     descriptionSection
                     if isAdmin {
@@ -41,8 +45,8 @@ struct CommunityDetailView: View {
                     statsSection
                     eventsSection
                 }
-                .padding(.top, 12)
-                .padding(.bottom, 28)
+                .padding(.top, theme.spacing.sm + 4)
+                .padding(.bottom, theme.spacing.xl)
             }
             .navigationTitle(community.name)
             .navigationBarTitleDisplayMode(.inline)
@@ -94,7 +98,7 @@ struct CommunityDetailView: View {
                             endPoint: .bottomTrailing
                         )
                     )
-                    .frame(width: 100, height: 100)
+                    .frame(width: 96, height: 96)
 
                 TrashIcon(systemName: "person.3.fill")
                     .font(.system(size: 40))
@@ -116,20 +120,22 @@ struct CommunityDetailView: View {
 
             joinButton
         }
-        .padding(.vertical, 22)
-        .padding(.horizontal, 18)
+        .padding(.vertical, theme.spacing.lg + 2)
+        .padding(.horizontal, theme.spacing.lg - 2)
         .frame(maxWidth: .infinity)
-        .surfaceCard(cornerRadius: 18)
-        .padding(.horizontal, 16)
+        .surfaceCard(cornerRadius: theme.corners.large)
+        .padding(.horizontal, theme.components.contentInset)
     }
 
     private var joinButton: some View {
         TrashButton(
-            baseColor: isMember ? theme.accents.green.opacity(0.2) : theme.accents.blue,
-            cornerRadius: 14,
+            baseColor: isPending ? theme.semanticWarning.opacity(0.2) : (isMember ? theme.accents.green.opacity(0.2) : theme.accents.blue),
+            cornerRadius: theme.corners.medium,
             action: {
                 Task {
-                    if isMember {
+                    if isPending {
+                        showApprovalAlert = true
+                    } else if isMember {
                         _ = await userSettings.leaveCommunity(community)
                     } else {
                         let result = await userSettings.joinCommunity(community)
@@ -144,19 +150,18 @@ struct CommunityDetailView: View {
                 if userSettings.isLoadingCommunities {
                     ProgressView()
                         .scaleEffect(0.8)
-                        .tint(isMember ? theme.accents.green : theme.onAccentForeground)
+                        .tint(isPending ? theme.semanticWarning : (isMember ? theme.accents.green : theme.onAccentForeground))
                 } else {
-                    TrashIcon(systemName: isMember ? "checkmark.circle.fill" : "plus.circle.fill")
+                    TrashIcon(systemName: isPending ? "clock.badge.exclamationmark.fill" : (isMember ? "checkmark.circle.fill" : "plus.circle.fill"))
                 }
-                Text(isMember ? "Joined" : "Join Community")
+                Text(isPending ? "Pending Approval" : (isMember ? "Joined" : "Join Community"))
             }
             .font(theme.typography.headline)
-            .foregroundColor(isMember ? theme.accents.green : theme.onAccentForeground)
+            .foregroundColor(isPending ? theme.semanticWarning : (isMember ? theme.accents.green : theme.onAccentForeground))
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 14)
         }
-        .padding(.horizontal, 40)
-        .padding(.top, 8)
+        .padding(.horizontal, theme.spacing.xxl)
+        .padding(.top, theme.spacing.sm)
     }
 
     // MARK: - Description Section
@@ -172,10 +177,10 @@ struct CommunityDetailView: View {
             .foregroundColor(theme.palette.textSecondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .surfaceCard(cornerRadius: 16)
-        .padding(.horizontal, 16)
-        .padding(.top, 16)
+        .padding(theme.components.cardPadding)
+        .surfaceCard(cornerRadius: theme.corners.medium)
+        .padding(.horizontal, theme.components.contentInset)
+        .padding(.top, theme.spacing.md)
     }
 
     // MARK: - Stats Section
@@ -200,27 +205,27 @@ struct CommunityDetailView: View {
                 value: "\(viewModel.pastEvents.count)", label: "Past",
                 icon: "clock.arrow.circlepath", color: theme.accents.orange)
         }
-        .padding(.vertical, 16)
+        .padding(.vertical, theme.spacing.md)
         .frame(maxWidth: .infinity)
-        .surfaceCard(cornerRadius: 16)
-        .padding(.horizontal, 16)
-        .padding(.top, 12)
+        .surfaceCard(cornerRadius: theme.corners.medium)
+        .padding(.horizontal, theme.components.contentInset)
+        .padding(.top, theme.spacing.sm + 4)
     }
 
     // MARK: - Events Section
 
     private var eventsSection: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: theme.spacing.md) {
             // Upcoming Events
             if !viewModel.upcomingEvents.isEmpty {
                 eventListSection(
-                    title: "Upcoming Events", events: viewModel.upcomingEvents, iconColor: .green)
+                    title: "Upcoming Events", events: viewModel.upcomingEvents, iconColor: theme.accents.green)
             }
 
             // Past Events
             if !viewModel.pastEvents.isEmpty {
                 eventListSection(
-                    title: "Past Events", events: viewModel.pastEvents, iconColor: .orange)
+                    title: "Past Events", events: viewModel.pastEvents, iconColor: theme.accents.orange)
             }
 
             // Empty State
@@ -235,7 +240,7 @@ struct CommunityDetailView: View {
                 loadingView
             }
         }
-        .padding(.top, 8)
+        .padding(.top, theme.spacing.sm)
     }
 
     private func eventListSection(title: String, events: [CommunityEvent], iconColor: Color)
@@ -245,7 +250,7 @@ struct CommunityDetailView: View {
             sectionHeader(title)
             .padding(.horizontal, 16)
 
-            LazyVStack(spacing: 12) {
+            LazyVStack(spacing: theme.spacing.sm + 4) {
                 ForEach(events) { event in
                     EnhancedEventCard(
                         event: event,
@@ -256,12 +261,12 @@ struct CommunityDetailView: View {
                     }
                 }
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, theme.components.contentInset)
         }
     }
 
     private var emptyEventsView: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: theme.spacing.md) {
             TrashIcon(systemName: "calendar.badge.exclamationmark")
                 .font(.system(size: 50))
                 .foregroundColor(theme.palette.textSecondary)
@@ -277,8 +282,8 @@ struct CommunityDetailView: View {
         }
         .padding(.vertical, 40)
         .frame(maxWidth: .infinity)
-        .surfaceCard(cornerRadius: 16)
-        .padding(.horizontal, 16)
+        .surfaceCard(cornerRadius: theme.corners.medium)
+        .padding(.horizontal, theme.components.contentInset)
     }
 
     private var loadingView: some View {
@@ -303,7 +308,7 @@ struct CommunityDetailView: View {
 
     private var adminSection: some View {
         TrashButton(
-            baseColor: theme.semanticWarning.opacity(0.18), cornerRadius: 16,
+            baseColor: theme.semanticWarning.opacity(0.18), cornerRadius: theme.corners.medium,
             action: { showAdminDashboard = true }
         ) {
             HStack(spacing: 12) {
@@ -321,10 +326,9 @@ struct CommunityDetailView: View {
                     .font(.caption)
                     .foregroundColor(theme.palette.textSecondary)
             }
-            .padding(16)
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 12)
+        .padding(.horizontal, theme.components.contentInset)
+        .padding(.top, theme.spacing.sm + 4)
     }
 }
 
@@ -375,16 +379,16 @@ private struct CommunityEventCard: View {
 
     var body: some View {
         TrashTapArea(action: onTap) {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: theme.spacing.sm + 2) {
+                HStack(spacing: theme.spacing.sm + 4) {
                     // Category Icon
                     ZStack {
                         Circle()
                             .fill(event.category.color.opacity(isPast ? 0.1 : 0.15))
-                            .frame(width: 44, height: 44)
+                            .frame(width: theme.components.minimumHitTarget, height: theme.components.minimumHitTarget)
                         TrashIcon(systemName: event.imageSystemName)
                             .font(.system(size: 18))
-                            .foregroundColor(isPast ? .secondary : event.category.color)
+                            .foregroundColor(isPast ? theme.palette.textSecondary : event.category.color)
                     }
 
                     VStack(alignment: .leading, spacing: 4) {
@@ -392,22 +396,22 @@ private struct CommunityEventCard: View {
                             Text(event.category.rawValue)
                                 .font(theme.typography.caption)
                                 .fontWeight(.bold)
-                                .foregroundColor(isPast ? .secondary : theme.palette.textPrimary)
+                                .foregroundColor(isPast ? theme.palette.textSecondary : theme.palette.textPrimary)
                                 .padding(.horizontal, 8)
-                                .padding(.vertical, 2)
+                                .frame(minHeight: 28)
                                 .background(
-                                    (isPast ? Color.gray : event.category.color).opacity(0.15)
+                                    (isPast ? theme.palette.textSecondary : event.category.color).opacity(0.15)
                                 )
-                                .cornerRadius(6)
+                                .clipShape(RoundedRectangle(cornerRadius: theme.corners.small, style: .continuous))
 
                             if isPast {
                                 Text("Past")
                                     .font(.caption2)
                                     .foregroundColor(theme.semanticWarning)
                                     .padding(.horizontal, 6)
-                                    .padding(.vertical, 2)
+                                    .frame(minHeight: 24)
                                     .background(theme.semanticWarning.opacity(0.14))
-                                    .cornerRadius(4)
+                                    .clipShape(RoundedRectangle(cornerRadius: theme.corners.small, style: .continuous))
                             }
 
                             Spacer()
@@ -428,7 +432,7 @@ private struct CommunityEventCard: View {
                     }
                 }
 
-                HStack(spacing: 16) {
+                HStack(spacing: theme.spacing.md) {
                     TrashLabel(dateFormatter.string(from: event.date), icon: "calendar")
                     Spacer()
                     TrashLabel(
@@ -437,8 +441,8 @@ private struct CommunityEventCard: View {
                 .font(theme.typography.caption)
                 .foregroundColor(theme.palette.textSecondary)
             }
-            .padding(14)
-            .surfaceCard(cornerRadius: 14)
+            .padding(theme.components.cardPadding)
+            .surfaceCard(cornerRadius: theme.corners.medium)
         }
         .opacity(isPast ? 0.7 : 1)
     }
@@ -552,7 +556,7 @@ struct EventDetailSheetForCommunity: View {
             ZStack {
 
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: theme.spacing.lg) {
                         ZStack {
                             LinearGradient(
                                 colors: [event.category.color.opacity(0.8), event.category.color],
@@ -561,7 +565,7 @@ struct EventDetailSheetForCommunity: View {
                             )
                             .frame(height: 180)
 
-                            VStack(spacing: 12) {
+                            VStack(spacing: theme.spacing.sm + 4) {
                                 TrashIcon(systemName: event.imageSystemName)
                                     .font(.system(size: 50))
                                     .trashOnAccentForeground()
@@ -571,15 +575,15 @@ struct EventDetailSheetForCommunity: View {
 
                                 if isPast {
                                     TrashPill(
-                                        title: "Past Event", color: .black.opacity(0.45),
+                                        title: "Past Event", color: theme.palette.textPrimary.opacity(0.45),
                                         isSelected: true)
                                 }
                             }
                         }
-                        .cornerRadius(20)
-                        .padding(.horizontal)
+                        .clipShape(RoundedRectangle(cornerRadius: theme.corners.large, style: .continuous))
+                        .padding(.horizontal, theme.components.contentInset)
 
-                        VStack(alignment: .leading, spacing: 6) {
+                        VStack(alignment: .leading, spacing: theme.spacing.xs + 2) {
                             Text(event.title)
                                 .font(theme.typography.title)
                                 .foregroundColor(theme.palette.textPrimary)
@@ -592,9 +596,9 @@ struct EventDetailSheetForCommunity: View {
                             }
                             .font(theme.typography.subheadline)
                         }
-                        .padding(.horizontal)
+                        .padding(.horizontal, theme.components.contentInset)
 
-                        VStack(spacing: 12) {
+                        VStack(spacing: theme.spacing.sm + 4) {
                             InfoRowForCommunity(
                                 icon: "calendar", title: "Date & Time",
                                 value: dateFormatter.string(from: event.date))
@@ -605,7 +609,7 @@ struct EventDetailSheetForCommunity: View {
                                 icon: "person.2.fill", title: "Participants",
                                 value: "\(event.participantCount) / \(event.maxParticipants)")
                         }
-                        .padding(.horizontal)
+                        .padding(.horizontal, theme.components.contentInset)
 
                         VStack(alignment: .leading, spacing: 8) {
                             Text("About")
@@ -618,7 +622,7 @@ struct EventDetailSheetForCommunity: View {
                             .font(theme.typography.body)
                             .foregroundColor(theme.palette.textSecondary)
                         }
-                        .padding(.horizontal)
+                        .padding(.horizontal, theme.components.contentInset)
 
                         Spacer(minLength: 100)
                     }
@@ -639,8 +643,8 @@ struct EventDetailSheetForCommunity: View {
                             baseColor: currentEvent.isRegistered
                                 ? theme.accents.green
                                 : (currentEvent.participantCount >= currentEvent.maxParticipants
-                                    ? .gray : event.category.color),
-                            cornerRadius: 14,
+                                    ? theme.palette.textSecondary : event.category.color),
+                            cornerRadius: theme.corners.medium,
                             action: {
                                 Task {
                                     await viewModel.toggleRegistration(for: event)
@@ -656,14 +660,13 @@ struct EventDetailSheetForCommunity: View {
                             .font(theme.typography.headline)
                             .trashOnAccentForeground()
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
                         }
                         .disabled(
                             currentEvent.participantCount >= currentEvent.maxParticipants
                                 && !currentEvent.isRegistered
                         )
-                        .padding(.horizontal)
-                        .padding(.bottom, 8)
+                        .padding(.horizontal, theme.components.contentInset)
+                        .padding(.bottom, theme.spacing.sm)
                     }
                         .background(theme.appBackground)
                 }
@@ -696,8 +699,8 @@ private struct InfoRowForCommunity: View {
 
             Spacer()
         }
-        .padding(12)
-        .surfaceCard(cornerRadius: 12)
+        .padding(theme.components.cardPadding)
+        .surfaceCard(cornerRadius: theme.corners.medium)
     }
 }
 

@@ -14,7 +14,7 @@ struct EnhancedSwipeableCard: View {
 
     var body: some View {
         ZStack {
-            VStack(spacing: 10) {
+            VStack(spacing: theme.spacing.sm) {
                 // Header: Item Name
                 HStack {
                     Text(result.itemName)
@@ -25,10 +25,10 @@ struct EnhancedSwipeableCard: View {
                         .font(theme.typography.caption)
                         .fontWeight(.bold)
                         .foregroundColor(theme.palette.textPrimary)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
+                        .padding(.horizontal, 12)
+                        .frame(minHeight: 32)
                         .background(
-                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            RoundedRectangle(cornerRadius: theme.corners.small, style: .continuous)
                                 .fill(result.color.opacity(0.18))
                         )
                 }
@@ -44,7 +44,7 @@ struct EnhancedSwipeableCard: View {
                 .fontWeight(.bold)
                 .foregroundColor(theme.palette.textPrimary)
                 .padding(.horizontal, 14)
-                .padding(.vertical, 6)
+                .frame(minHeight: theme.components.minimumHitTarget)
                 .background(result.color.opacity(0.2))
                 .clipShape(Capsule())
 
@@ -65,12 +65,12 @@ struct EnhancedSwipeableCard: View {
                 }
                 .font(.caption2.bold())
             }
-            .padding(16)
+            .padding(theme.components.cardPadding)
             .background(
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                RoundedRectangle(cornerRadius: theme.corners.large, style: .continuous)
                     .fill(theme.surfaceBackground)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        RoundedRectangle(cornerRadius: theme.corners.large, style: .continuous)
                             .stroke(theme.palette.divider.opacity(0.85), lineWidth: 1)
                     )
             )
@@ -127,12 +127,12 @@ struct EnhancedFeedbackForm: View {
                 textInputAutocapitalization: .never
             )
         }
-        .padding(16)
+        .padding(theme.components.cardPadding)
         .background(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
+            RoundedRectangle(cornerRadius: theme.corners.large, style: .continuous)
                 .fill(theme.surfaceBackground)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    RoundedRectangle(cornerRadius: theme.corners.large, style: .continuous)
                         .stroke(theme.palette.divider.opacity(0.85), lineWidth: 1)
                 )
         )
@@ -146,9 +146,9 @@ struct ErrorCard: View {
     private let theme = TrashTheme()
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: theme.spacing.md) {
             TrashIcon(systemName: "exclamationmark.octagon.fill")
-                .font(.system(size: 44))
+                .font(.system(size: 40))
                 .foregroundColor(theme.semanticDanger)
 
             Text("Analysis Error")
@@ -162,16 +162,15 @@ struct ErrorCard: View {
 
             TrashButton(baseColor: theme.accents.blue, action: onRetry) {
                 Text("Try Again")
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 10)
+                    .frame(maxWidth: .infinity)
             }
         }
-        .padding(24)
+        .padding(theme.components.sheetPadding)
         .background(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
+            RoundedRectangle(cornerRadius: theme.corners.large, style: .continuous)
                 .fill(theme.surfaceBackground)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    RoundedRectangle(cornerRadius: theme.corners.large, style: .continuous)
                         .stroke(theme.palette.divider.opacity(0.85), lineWidth: 1)
                 )
                 .shadow(color: Color.black.opacity(0.08), radius: 12, x: 0, y: 4)
@@ -192,7 +191,7 @@ struct ScanLineOverlay: View {
         GeometryReader { geo in
             ZStack(alignment: .top) {
                 // Border
-                RoundedRectangle(cornerRadius: 24)
+                RoundedRectangle(cornerRadius: theme.corners.large)
                     .stroke(theme.accents.blue.opacity(0.3), lineWidth: 2)
 
                 // Moving line

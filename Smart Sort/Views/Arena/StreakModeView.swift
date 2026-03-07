@@ -44,6 +44,10 @@ struct StreakModeView: View {
         }
     }
 
+    private var quizCardHeight: CGFloat {
+        min(540, UIScreen.main.bounds.height * 0.58)
+    }
+
     // MARK: - Main Content
 
     private var mainContent: some View {
@@ -106,10 +110,13 @@ struct StreakModeView: View {
                 SharedQuizCard(
                     question: question,
                     image: viewModel.imageCache[question.id],
+                    imageFailed: viewModel.isArenaImageFailed(for: question),
+                    correctAnswer: viewModel.lastCorrectCategory,
                     categories: categories,
                     showCorrect: viewModel.showCorrectFeedback,
                     showWrong: viewModel.showWrongFeedback,
                     isSubmitting: viewModel.isSubmitting,
+                    onRetryImage: { viewModel.retryCurrentImage() },
                     onAnswer: { category in
                         Task { await viewModel.submitAnswer(selectedCategory: category) }
                     }
@@ -132,8 +139,8 @@ struct StreakModeView: View {
                 }
             }
         }
-        .frame(height: 540)
-        .padding(.horizontal, 16)
+        .frame(height: quizCardHeight)
+        .padding(.horizontal, theme.components.contentInset)
     }
 
     private var errorBanner: some View {
@@ -146,16 +153,16 @@ struct StreakModeView: View {
             Spacer()
             TrashIconButton(icon: "xmark", action: { viewModel.showError = false })
         }
-        .padding(16)
+        .padding(theme.components.cardPadding)
         .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
+            RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)
                 .fill(theme.surfaceBackground)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)
                         .stroke(theme.palette.divider.opacity(0.85), lineWidth: 1)
                 )
         )
-        .padding(.horizontal)
+        .padding(.horizontal, theme.components.contentInset)
         .transition(.move(edge: .top).combined(with: .opacity))
     }
 

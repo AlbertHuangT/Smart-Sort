@@ -105,10 +105,87 @@ final class AdminService {
     /// Get community settings (for admin edit view)
     func getCommunitySettings(communityId: String) async throws -> CommunitySettingsResponse? {
         return try await client
-            .from("communities")
-            .select("id, description, welcome_message, rules, requires_approval")
-            .eq("id", value: communityId)
+            .rpc("get_community_settings", params: ["p_community_id": communityId])
             .single()
+            .execute()
+            .value
+    }
+
+    func isAppAdmin() async throws -> Bool {
+        try await client
+            .rpc("get_app_admin_status")
+            .execute()
+            .value
+    }
+
+    func getQuizQuestionCandidates(
+        status: String? = "pending",
+        limit: Int = 100
+    ) async throws -> [QuizQuestionCandidateResponse] {
+        let params = QuizCandidateQueryParams(p_status: status, p_limit: limit)
+        return try await client
+            .rpc("get_quiz_question_candidates", params: params)
+            .execute()
+            .value
+    }
+
+    func createQuizCandidatePreviewURL(path: String) async throws -> URL {
+        try await client.storage
+            .from("quiz-candidate-images")
+            .createSignedURL(path: path, expiresIn: 3600)
+    }
+
+    func publishQuizCandidateImage(
+        candidateId: UUID,
+        sourcePath: String
+    ) async throws -> (path: String, publicURL: URL) {
+        let fileExtension = URL(fileURLWithPath: sourcePath).pathExtension
+        let normalizedExtension = fileExtension.isEmpty ? "jpg" : fileExtension
+        let destinationPath = "approved/\(candidateId.uuidString).\(normalizedExtension)"
+
+        _ = try await client.storage
+            .from("quiz-candidate-images")
+            .copy(
+                from: sourcePath,
+                to: destinationPath,
+                options: DestinationOptions(destinationBucket: "quiz-images")
+            )
+
+        let publicURL = try client.storage
+            .from("quiz-images")
+            .getPublicURL(path: destinationPath)
+
+        return (destinationPath, publicURL)
+    }
+
+    func deletePublishedQuizCandidateImage(path: String) async {
+        do {
+            _ = try await client.storage
+                .from("quiz-images")
+                .remove(paths: [path])
+        } catch {
+            print("❌ Delete published quiz image error: \(error)")
+        }
+    }
+
+    func reviewQuizQuestionCandidate(
+        candidateId: UUID,
+        decision: String,
+        reviewNotes: String? = nil,
+        itemName: String? = nil,
+        category: String? = nil,
+        publicImageURL: URL? = nil
+    ) async throws -> QuizCandidateReviewResult {
+        let params = ReviewQuizQuestionCandidateParams(
+            p_candidate_id: candidateId.uuidString,
+            p_decision: decision,
+            p_review_notes: reviewNotes,
+            p_item_name: itemName,
+            p_category: category,
+            p_public_image_url: publicImageURL?.absoluteString
+        )
+        return try await client
+            .rpc("review_quiz_question_candidate", params: params)
             .execute()
             .value
     }

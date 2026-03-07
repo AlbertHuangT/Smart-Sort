@@ -24,18 +24,18 @@ struct DailyLeaderboardView: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     ScrollView {
-                        VStack(alignment: .leading, spacing: 18) {
+                        VStack(alignment: .leading, spacing: theme.spacing.md + 2) {
                             Text("Top Runs Today")
                                 .font(.footnote.weight(.semibold))
                                 .foregroundColor(theme.palette.textSecondary)
                                 .textCase(.uppercase)
-                                .tracking(0.8)
+                                .tracking(0.6)
 
                             ForEach(viewModel.entries) { entry in
                                 DailyLeaderboardRow(entry: entry)
                             }
                         }
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, theme.components.contentInset)
                         .padding(.top, 8)
                     }
                 }
@@ -70,9 +70,9 @@ struct DailyLeaderboardRow: View {
 
     var rankColor: Color {
         switch entry.rank {
-        case 1: return .yellow
-        case 2: return .gray
-        case 3: return .orange
+        case 1: return theme.medalGold
+        case 2: return theme.medalSilver
+        case 3: return theme.medalBronze
         default: return theme.palette.textSecondary
         }
     }
@@ -94,7 +94,7 @@ struct DailyLeaderboardRow: View {
                 if entry.rank <= 3 {
                     Circle()
                         .fill(rankColor.opacity(0.2))
-                        .frame(width: 36, height: 36)
+                        .frame(width: theme.components.minimumHitTarget, height: theme.components.minimumHitTarget)
                     Text("\(entry.rank)")
                         .font(.headline.bold())
                         .foregroundColor(rankColor)
@@ -102,7 +102,7 @@ struct DailyLeaderboardRow: View {
                     Text("\(entry.rank)")
                         .font(.subheadline.bold())
                         .foregroundColor(theme.palette.textSecondary)
-                        .frame(width: 36, height: 36)
+                        .frame(width: theme.components.minimumHitTarget, height: theme.components.minimumHitTarget)
                 }
             }
 
@@ -130,13 +130,13 @@ struct DailyLeaderboardRow: View {
                     .foregroundColor(theme.palette.textSecondary)
             }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, theme.components.contentInset)
         .padding(.vertical, 12)
         .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
+            RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)
                 .fill(theme.surfaceBackground)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)
                         .stroke(theme.palette.divider.opacity(0.8), lineWidth: 1)
                 )
         )

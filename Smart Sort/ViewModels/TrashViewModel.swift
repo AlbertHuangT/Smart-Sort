@@ -31,11 +31,13 @@ enum ClassifierPreparationState: Equatable {
 class TrashViewModel: ObservableObject {
     @Published var appState: AppState = .idle
     @Published private(set) var classifierPreparationState: ClassifierPreparationState = .idle
+    @Published private(set) var currentPhotoModeration = PhotoModerationResult()
     
     private let classifier: TrashClassifierService
     private let client = SupabaseManager.shared.client
     private let feedbackService: FeedbackSubmitting
     private let gamificationService: GamificationServicing
+    private let photoModerationService: PhotoModerating
     
     // 🔥 修改：移除了默认参数 = nil，强制要求传入 classifier
     // 这样你就永远不会意外用到假服务了
@@ -43,16 +45,19 @@ class TrashViewModel: ObservableObject {
         self.classifier = classifier
         self.feedbackService = FeedbackService.shared
         self.gamificationService = GamificationService.shared
+        self.photoModerationService = PhotoModerationService.shared
     }
 
     init(
         classifier: TrashClassifierService,
         feedbackService: FeedbackSubmitting,
-        gamificationService: GamificationServicing
+        gamificationService: GamificationServicing,
+        photoModerationService: PhotoModerating
     ) {
         self.classifier = classifier
         self.feedbackService = feedbackService
         self.gamificationService = gamificationService
+        self.photoModerationService = photoModerationService
     }
 
     func prepareClassifier() async {
@@ -96,18 +101,58 @@ class TrashViewModel: ObservableObject {
         self.appState = .analyzing
 
         Task {
+            let moderation = await photoModerationService.evaluate(image)
+            self.currentPhotoModeration = moderation
+
+            if moderation.isBlurry {
+                LogManager.shared.log(
+                    "Photo rejected before classification due to blur score \(moderation.blurScore)",
+                    level: .info,
+                    category: "PhotoModeration"
+                )
+                self.appState = .error("Photo looks too blurry. Please retake and try again.")
+                return
+            }
+
             let result = await classifier.classifyImage(image: image)
             if self.classifier.isReady {
                 self.classifierPreparationState = .ready
             }
-            self.appState = .finished(result)
+            if result.representsClassifierFailure {
+                self.appState = .error(result.actionTip)
+            } else {
+                self.appState = .finished(result)
+            }
         }
     }
     
     // MARK: - Feedback Logic
     
-    func handleCorrectFeedback() {
+    func handleCorrectFeedback(image: UIImage?) {
         LogManager.shared.log("User confirmed result", level: .info, category: "Feedback")
+
+        if let image,
+           !currentPhotoModeration.containsFace,
+           case .finished(let result) = appState
+        {
+            Task {
+                do {
+                    try await feedbackService.submitConfirmedQuizCandidate(
+                        image: image,
+                        predictedLabel: result.itemName,
+                        predictedCategory: result.category,
+                        userId: client.auth.currentUser?.id
+                    )
+                } catch {
+                    LogManager.shared.log(
+                        "Quiz candidate upload failed: \(error)",
+                        level: .warning,
+                        category: "Feedback"
+                    )
+                }
+            }
+        }
+
         grantPoints(amount: 10)
         self.reset()
     }
@@ -123,18 +168,34 @@ class TrashViewModel: ObservableObject {
     ) async {
         // 🔥 FIX: 防止重复提交
         guard case .collectingFeedback = appState else { return }
+        let trimmedCorrection = correctedName.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !trimmedCorrection.isEmpty else {
+            self.appState = .error("Please enter the correct item name before submitting.")
+            return
+        }
+
+        if currentPhotoModeration.containsFace {
+            LogManager.shared.log(
+                "Feedback upload blocked because photo contains a face",
+                level: .info,
+                category: "PhotoModeration"
+            )
+            self.appState = .error("This photo includes a face, so it can't be uploaded as feedback. Please retake without people in frame.")
+            return
+        }
 
         LogManager.shared.log("Submitting report...", level: .info, category: "Feedback")
 
         // 🔥 FIX: 设置中间状态防止重复提交
-        self.appState = .analyzing
+        self.appState = .submittingFeedback(originalResult)
 
         do {
             try await feedbackService.submitFeedback(
                 image: image,
                 predictedLabel: originalResult.itemName,
                 predictedCategory: originalResult.category,
-                correctedName: correctedName,
+                correctedName: trimmedCorrection,
                 userId: client.auth.currentUser?.id
             )
             LogManager.shared.log("Report uploaded successfully", level: .info, category: "Feedback")
@@ -154,6 +215,7 @@ class TrashViewModel: ObservableObject {
     }
     
     func reset() {
+        currentPhotoModeration = PhotoModerationResult()
         self.appState = .idle
     }
     

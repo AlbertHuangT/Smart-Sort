@@ -24,13 +24,11 @@ class CurrentUserViewModel: ObservableObject {
             return
         }
 
-        guard let uid = SupabaseManager.shared.client.auth.currentUser?.id else { return }
+        guard SupabaseManager.shared.client.auth.currentUser?.id != nil else { return }
 
         do {
             let profile: UserProfileDTO = try await SupabaseManager.shared.client
-                .from("profiles")
-                .select("username, credits")
-                .eq("id", value: uid)
+                .rpc("get_my_profile")
                 .single()
                 .execute()
                 .value

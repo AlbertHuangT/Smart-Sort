@@ -64,10 +64,10 @@ struct CreateEventFormSheet: View {
 
                     if !isPersonalEvent {
                         if userSettings.adminCommunities.isEmpty {
-                            HStack {
-                                TrashIcon(systemName: "exclamationmark.triangle.fill")
-                                    .foregroundColor(theme.semanticWarning)
-                                Text("You need to be a community admin to create community events")
+                        HStack {
+                            TrashIcon(systemName: "exclamationmark.triangle.fill")
+                                .foregroundColor(theme.semanticWarning)
+                            Text("You need to be a community admin to create community events")
                                     .font(theme.typography.caption)
                                     .foregroundColor(theme.palette.textSecondary)
                             }

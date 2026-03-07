@@ -18,7 +18,7 @@ final class EventsViewModel: ObservableObject {
     @Published var showOnlyJoinedCommunities = false
     @Published var errorMessage: String?
 
-    private var loadTask: Task<Void, Never>?
+    private var loadSequence = 0
     private var lastLoadTime: Date?
     private let minLoadInterval: TimeInterval = 0.5
 
@@ -75,7 +75,8 @@ final class EventsViewModel: ObservableObject {
     }
 
     func loadEvents() async {
-        loadTask?.cancel()
+        loadSequence += 1
+        let requestSequence = loadSequence
 
         if let lastLoadTime, Date().timeIntervalSince(lastLoadTime) < minLoadInterval {
             try? await Task.sleep(nanoseconds: UInt64(minLoadInterval * 1_000_000_000))
@@ -110,10 +111,10 @@ final class EventsViewModel: ObservableObject {
                 sortBy: sortByParam
             )
 
-            guard !Task.isCancelled else { return }
+            guard !Task.isCancelled, requestSequence == loadSequence else { return }
             events = response.map(CommunityEvent.init(from:))
         } catch {
-            guard !Task.isCancelled else { return }
+            guard !Task.isCancelled, requestSequence == loadSequence else { return }
             print("❌ Get nearby events error: \(error)")
             errorMessage = error.localizedDescription
         }

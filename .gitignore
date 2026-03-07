@@ -38,9 +38,10 @@ Package.pins
 Secrets.swift
 TODO/
 AGENTS.md
-supabase/
 CLAUDE.md
 GEMINI.md
 plan.md
 .claude/
 .gemini/
+supabase/.temp/
+supabase/.DS_Store

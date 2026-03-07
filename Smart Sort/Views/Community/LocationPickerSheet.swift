@@ -25,16 +25,16 @@ struct LocationPickerSheet: View {
                 }
 
                 TrashSearchField(placeholder: "Search cities...", text: $searchText)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
+                .padding(.horizontal, theme.components.contentInset)
+                .padding(.vertical, theme.spacing.sm + 4)
 
                 HStack {
                     Text("Or select a city")
-                        .font(.subheadline)
+                        .font(theme.typography.subheadline)
                         .foregroundColor(theme.palette.textSecondary)
                     Spacer()
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, theme.spacing.lg)
                 .padding(.bottom, 8)
 
                 List {
@@ -112,21 +112,21 @@ struct LocationPickerSheet: View {
                                     endPoint: .bottomTrailing
                                 )
                             )
-                            .frame(width: 44, height: 44)
+                            .frame(width: theme.components.minimumHitTarget, height: theme.components.minimumHitTarget)
 
                         if userSettings.isRequestingLocation {
                             ProgressView()
                                 .progressViewStyle(CircularProgressViewStyle(tint: theme.onAccentForeground))
                         } else {
                             TrashIcon(systemName: "location.fill")
-                                .font(.system(size: 20))
+                                .font(.system(size: 17, weight: .semibold))
                                 .trashOnAccentForeground()
                         }
                     }
 
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Use Current Location")
-                            .font(.headline)
+                            .font(theme.typography.headline)
                             .foregroundColor(theme.palette.textPrimary)
 
                         Text(locationSubtitle)
@@ -145,28 +145,28 @@ struct LocationPickerSheet: View {
                             .font(.caption.bold())
                             .trashOnAccentForeground()
                             .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
+                            .frame(minHeight: theme.components.minimumHitTarget)
                             .background(theme.accents.blue)
-                            .cornerRadius(12)
+                            .clipShape(RoundedRectangle(cornerRadius: theme.corners.small, style: .continuous))
                     }
                 }
-                .padding(16)
+                .padding(theme.components.cardPadding)
                 .background(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)
                         .fill(theme.surfaceBackground)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)
                                 .stroke(theme.palette.divider.opacity(0.85), lineWidth: 1)
                         )
                 )
             }
             .disabled(userSettings.isRequestingLocation)
-            .padding(.horizontal, 16)
-            .padding(.top, 16)
+            .padding(.horizontal, theme.components.contentInset)
+            .padding(.top, theme.components.contentInset)
             .padding(.bottom, 8)
 
             Divider()
-                .padding(.horizontal, 16)
+                .padding(.horizontal, theme.components.contentInset)
                 .padding(.vertical, 8)
         }
     }
@@ -223,9 +223,9 @@ private struct LocationRow: View {
                 ZStack {
                     Circle()
                         .fill(theme.accents.blue.opacity(0.15))
-                        .frame(width: 40, height: 40)
+                        .frame(width: theme.components.minimumHitTarget, height: theme.components.minimumHitTarget)
                     TrashIcon(systemName: "mappin.circle.fill")
-                        .font(.system(size: 20))
+                        .font(.system(size: 17, weight: .semibold))
                         .foregroundColor(theme.accents.blue)
                 }
 

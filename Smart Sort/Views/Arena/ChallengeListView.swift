@@ -33,6 +33,7 @@ struct ChallengeListView: View {
                                 ForEach(viewModel.pendingChallenges) { challenge in
                                     ChallengeRow(
                                         challenge: challenge,
+                                        displayStatus: viewModel.effectiveStatus(for: challenge),
                                         currentUserId: viewModel.currentUserId,
                                         onAccept: {
                                             selectedChallenge = challenge
@@ -53,6 +54,7 @@ struct ChallengeListView: View {
                                 ForEach(viewModel.activeChallenges) { challenge in
                                     ChallengeRow(
                                         challenge: challenge,
+                                        displayStatus: viewModel.effectiveStatus(for: challenge),
                                         currentUserId: viewModel.currentUserId,
                                         onAccept: {
                                             selectedChallenge = challenge
@@ -65,10 +67,11 @@ struct ChallengeListView: View {
 
                             // Completed section
                             if !viewModel.completedChallenges.isEmpty {
-                                sectionHeader("Completed")
+                                sectionHeader("History")
                                 ForEach(viewModel.completedChallenges) { challenge in
                                     ChallengeRow(
                                         challenge: challenge,
+                                        displayStatus: viewModel.effectiveStatus(for: challenge),
                                         currentUserId: viewModel.currentUserId,
                                         onAccept: nil,
                                         onDecline: nil
@@ -129,6 +132,7 @@ struct ChallengeListView: View {
 
 struct ChallengeRow: View {
     let challenge: ArenaChallenge
+    let displayStatus: String
     let currentUserId: UUID?
     let onAccept: (() -> Void)?
     let onDecline: (() -> Void)?
@@ -144,7 +148,7 @@ struct ChallengeRow: View {
     }
 
     var statusColor: Color {
-        switch challenge.status {
+        switch displayStatus {
         case "pending": return theme.semanticWarning
         case "accepted", "in_progress": return theme.accents.blue
         case "completed":
@@ -156,7 +160,7 @@ struct ChallengeRow: View {
     }
 
     var statusText: String {
-        switch challenge.status {
+        switch displayStatus {
         case "pending":
             return isChallenger ? "Waiting..." : "Incoming!"
         case "accepted", "in_progress":
@@ -194,7 +198,7 @@ struct ChallengeRow: View {
             Spacer()
 
             // Score (if completed)
-            if challenge.status == "completed" {
+            if displayStatus == "completed" {
                 let myScore =
                     isChallenger ? (challenge.challengerScore ?? 0) : (challenge.opponentScore ?? 0)
                 let theirScore =
@@ -206,16 +210,14 @@ struct ChallengeRow: View {
             }
 
             // Action buttons
-            if challenge.status == "pending" && !isChallenger {
+            if displayStatus == "pending" && !isChallenger {
                 HStack(spacing: 8) {
                     if let onAccept = onAccept {
                         TrashButton(
-                            baseColor: theme.accents.green, cornerRadius: 15, action: onAccept
+                            baseColor: theme.accents.green, cornerRadius: theme.corners.medium, action: onAccept
                         ) {
                             Text("Accept")
                                 .font(theme.typography.caption)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
                         }
                     }
                     if let onDecline = onDecline {
@@ -231,13 +233,14 @@ struct ChallengeRow: View {
                 }
             }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, theme.components.contentInset)
         .padding(.vertical, 12)
+        .frame(minHeight: theme.components.rowHeight)
         .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
+            RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)
                 .fill(theme.surfaceBackground)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)
                         .stroke(theme.palette.divider.opacity(0.8), lineWidth: 1)
                 )
         )
@@ -251,6 +254,8 @@ class ChallengeListViewModel: ObservableObject {
     @Published var challenges: [ArenaChallenge] = []
     @Published var isLoading = false
 
+    private let staleActiveWindow: TimeInterval = 30 * 60
+
     private let arenaService = ArenaService.shared
     private let client = SupabaseManager.shared.client
 
@@ -259,15 +264,33 @@ class ChallengeListViewModel: ObservableObject {
     }
 
     var pendingChallenges: [ArenaChallenge] {
-        challenges.filter { $0.status == "pending" }
+        challenges.filter { effectiveStatus(for: $0) == "pending" }
     }
 
     var activeChallenges: [ArenaChallenge] {
-        challenges.filter { $0.status == "accepted" || $0.status == "in_progress" }
+        challenges.filter {
+            let status = effectiveStatus(for: $0)
+            return status == "accepted" || status == "in_progress"
+        }
     }
 
     var completedChallenges: [ArenaChallenge] {
-        challenges.filter { $0.status == "completed" }
+        challenges.filter {
+            ["completed", "declined", "cancelled", "expired"].contains(effectiveStatus(for: $0))
+        }
+    }
+
+    func effectiveStatus(for challenge: ArenaChallenge) -> String {
+        guard ["accepted", "in_progress"].contains(challenge.status) else {
+            return challenge.status
+        }
+        guard let lastActivityDate = challenge.lastActivityDate else {
+            return challenge.status
+        }
+        if lastActivityDate < Date().addingTimeInterval(-staleActiveWindow) {
+            return "expired"
+        }
+        return challenge.status
     }
 
     func fetchChallenges() async {

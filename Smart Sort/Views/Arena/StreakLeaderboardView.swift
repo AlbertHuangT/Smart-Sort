@@ -24,18 +24,18 @@ struct StreakLeaderboardView: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     ScrollView {
-                        VStack(alignment: .leading, spacing: 18) {
+                        VStack(alignment: .leading, spacing: theme.spacing.md + 2) {
                             Text("Best Streaks")
                                 .font(.footnote.weight(.semibold))
                                 .foregroundColor(theme.palette.textSecondary)
                                 .textCase(.uppercase)
-                                .tracking(0.8)
+                                .tracking(0.6)
 
                             ForEach(Array(viewModel.entries.enumerated()), id: \.element.id) { index, entry in
                                 StreakLeaderboardRow(rank: index + 1, entry: entry)
                             }
                         }
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, theme.components.contentInset)
                         .padding(.top, 8)
                     }
                 }
@@ -71,9 +71,9 @@ struct StreakLeaderboardRow: View {
 
     var rankColor: Color {
         switch rank {
-        case 1: return .yellow
-        case 2: return .gray
-        case 3: return .orange
+        case 1: return theme.medalGold
+        case 2: return theme.medalSilver
+        case 3: return theme.medalBronze
         default: return theme.palette.textSecondary
         }
     }
@@ -85,7 +85,7 @@ struct StreakLeaderboardRow: View {
                 if rank <= 3 {
                     Circle()
                         .fill(rankColor.opacity(0.2))
-                        .frame(width: 36, height: 36)
+                        .frame(width: theme.components.minimumHitTarget, height: theme.components.minimumHitTarget)
                     Text("\(rank)")
                         .font(.headline.bold())
                         .foregroundColor(rankColor)
@@ -93,7 +93,7 @@ struct StreakLeaderboardRow: View {
                     Text("\(rank)")
                         .font(.subheadline.bold())
                         .foregroundColor(theme.palette.textSecondary)
-                        .frame(width: 36, height: 36)
+                        .frame(width: theme.components.minimumHitTarget, height: theme.components.minimumHitTarget)
                 }
             }
 
@@ -117,13 +117,13 @@ struct StreakLeaderboardRow: View {
                     .foregroundColor(theme.palette.textSecondary)
             }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, theme.components.contentInset)
         .padding(.vertical, 12)
         .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
+            RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)
                 .fill(theme.surfaceBackground)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)
                         .stroke(theme.palette.divider.opacity(0.8), lineWidth: 1)
                 )
         )

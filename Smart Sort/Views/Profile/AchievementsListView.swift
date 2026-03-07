@@ -14,7 +14,7 @@ struct AchievementsListView: View {
     private let theme = TrashTheme()
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: theme.spacing.md) {
             TrashSegmentedControl(
                 options: [
                     TrashSegmentOption(value: 0, title: "Official", icon: "shield.fill"),
@@ -22,8 +22,8 @@ struct AchievementsListView: View {
                 ],
                 selection: $selectedTab
             )
-            .padding(.horizontal, 16)
-            .padding(.top, 12)
+            .padding(.horizontal, theme.components.contentInset)
+            .padding(.top, theme.spacing.sm + 4)
 
             if service.isLoading {
                 Spacer(minLength: 0)
@@ -34,12 +34,12 @@ struct AchievementsListView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 18) {
+                    LazyVStack(alignment: .leading, spacing: theme.spacing.md) {
                         Text(selectedTab == 0 ? "Official Achievements" : "Community Achievements")
                             .font(.footnote.weight(.semibold))
                             .foregroundColor(theme.palette.textSecondary)
                             .textCase(.uppercase)
-                            .tracking(0.8)
+                            .tracking(0.6)
 
                         ForEach(filteredAchievements) { achievement in
                             AchievementCard(achievement: achievement) {
@@ -53,9 +53,9 @@ struct AchievementsListView: View {
                             }
                         }
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 12)
-                    .padding(.bottom, 24)
+                    .padding(.horizontal, theme.components.contentInset)
+                    .padding(.top, theme.spacing.sm + 4)
+                    .padding(.bottom, theme.spacing.lg)
                 }
             }
         }
@@ -96,7 +96,7 @@ struct AchievementCard: View {
     private let theme = TrashTheme()
 
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: theme.spacing.sm + 6) {
             // 成就图标
             ZStack {
                 Circle()
@@ -107,26 +107,27 @@ struct AchievementCard: View {
                             endPoint: .bottomTrailing
                         )
                     )
-                    .frame(width: 52, height: 52)
+                    .frame(width: 56, height: 56)
                     .shadow(color: achievement.rarity.color.opacity(0.3), radius: 6, x: 0, y: 3)
 
                 TrashIcon(systemName: achievement.iconName)
-                    .font(.title2)
+                    .font(.system(size: 22, weight: .semibold))
                     .trashOnAccentForeground()
             }
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: theme.spacing.xs) {
                 HStack(spacing: 6) {
                     Text(achievement.name)
-                        .font(.headline)
+                        .font(theme.typography.subheadline)
+                        .fontWeight(.semibold)
                         .foregroundColor(theme.palette.textPrimary)
 
                     // 稀有度标签
                     Text(achievement.rarity.displayName)
-                        .font(.system(size: 9, weight: .bold))
+                        .font(theme.typography.caption)
                         .foregroundColor(achievement.rarity.color)
-                        .padding(.horizontal, 5)
-                        .padding(.vertical, 2)
+                        .padding(.horizontal, 8)
+                        .frame(minHeight: 24)
                         .background(
                             Capsule(style: .continuous)
                                 .fill(achievement.rarity.color.opacity(0.15))
@@ -140,22 +141,22 @@ struct AchievementCard: View {
                         .lineLimit(2)
                 }
 
-                HStack(spacing: 8) {
+                HStack(spacing: theme.spacing.sm) {
                     if let communityName = achievement.communityName {
                         HStack(spacing: 3) {
                             TrashIcon(systemName: "person.3.fill")
-                                .font(.system(size: 8))
+                                .font(.system(size: 10, weight: .semibold))
                             Text(communityName)
-                                .font(.caption2)
+                                .font(theme.typography.caption)
                         }
                         .foregroundColor(theme.accents.blue)
                     }
 
                     HStack(spacing: 3) {
                         TrashIcon(systemName: "calendar")
-                            .font(.system(size: 8))
+                            .font(.system(size: 10, weight: .semibold))
                         Text(achievement.grantedAt, style: .date)
-                            .font(.caption2)
+                            .font(theme.typography.caption)
                     }
                     .foregroundColor(theme.palette.textSecondary)
                 }
@@ -168,13 +169,13 @@ struct AchievementCard: View {
                 if achievement.isEquipped {
                     HStack(spacing: 3) {
                         TrashIcon(systemName: "checkmark")
-                            .font(.system(size: 10, weight: .bold))
+                            .font(.system(size: 11, weight: .bold))
                         Text("Equipped")
-                            .font(.caption2.bold())
+                            .font(theme.typography.caption.weight(.bold))
                     }
                     .trashOnAccentForeground()
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
+                    .padding(.horizontal, 12)
+                    .frame(minHeight: theme.components.minimumHitTarget)
                     .background(
                         LinearGradient(
                             colors: achievement.rarity.gradient,
@@ -182,35 +183,35 @@ struct AchievementCard: View {
                             endPoint: .trailing
                         )
                     )
-                    .cornerRadius(8)
+                    .clipShape(RoundedRectangle(cornerRadius: theme.corners.small, style: .continuous))
                 } else {
                     Text("Equip")
-                        .font(.caption2.bold())
+                        .font(theme.typography.caption.weight(.bold))
                         .foregroundColor(theme.accents.blue)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
+                        .padding(.horizontal, 12)
+                        .frame(minHeight: theme.components.minimumHitTarget)
                         .background(
-                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            RoundedRectangle(cornerRadius: theme.corners.small, style: .continuous)
                                 .fill(theme.surfaceBackground)
                                 .overlay(
-                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    RoundedRectangle(cornerRadius: theme.corners.small, style: .continuous)
                                         .stroke(theme.palette.divider.opacity(0.8), lineWidth: 1)
                                 )
                         )
                 }
             }
         }
-        .padding(14)
+        .padding(theme.components.cardPadding)
         .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
+            RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)
                 .fill(theme.surfaceBackground)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)
                         .stroke(theme.palette.divider.opacity(0.8), lineWidth: 1)
                 )
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
+            RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)
                 .stroke(
                     achievement.isEquipped
                     ? LinearGradient(colors: achievement.rarity.gradient, startPoint: .topLeading, endPoint: .bottomTrailing)

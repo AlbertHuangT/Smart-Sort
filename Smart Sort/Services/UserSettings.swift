@@ -8,6 +8,7 @@
 import SwiftUI
 import Combine
 import CoreLocation
+import Supabase
 
 // MARK: - User Settings Manager
 
@@ -22,6 +23,7 @@ class UserSettings: ObservableObject {
     @Published var preciseLocation: CLLocation?
     @Published var locationPermissionStatus: CLAuthorizationStatus = .notDetermined
     @Published var isRequestingLocation = false
+    @Published var locationSyncError: String?
 
     private let locationKey = "selectedLocation"
     private let locationManager = LocationManager()
@@ -29,7 +31,7 @@ class UserSettings: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
 
     private init() {
-        loadSavedData()
+        refreshForCurrentUser()
         setupLocationManager()
         bindCommunityStore()
     }
@@ -101,36 +103,58 @@ class UserSettings: ObservableObject {
 
     private func loadSavedData() {
         // 加载位置
-        if let data = UserDefaults.standard.data(forKey: locationKey),
+        if let data = UserDefaults.standard.data(forKey: scopedLocationKey()),
            let location = try? JSONDecoder().decode(UserLocation.self, from: data) {
             selectedLocation = location
         }
 
     }
 
+    func refreshForCurrentUser() {
+        selectedLocation = nil
+        preciseLocation = nil
+        locationSyncError = nil
+        communityStore.refreshForCurrentUser()
+        loadSavedData()
+    }
+
     // MARK: - Location Methods
 
     func selectLocation(_ location: UserLocation?) async {
+        let previousLocation = selectedLocation
         selectedLocation = location
+        locationSyncError = nil
 
         if let location = location {
-            // 保存到本地
-            if let data = try? JSONEncoder().encode(location) {
-                UserDefaults.standard.set(data, forKey: locationKey)
+            do {
+                let success = try await CommunityService.shared.updateUserLocation(
+                    city: location.city,
+                    state: location.state,
+                    latitude: location.latitude,
+                    longitude: location.longitude
+                )
+
+                guard success else {
+                    throw NSError(
+                        domain: "UserSettings",
+                        code: -1,
+                        userInfo: [NSLocalizedDescriptionKey: "Server rejected location update"]
+                    )
+                }
+            } catch {
+                selectedLocation = previousLocation
+                locationSyncError = error.localizedDescription
+                return
             }
 
-            // 同步到后端
-            _ = try? await CommunityService.shared.updateUserLocation(
-                city: location.city,
-                state: location.state,
-                latitude: location.latitude,
-                longitude: location.longitude
-            )
+            if let data = try? JSONEncoder().encode(location) {
+                UserDefaults.standard.set(data, forKey: scopedLocationKey())
+            }
 
             // 加载该城市的社区
             await loadCommunitiesForCity(location.city)
         } else {
-            UserDefaults.standard.removeObject(forKey: locationKey)
+            UserDefaults.standard.removeObject(forKey: scopedLocationKey())
             communityStore.clearCommunitiesInCity()
         }
     }
@@ -174,6 +198,10 @@ class UserSettings: ObservableObject {
         communityStore.isAdmin(of: community)
     }
 
+    func isPending(of community: Community) -> Bool {
+        communityStore.isPending(of: community)
+    }
+
     /// 获取已加入的社区 (本地缓存)
     func getJoinedCommunities() -> [Community] {
         communityStore.getJoinedCommunities()
@@ -188,5 +216,10 @@ class UserSettings: ObservableObject {
 
     func searchCommunities(query: String, inCity: String? = nil) -> [Community] {
         communityStore.searchCommunities(query: query, inCity: inCity)
+    }
+
+    private func scopedLocationKey() -> String {
+        let userNamespace = SupabaseManager.shared.client.auth.currentUser?.id.uuidString ?? "guest"
+        return "\(locationKey):\(userNamespace)"
     }
 }

@@ -96,10 +96,27 @@ class BugReportService {
             app_version: appVersion
         )
 
-        try await client
-            .from("bug_reports")
-            .insert(record)
-            .execute()
+        do {
+            try await client
+                .from("bug_reports")
+                .insert(record)
+                .execute()
+        } catch {
+            if let logPath {
+                do {
+                    _ = try await client.storage
+                        .from("bug-report-logs")
+                        .remove(paths: [logPath])
+                } catch {
+                    LogManager.shared.log(
+                        "Failed to clean up orphaned bug report log \(logPath): \(error)",
+                        level: .warning,
+                        category: "BugReport"
+                    )
+                }
+            }
+            throw error
+        }
 
         LogManager.shared.log("Bug report submitted successfully", level: .info, category: "BugReport")
     }

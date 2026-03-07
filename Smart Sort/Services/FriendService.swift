@@ -17,8 +17,6 @@ struct FriendUser: Decodable, Identifiable, Sendable {
     let id: UUID
     let username: String
     let credits: Int
-    let email: String?
-    let phone: String?
 }
 
 // MARK: - Service

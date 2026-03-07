@@ -31,13 +31,8 @@ struct HistoryItem: Decodable, Identifiable {
     
     // 生成 Supabase Storage 的公开链接
     var publicImageUrl: URL? {
-        // 你的 Project URL
-        let projectURL = "https://nwhdqiaepwhxepcygsmm.supabase.co"
-        // 你的 Bucket 名字 (在 FeedbackService 中定义为 feedback_images)
-        let bucket = "feedback_images"
-        
-        // 拼接 URL: https://[project].supabase.co/storage/v1/object/public/[bucket]/[path]
-        return URL(string: "\(projectURL)/storage/v1/object/public/\(bucket)/\(imagePath)")
+        SupabaseManager.shared.baseURL
+            .appending(path: "storage/v1/object/public/feedback_images/\(imagePath)")
     }
 }
 

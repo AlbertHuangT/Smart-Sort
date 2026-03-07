@@ -257,6 +257,88 @@ struct CommunitySettingsResponse: Codable {
     }
 }
 
+struct QuizQuestionCandidateResponse: Identifiable, Codable {
+    let id: UUID
+    let userId: UUID
+    let username: String
+    let imagePath: String
+    let predictedLabel: String
+    let predictedCategory: String
+    let status: String
+    let reviewNotes: String?
+    let createdAt: Date
+    let reviewedAt: Date?
+    let publishedQuestionId: UUID?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case userId = "user_id"
+        case username
+        case imagePath = "image_path"
+        case predictedLabel = "predicted_label"
+        case predictedCategory = "predicted_category"
+        case status
+        case reviewNotes = "review_notes"
+        case createdAt = "created_at"
+        case reviewedAt = "reviewed_at"
+        case publishedQuestionId = "published_question_id"
+    }
+}
+
+struct QuizCandidateQueryParams: Sendable {
+    let p_status: String?
+    let p_limit: Int
+}
+
+extension QuizCandidateQueryParams: Encodable {
+    nonisolated func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encodeIfPresent(p_status, forKey: .p_status)
+        try container.encode(p_limit, forKey: .p_limit)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case p_status, p_limit
+    }
+}
+
+struct ReviewQuizQuestionCandidateParams: Sendable {
+    let p_candidate_id: String
+    let p_decision: String
+    let p_review_notes: String?
+    let p_item_name: String?
+    let p_category: String?
+    let p_public_image_url: String?
+}
+
+extension ReviewQuizQuestionCandidateParams: Encodable {
+    nonisolated func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(p_candidate_id, forKey: .p_candidate_id)
+        try container.encode(p_decision, forKey: .p_decision)
+        try container.encodeIfPresent(p_review_notes, forKey: .p_review_notes)
+        try container.encodeIfPresent(p_item_name, forKey: .p_item_name)
+        try container.encodeIfPresent(p_category, forKey: .p_category)
+        try container.encodeIfPresent(p_public_image_url, forKey: .p_public_image_url)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case p_candidate_id, p_decision, p_review_notes, p_item_name, p_category, p_public_image_url
+    }
+}
+
+struct QuizCandidateReviewResult: Codable {
+    let success: Bool
+    let decision: String
+    let publishedQuestionId: UUID?
+
+    enum CodingKeys: String, CodingKey {
+        case success
+        case decision
+        case publishedQuestionId = "published_question_id"
+    }
+}
+
 // MARK: - RPC Parameter Structs (Sendable for safe cross-actor usage)
 
 struct NearbyEventsParams: Sendable {

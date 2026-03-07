@@ -15,7 +15,7 @@ struct AccountSettingsView: View {
         ZStack {
             
             ScrollView {
-                VStack(spacing: 24) {
+                VStack(spacing: theme.spacing.lg) {
                     SectionHeader(title: "Identity")
                     
                     VStack(spacing: 12) {
@@ -38,7 +38,7 @@ struct AccountSettingsView: View {
                     
                     InfoCard(content: "Linking your email or phone allows you to access your account and credits from any device.")
                 }
-                .padding(16)
+                .padding(theme.components.contentInset)
             }
         }
         .navigationTitle("Settings")

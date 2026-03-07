@@ -105,10 +105,13 @@ struct DuelView: View {
                 SharedQuizCard(
                     question: question,
                     image: viewModel.imageCache[question.id],
+                    imageFailed: viewModel.isArenaImageFailed(for: question),
+                    correctAnswer: viewModel.lastCorrectCategory,
                     categories: categories,
                     showCorrect: viewModel.showCorrectFeedback,
                     showWrong: viewModel.showWrongFeedback,
                     isSubmitting: viewModel.isSubmitting,
+                    onRetryImage: { viewModel.retryCurrentImage() },
                     onAnswer: { category in
                         Task { await viewModel.submitAnswer(selectedCategory: category) }
                     }

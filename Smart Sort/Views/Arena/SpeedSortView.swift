@@ -61,6 +61,10 @@ struct SpeedSortView: View {
         }
     }
 
+    private var quizCardHeight: CGFloat {
+        min(540, UIScreen.main.bounds.height * 0.58)
+    }
+
     // MARK: - Main Content
 
     private var mainContent: some View {
@@ -113,10 +117,13 @@ struct SpeedSortView: View {
                 SharedQuizCard(
                     question: question,
                     image: viewModel.imageCache[question.id],
+                    imageFailed: viewModel.isArenaImageFailed(for: question),
+                    correctAnswer: viewModel.lastCorrectCategory,
                     categories: categories,
                     showCorrect: viewModel.showCorrectFeedback,
                     showWrong: viewModel.showWrongFeedback,
                     isSubmitting: viewModel.isSubmitting,
+                    onRetryImage: { viewModel.retryCurrentImage() },
                     onAnswer: { category in
                         Task { await viewModel.submitAnswer(selectedCategory: category) }
                     },
@@ -130,8 +137,8 @@ struct SpeedSortView: View {
                 .id(question.id)
             }
         }
-        .frame(height: 540)
-        .padding(.horizontal, 16)
+        .frame(height: quizCardHeight)
+        .padding(.horizontal, theme.components.contentInset)
     }
 
     private var errorBanner: some View {
@@ -144,16 +151,16 @@ struct SpeedSortView: View {
             Spacer()
             TrashIconButton(icon: "xmark", action: { viewModel.showError = false })
         }
-        .padding(16)
+        .padding(theme.components.cardPadding)
         .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
+            RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)
                 .fill(theme.surfaceBackground)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)
                         .stroke(theme.palette.divider.opacity(0.85), lineWidth: 1)
                 )
         )
-        .padding(.horizontal)
+        .padding(.horizontal, theme.components.contentInset)
         .transition(.move(edge: .top).combined(with: .opacity))
     }
 
@@ -220,6 +227,7 @@ struct SpeedSortView: View {
 struct SpeedSortCountdownOverlay: View {
     let value: Int
     @State private var scale: CGFloat = 0.3
+    private let theme = TrashTheme()
 
     var displayText: String {
         value > 0 ? "\(value)" : "GO!"
@@ -227,16 +235,16 @@ struct SpeedSortCountdownOverlay: View {
 
     var displayColor: Color {
         switch value {
-        case 3: return .red
-        case 2: return .orange
-        case 1: return .yellow
-        default: return .green
+        case 3: return theme.semanticDanger
+        case 2: return theme.semanticWarning
+        case 1: return theme.semanticHighlight
+        default: return theme.semanticSuccess
         }
     }
 
     var body: some View {
         ZStack {
-            Color.black.opacity(0.4)
+            theme.palette.textPrimary.opacity(0.4)
                 .ignoresSafeArea()
 
             Text(displayText)

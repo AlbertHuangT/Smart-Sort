@@ -12,12 +12,12 @@ struct TrashCard<Content: View>: View {
 
     var body: some View {
         content
-            .padding()
+            .padding(theme.components.cardPadding)
             .background(
-                RoundedRectangle(cornerRadius: cornerRadius ?? 16, style: .continuous)
+                RoundedRectangle(cornerRadius: cornerRadius ?? theme.corners.medium, style: .continuous)
                     .fill(theme.surfaceBackground)
                     .overlay(
-                        RoundedRectangle(cornerRadius: cornerRadius ?? 16, style: .continuous)
+                        RoundedRectangle(cornerRadius: cornerRadius ?? theme.corners.medium, style: .continuous)
                             .stroke(theme.palette.divider.opacity(0.8), lineWidth: 1)
                     )
                     .shadow(color: Color.black.opacity(0.04), radius: 10, x: 0, y: 4)
@@ -52,7 +52,10 @@ struct TrashButton<Content: View>: View {
             action()
         }) {
             content
+                .font(theme.typography.button)
                 .frame(maxWidth: .infinity)
+                .frame(minHeight: theme.components.buttonHeight)
+                .padding(.horizontal, theme.spacing.sm)
         }
         .buttonStyle(.borderedProminent)
         .buttonBorderShape(
@@ -68,6 +71,7 @@ struct TrashTapArea<Content: View>: View {
     let action: () -> Void
     var haptics: Bool = false
     let content: Content
+    private let theme = TrashTheme()
 
     @State private var hapticTrigger = false
 
@@ -83,6 +87,11 @@ struct TrashTapArea<Content: View>: View {
             action()
         }) {
             content
+                .frame(
+                    minWidth: theme.components.minimumHitTarget,
+                    minHeight: theme.components.minimumHitTarget,
+                    alignment: .center
+                )
         }
         .buttonStyle(.plain)
         .compatibleSensoryFeedback(.impactSoft(intensity: 0.4), trigger: hapticTrigger)

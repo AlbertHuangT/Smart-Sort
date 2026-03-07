@@ -5,18 +5,18 @@
 //  Daily Challenge: same 10 questions for everyone, once per day, timed.
 //
 
-import SwiftUI
 import Combine
 import Supabase
+import SwiftUI
 
 @MainActor
-class DailyChallengeViewModel: ObservableObject {
+class DailyChallengeViewModel: ObservableObject, ArenaImageManaging {
     @Published var challengeResponse: DailyChallengeResponse?
     @Published var questions: [QuizQuestion] = []
     @Published var isLoading = false
     @Published var imageCache: [UUID: UIImage] = [:]
+    @Published var failedImageIDs: Set<UUID> = []
 
-    // Session state
     @Published var currentQuestionIndex = 0
     @Published var sessionScore = 0
     @Published var comboCount = 0
@@ -25,11 +25,9 @@ class DailyChallengeViewModel: ObservableObject {
     @Published var sessionCompleted = false
     @Published var alreadyPlayed = false
 
-    // Timer (total elapsed time)
     @Published var elapsedSeconds: Double = 0
     private var timerCancellable: AnyCancellable?
 
-    // Animation states
     @Published var showCorrectFeedback = false
     @Published var showWrongFeedback = false
     @Published var showComboAnimation = false
@@ -38,11 +36,13 @@ class DailyChallengeViewModel: ObservableObject {
 
     @Published var showError = false
     @Published var errorMessage: String?
-
-    // Result
+    @Published var lastCorrectCategory: String?
     @Published var pointsAwarded = 0
 
     private let client = SupabaseManager.shared.client
+    private var sessionId: UUID?
+    var imageLoadHandles: [UUID: ArenaImageLoadHandle] = [:]
+    let imageLogPrefix = "Daily"
 
     var currentQuestion: QuizQuestion? {
         guard currentQuestionIndex < questions.count else { return nil }
@@ -64,8 +64,6 @@ class DailyChallengeViewModel: ObservableObject {
         return String(format: "%d.%d", secs, tenths)
     }
 
-    // MARK: - Data Fetching
-
     func fetchChallenge() async {
         isLoading = true
         errorMessage = nil
@@ -78,12 +76,13 @@ class DailyChallengeViewModel: ObservableObject {
                 .execute()
                 .value
 
-            self.challengeResponse = response
-            self.alreadyPlayed = response.alreadyPlayed
-            self.questions = response.questions
+            challengeResponse = response
+            alreadyPlayed = response.alreadyPlayed
+            sessionId = response.sessionId
+            questions = response.questions
 
             if !response.alreadyPlayed {
-                await preloadImages()
+                _ = await primeArenaImages(for: response.questions)
                 startTimer()
             }
         } catch {
@@ -92,8 +91,6 @@ class DailyChallengeViewModel: ObservableObject {
         }
         isLoading = false
     }
-
-    // MARK: - Timer
 
     private func startTimer() {
         elapsedSeconds = 0
@@ -109,16 +106,34 @@ class DailyChallengeViewModel: ObservableObject {
         timerCancellable?.cancel()
     }
 
-    // MARK: - Answer Submission
-
     func submitAnswer(selectedCategory: String) async {
         guard !isSubmitting else { return }
-        guard let question = currentQuestion else { return }
+        guard currentQuestion != nil else { return }
+        guard let sessionId else { return }
 
         isSubmitting = true
         defer { isSubmitting = false }
 
-        let isCorrect = selectedCategory == question.correctCategory
+        let answerResponse: SoloAnswerResponse
+        do {
+            let params = SubmitSoloAnswerParams(
+                p_session_id: sessionId.uuidString,
+                p_question_index: currentQuestionIndex,
+                p_selected_category: selectedCategory,
+                p_answer_time_ms: 0
+            )
+            answerResponse = try await client
+                .rpc("submit_solo_answer", params: params)
+                .execute()
+                .value
+        } catch {
+            errorMessage = "Failed to submit answer: \(error.localizedDescription)"
+            showError = true
+            return
+        }
+
+        let isCorrect = answerResponse.isCorrect
+        lastCorrectCategory = answerResponse.correctCategory
 
         if isCorrect {
             comboCount += 1
@@ -160,40 +175,59 @@ class DailyChallengeViewModel: ObservableObject {
 
         if currentQuestionIndex + 1 >= questions.count {
             stopTimer()
-            await submitResult()
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                sessionCompleted = true
+            if await submitResult() {
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                    sessionCompleted = true
+                }
             }
         } else {
             withAnimation(.easeInOut(duration: 0.3)) {
                 currentQuestionIndex += 1
             }
+            scheduleUpcomingArenaImages(for: questions, startingAt: currentQuestionIndex)
         }
     }
 
-    private func submitResult() async {
+    private func submitResult() async -> Bool {
+        guard let sessionId else {
+            errorMessage = "Daily Challenge session missing"
+            showError = true
+            return false
+        }
+
         do {
-            let params = DailyChallengeSubmitParams(
-                p_score: sessionScore,
-                p_correct_count: correctCount,
-                p_time_seconds: elapsedSeconds,
-                p_max_combo: maxCombo
-            )
             let response: DailyChallengeSubmitResponse = try await client
-                .rpc("submit_daily_challenge", params: params)
+                .rpc(
+                    "submit_daily_challenge",
+                    params: DailyChallengeSubmitParams(
+                        p_session_id: sessionId,
+                        p_time_seconds: elapsedSeconds
+                    )
+                )
                 .execute()
                 .value
 
-            self.pointsAwarded = response.pointsAwarded
-            self.alreadyPlayed = true
+            pointsAwarded = response.pointsAwarded
+            if let score = response.score {
+                sessionScore = score
+            }
+            if let correctCount = response.correctCount {
+                self.correctCount = correctCount
+            }
+            if let maxCombo = response.maxCombo {
+                self.maxCombo = maxCombo
+            }
+            alreadyPlayed = true
+            return true
         } catch {
-            print("❌ [Daily] Failed to submit result: \(error)")
+            errorMessage = "Daily result could not be saved: \(error.localizedDescription)"
+            showError = true
+            return false
         }
     }
 
-    // MARK: - Session Management
-
     private func resetSession() {
+        cancelArenaImageLoads()
         currentQuestionIndex = 0
         sessionScore = 0
         comboCount = 0
@@ -201,50 +235,23 @@ class DailyChallengeViewModel: ObservableObject {
         correctCount = 0
         sessionCompleted = false
         alreadyPlayed = false
+        sessionId = nil
         showCorrectFeedback = false
         showWrongFeedback = false
+        showComboAnimation = false
         showComboBreak = false
         elapsedSeconds = 0
         pointsAwarded = 0
+        lastCorrectCategory = nil
         imageCache.removeAll()
+        failedImageIDs.removeAll()
         questions.removeAll()
         challengeResponse = nil
         stopTimer()
     }
 
-    // MARK: - Image Loading
-
-    private func preloadImages() async {
-        // Load all images concurrently (only 10 questions)
-        await withTaskGroup(of: Void.self) { group in
-            for question in questions {
-                group.addTask { [weak self] in
-                    await self?.loadImage(for: question)
-                }
-            }
-        }
-    }
-
-    private func loadImage(for question: QuizQuestion) async {
-        guard imageCache[question.id] == nil else { return }
-
-        do {
-            guard let url = URL(string: question.imageUrl) else { return }
-            var request = URLRequest(url: url)
-            request.cachePolicy = .returnCacheDataElseLoad
-
-            let (data, _) = try await URLSession.shared.data(for: request)
-            let decodedImage = await Task.detached(priority: .userInitiated) {
-                return UIImage(data: data)?.preparingForDisplay()
-            }.value
-
-            if let image = decodedImage {
-                await MainActor.run {
-                    imageCache[question.id] = image
-                }
-            }
-        } catch {
-            print("⚠️ [Daily] Failed to load image: \(error.localizedDescription)")
-        }
+    func retryCurrentImage() {
+        guard let question = currentQuestion else { return }
+        scheduleArenaImageLoad(for: question, forceReload: true)
     }
 }

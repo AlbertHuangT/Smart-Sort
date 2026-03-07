@@ -116,6 +116,7 @@ struct VerifyView: View {
             flowPhase = .cameraClosed
             isTorchOn = false
             cameraManager.stop()
+            viewModel.reset()
         }
         .onReceive(cameraManager.$capturedImage) { img in
             if let img = img, viewModel.appState == .idle {
@@ -130,6 +131,8 @@ struct VerifyView: View {
                 }
             case .collectingFeedback:
                 flowPhase = .collectingFeedback
+            case .submittingFeedback:
+                flowPhase = .submittingFeedback
             case .error:
                 if flowPhase == .submittingFeedback {
                     flowPhase = .reviewingResult
@@ -155,8 +158,8 @@ struct VerifyView: View {
     }
 
     private func ecoCameraArea(size: CGSize) -> some View {
-        let outerRadius: CGFloat = 30
-        let innerRadius: CGFloat = 24
+        let outerRadius = theme.corners.large + 6
+        let innerRadius = theme.corners.large
         let inset: CGFloat = 18
 
         return ZStack {
@@ -202,7 +205,7 @@ struct VerifyView: View {
                                 .foregroundColor(isClassifierFailed ? theme.semanticDanger : theme.accents.blue)
                         }
                     }
-                    .padding(20)
+                    .padding(theme.spacing.lg)
                 }
             }
             .frame(width: size.width - inset * 2, height: size.height - inset * 2)
@@ -268,7 +271,7 @@ struct VerifyView: View {
                     ZStack {
                         Circle()
                             .fill(theme.accents.green.opacity(0.7))
-                            .frame(width: 86, height: 86)
+                            .frame(width: 84, height: 84)
                             .offset(y: 3)
 
                         Circle()
@@ -288,20 +291,19 @@ struct VerifyView: View {
             } else {
                 TrashButton(
                     baseColor: showFeedbackForm ? theme.accents.green : theme.accents.blue,
-                    cornerRadius: 27,
+                    cornerRadius: theme.corners.large,
                     action: handleMainButtonTap
                 ) {
                     HStack(spacing: 12) {
                         TrashIcon(systemName: buttonIcon)
                             .font(.system(size: 18, weight: .semibold))
                         Text(buttonText)
-                            .font(.system(size: 17, weight: .bold))
+                            .font(theme.typography.button.weight(.bold))
                     }
                     .trashOnAccentForeground()
                     .frame(maxWidth: .infinity)
-                    .frame(height: 54)
                 }
-                .padding(.horizontal, 24)
+                .padding(.horizontal, theme.spacing.xl)
             }
         }
         .padding(.bottom, 8)
@@ -346,10 +348,10 @@ struct VerifyView: View {
             }
             .padding(40)
             .background(
-                RoundedRectangle(cornerRadius: 30, style: .continuous)
+                RoundedRectangle(cornerRadius: theme.corners.large + 6, style: .continuous)
                     .fill(theme.surfaceBackground)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 30, style: .continuous)
+                        RoundedRectangle(cornerRadius: theme.corners.large + 6, style: .continuous)
                             .stroke(theme.palette.divider.opacity(0.85), lineWidth: 1)
                     )
                     .shadow(color: Color.black.opacity(0.08), radius: 12, x: 0, y: 4)
@@ -406,7 +408,7 @@ struct VerifyView: View {
     private func handleSwipe(direction: SwipeDirection, result: TrashAnalysisResult) {
         if direction == .right {
             swipeSuccessTrigger.toggle()
-            viewModel.handleCorrectFeedback()
+            viewModel.handleCorrectFeedback(image: cameraManager.capturedImage)
             withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                 cardOffset.width = 500
             }
@@ -451,6 +453,7 @@ struct VerifyView: View {
 
     private func submitFeedback() {
         guard !isSubmittingFeedback else { return }
+        guard !feedbackItemName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         guard case .collectingFeedback(let originalResult) = viewModel.appState,
             let currentImage = cameraManager.capturedImage
         else { return }

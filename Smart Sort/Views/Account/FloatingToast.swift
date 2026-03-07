@@ -2,20 +2,21 @@ import SwiftUI
 
 struct FloatingToast: View {
     @Binding var message: String?
+    private let theme = TrashTheme()
 
     var body: some View {
         if let text = message {
             Text(text)
-                .font(.caption)
-                .foregroundStyle(.white)
+                .font(theme.typography.caption)
+                .foregroundColor(theme.onAccentForeground)
                 .padding(.horizontal, 16)
-                .padding(.vertical, 8)
+                .frame(minHeight: theme.components.minimumHitTarget)
                 .background(
                     Capsule()
-                        .fill(Color.black.opacity(0.8))
+                        .fill(theme.palette.textPrimary.opacity(0.92))
                 )
                 .padding(.top, 60)
-                .padding(.horizontal, 16)
+                .padding(.horizontal, theme.components.contentInset)
                 .onAppear {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
                         withAnimation {

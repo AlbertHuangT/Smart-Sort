@@ -32,12 +32,13 @@ struct TrashSegmentedControl<Value: Hashable>: View {
         }
         .pickerStyle(.segmented)
         .labelsHidden()
+        .frame(minHeight: theme.components.segmentedControlHeight)
         .padding(6)
         .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
+            RoundedRectangle(cornerRadius: theme.corners.large, style: .continuous)
                 .fill(theme.surfaceBackground)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    RoundedRectangle(cornerRadius: theme.corners.large, style: .continuous)
                         .stroke(theme.palette.divider.opacity(0.75), lineWidth: 1)
                 )
         )

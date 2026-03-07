@@ -9,14 +9,59 @@ import SwiftUI
 
 // MARK: - Shared Quiz Card (reusable across modes)
 
+struct ArenaImagePlaceholder: View {
+    let failed: Bool
+    let onRetry: (() -> Void)?
+    private let theme = TrashTheme()
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: theme.corners.large + 4)
+            .fill(theme.palette.card)
+            .overlay {
+                VStack(spacing: theme.spacing.md) {
+                    if failed {
+                        TrashIcon(systemName: "photo.badge.exclamationmark")
+                            .font(.system(size: 28, weight: .semibold))
+                            .foregroundColor(theme.semanticWarning)
+                        Text("Image unavailable")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundColor(theme.palette.textPrimary)
+                        if let onRetry {
+                            TrashButton(baseColor: theme.accents.blue, cornerRadius: 999, action: onRetry) {
+                                HStack(spacing: 8) {
+                                    TrashIcon(systemName: "arrow.clockwise")
+                                    Text("Retry")
+                                }
+                                .font(theme.typography.caption.weight(.bold))
+                                .trashOnAccentForeground()
+                            }
+                        }
+                    } else {
+                        ProgressView()
+                            .scaleEffect(1.5)
+                            .tint(theme.accents.blue)
+                        Text("Loading image...")
+                            .font(.subheadline)
+                            .foregroundColor(theme.palette.textSecondary)
+                    }
+                }
+                .padding(.horizontal, theme.spacing.lg)
+                .multilineTextAlignment(.center)
+            }
+    }
+}
+
 struct SharedQuizCard: View {
     let question: QuizQuestion
     let image: UIImage?
+    let imageFailed: Bool
+    let correctAnswer: String?
     let categories: [String]
     let showCorrect: Bool
     let showWrong: Bool
     let isSubmitting: Bool
     var pointsText: String = "+10 pts"
+    var onRetryImage: (() -> Void)? = nil
     let onAnswer: (String) -> Void
     var timerView: AnyView? = nil
     private let theme = TrashTheme()
@@ -33,22 +78,11 @@ struct SharedQuizCard: View {
                         .clipped()
                         .accessibilityLabel("Quiz item photo")
                 } else {
-                    RoundedRectangle(cornerRadius: 28)
-                        .fill(theme.palette.card)
-                        .overlay(
-                            VStack(spacing: 16) {
-                                ProgressView()
-                                    .scaleEffect(1.5)
-                                    .tint(theme.accents.blue)
-                                Text("Loading image...")
-                                    .font(.subheadline)
-                                    .foregroundColor(theme.palette.textSecondary)
-                            }
-                        )
+                    ArenaImagePlaceholder(failed: imageFailed, onRetry: onRetryImage)
                 }
 
                 // Answer buttons area
-                VStack(spacing: 16) {
+                VStack(spacing: theme.spacing.md) {
                     // Optional timer at top
                     if let timerView = timerView {
                         timerView
@@ -58,13 +92,13 @@ struct SharedQuizCard: View {
                         TrashIcon(systemName: "questionmark.circle.fill")
                             .font(.title3)
                         Text("What type of trash is this?")
-                            .font(.headline)
+                            .font(theme.typography.headline)
                         Spacer()
                     }
                     .trashOnAccentForeground()
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, theme.spacing.lg)
 
-                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: theme.spacing.sm + 4) {
                         ForEach(categories, id: \.self) { category in
                             CategoryAnswerButton(
                                 category: category,
@@ -73,10 +107,10 @@ struct SharedQuizCard: View {
                             )
                         }
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 28)
+                    .padding(.horizontal, theme.components.contentInset)
+                    .padding(.bottom, theme.spacing.xl)
                 }
-                .padding(.top, 20)
+                .padding(.top, theme.spacing.lg)
                 .background(
                     LinearGradient(
                         colors: [.clear, .black.opacity(0.85)],
@@ -91,10 +125,10 @@ struct SharedQuizCard: View {
                 }
 
                 if showWrong {
-                    EnhancedWrongFeedback(correctAnswer: question.correctCategory)
+                    EnhancedWrongFeedback(correctAnswer: correctAnswer ?? "Unknown")
                 }
             }
-            .clipShape(RoundedRectangle(cornerRadius: 28))
+            .clipShape(RoundedRectangle(cornerRadius: theme.corners.large + 4))
             .shadow(color: Color.black.opacity(0.08), radius: 14, x: 0, y: 8)
         }
     }
@@ -116,7 +150,7 @@ struct ArenaStatusBar: View {
     private let theme = TrashTheme()
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: theme.spacing.sm + 4) {
             // Progress pill
             if showProgress, let progressText = progressText {
                 HStack(spacing: 6) {
@@ -127,7 +161,7 @@ struct ArenaStatusBar: View {
                 }
                 .foregroundColor(theme.accents.blue)
                 .padding(.horizontal, 12)
-                .padding(.vertical, 6)
+                .frame(minHeight: theme.components.minimumHitTarget)
                 .background(statusPillBackground)
             }
 
@@ -141,7 +175,7 @@ struct ArenaStatusBar: View {
                 .font(.subheadline)
                 .foregroundColor(theme.accents.orange)
                 .padding(.horizontal, 12)
-                .padding(.vertical, 6)
+                .frame(minHeight: theme.components.minimumHitTarget)
                 .background(statusPillBackground)
                 .scaleEffect(pulseAnimation ? 1.05 : 1.0)
                 .animation(theme.animations.pulse, value: pulseAnimation)
@@ -153,8 +187,8 @@ struct ArenaStatusBar: View {
 
             Spacer()
         }
-        .padding(.horizontal, 16)
-        .padding(.bottom, 16)
+        .padding(.horizontal, theme.components.contentInset)
+        .padding(.bottom, theme.components.contentInset)
         .animation(.spring(response: 0.4, dampingFraction: 0.7), value: comboCount)
     }
 

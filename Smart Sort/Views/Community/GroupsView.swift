@@ -74,7 +74,7 @@ struct GroupsView: View {
             // Location Button
             TrashButton(
                 baseColor: theme.accents.blue.opacity(0.15),
-                cornerRadius: 16,
+                cornerRadius: theme.corners.medium,
                 action: { showLocationPicker = true }
             ) {
                 HStack(spacing: 6) {
@@ -91,8 +91,6 @@ struct GroupsView: View {
                         .truncationMode(.tail)
                 }
                 .foregroundColor(theme.accents.blue)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -101,7 +99,7 @@ struct GroupsView: View {
             // Toggle chip (Nearby / Joined)
             TrashButton(
                 baseColor: selectedSection == .joined ? theme.accents.green : nil,
-                cornerRadius: 16,
+                cornerRadius: theme.corners.medium,
                 action: {
                     withAnimation(.easeInOut(duration: 0.2)) {
                         selectedSection = (selectedSection == .nearby) ? .joined : .nearby
@@ -118,13 +116,11 @@ struct GroupsView: View {
                     selectedSection == .joined
                         ? theme.onAccentForeground : theme.palette.textSecondary
                 )
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
             }
             .fixedSize()
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
+        .padding(.horizontal, theme.components.contentInset)
+        .padding(.vertical, theme.spacing.sm)
     }
 
     // MARK: - Nearby Communities Content
@@ -158,8 +154,6 @@ struct GroupsView: View {
                 .foregroundColor(theme.palette.textPrimary)
             TrashButton(baseColor: theme.accents.blue, action: { showLocationPicker = true }) {
                 Text("Select Location")
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 12)
             }
             Spacer()
         }
@@ -222,7 +216,7 @@ struct GroupsView: View {
             paperBadge(icon: "person.3.fill", size: 110, iconColor: theme.palette.textSecondary)
             Text("No Communities Joined").font(theme.typography.headline)
             TrashButton(baseColor: theme.accents.blue, action: { selectedSection = .nearby }) {
-                Text("Browse Nearby").padding(.horizontal, 24).padding(.vertical, 12)
+                Text("Browse Nearby")
             }
             Spacer()
         }

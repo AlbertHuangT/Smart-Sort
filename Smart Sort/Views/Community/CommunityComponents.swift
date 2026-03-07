@@ -68,7 +68,8 @@ struct CommunitySelectionSheet: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
-                .surfaceCard(cornerRadius: 12)
+                .frame(minHeight: theme.components.rowHeight)
+                .surfaceCard(cornerRadius: theme.corners.medium)
 
                 localCommunitiesSection
             } else {
@@ -206,13 +207,16 @@ struct LocationRowView: View {
     var body: some View {
         TrashTapArea(action: onSelect) {
             HStack(spacing: 14) {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)
                     .fill(theme.surfaceBackground)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)
                             .stroke(theme.palette.divider.opacity(0.8), lineWidth: 1)
                     )
-                    .frame(width: 42, height: 42)
+                    .frame(
+                        width: theme.components.minimumHitTarget,
+                        height: theme.components.minimumHitTarget
+                    )
                     .overlay(
                         TrashIcon(systemName: "mappin.circle.fill")
                             .font(.system(size: 20))
@@ -234,7 +238,8 @@ struct LocationRowView: View {
                     .font(.caption)
                     .foregroundColor(theme.palette.textSecondary)
             }
-            .padding(.vertical, 4)
+            .padding(.vertical, 6)
+            .frame(minHeight: theme.components.rowHeight)
             .contentShape(Rectangle())
         }
     }
@@ -255,6 +260,10 @@ struct CommunityCardView: View {
         userSettings.isMember(of: community)
     }
 
+    var isPending: Bool {
+        userSettings.isPending(of: community)
+    }
+
     var isAdmin: Bool {
         userSettings.isAdmin(of: community)
     }
@@ -263,10 +272,10 @@ struct CommunityCardView: View {
         TrashTapArea(action: { showDetail = true }) {
             VStack(alignment: .leading, spacing: 0) {
                 ZStack(alignment: .topLeading) {
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)
                         .fill(theme.surfaceBackground)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)
                                 .stroke(theme.palette.divider.opacity(0.8), lineWidth: 1)
                         )
                         .frame(height: 120)
@@ -278,6 +287,11 @@ struct CommunityCardView: View {
 
                     HStack {
                         Spacer()
+                        if isPending {
+                            pillBadge(
+                                icon: "clock.badge.exclamationmark.fill", text: "Pending",
+                                foreground: theme.semanticWarning)
+                        }
                         if isMember {
                             pillBadge(
                                 icon: "checkmark.circle.fill", text: "Joined",
@@ -364,9 +378,9 @@ struct CommunityCardView: View {
                         }
                     }
                 }
-                .padding(16)
+                .padding(theme.components.cardPadding)
             }
-            .surfaceCard(cornerRadius: 16)
+            .surfaceCard(cornerRadius: theme.corners.medium)
         }
         .sheet(isPresented: $showDetail) {
             CommunityDetailView(community: community)

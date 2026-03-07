@@ -94,51 +94,12 @@ struct ArenaView: View {
 
     // Status bar (progress, combo)
     var statusBar: some View {
-        HStack(spacing: 12) {
-            // Progress pill
-            if !viewModel.questions.isEmpty && !viewModel.sessionCompleted {
-                HStack(spacing: 6) {
-                    TrashIcon(systemName: "number.circle.fill")
-                        .font(.caption)
-                    Text(viewModel.progressText)
-                        .font(.subheadline.bold())
-                }
-                .foregroundColor(theme.accents.blue)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(statusPillBackground)
-            }
-
-            // Combo pill
-            if viewModel.comboCount >= 2 {
-                HStack(spacing: 4) {
-                    TrashIcon(systemName: "flame.fill")
-                    Text("\(viewModel.comboCount)x")
-                        .fontWeight(.black)
-                }
-                .font(.subheadline)
-                .foregroundColor(theme.semanticWarning)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(statusPillBackground)
-                .scaleEffect(pulseAnimation ? 1.05 : 1.0)
-                .animation(theme.animations.pulse, value: pulseAnimation)
-            }
-
-            Spacer()
-        }
-        .padding(.horizontal, 16)
-        .padding(.bottom, 16)
-        .animation(.spring(response: 0.4, dampingFraction: 0.7), value: viewModel.comboCount)
-    }
-
-    private var statusPillBackground: some View {
-        Capsule(style: .continuous)
-            .fill(theme.surfaceBackground)
-            .overlay(
-                Capsule(style: .continuous)
-                    .stroke(theme.palette.divider.opacity(0.85), lineWidth: 1)
-            )
+        ArenaStatusBar(
+            progressText: !viewModel.questions.isEmpty && !viewModel.sessionCompleted ? viewModel.progressText : nil,
+            comboCount: viewModel.comboCount,
+            showProgress: true,
+            pulseAnimation: $pulseAnimation
+        )
     }
 
     // Error banner
@@ -154,10 +115,10 @@ struct ArenaView: View {
         }
         .padding(16)
         .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
+            RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)
                 .fill(theme.surfaceBackground)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)
                         .stroke(theme.palette.divider.opacity(0.85), lineWidth: 1)
                 )
         )
@@ -177,22 +138,25 @@ struct ArenaView: View {
                     })
                 }
             } else if let question = viewModel.currentQuestion {
-                EnhancedQuizCard(
+                SharedQuizCard(
                     question: question,
                     image: viewModel.imageCache[question.id],
+                    imageFailed: viewModel.isArenaImageFailed(for: question),
+                    correctAnswer: viewModel.lastCorrectCategory,
                     categories: categories,
                     showCorrect: viewModel.showCorrectFeedback,
                     showWrong: viewModel.showWrongFeedback,
                     isSubmitting: viewModel.isSubmitting,
-                    pointsText: viewModel.pointAnimationText.isEmpty ? "+20" : viewModel.pointAnimationText
+                    pointsText: viewModel.pointAnimationText.isEmpty ? "+20" : viewModel.pointAnimationText,
+                    onRetryImage: { viewModel.retryCurrentImage() }
                 ) { selectedCategory in
                     Task { await viewModel.submitAnswer(selectedCategory: selectedCategory) }
                 }
                 .id(question.id)
             }
         }
-        .frame(height: 540)
-        .padding(.horizontal, 16)
+        .frame(height: min(540, UIScreen.main.bounds.height * 0.62))
+        .padding(.horizontal, theme.components.contentInset)
     }
 }
 
@@ -244,8 +208,6 @@ struct EnhancedEmptyStateView: View {
                     TrashIcon(systemName: "arrow.clockwise")
                     Text("Refresh Quiz")
                 }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 10)
             }
         }
     }
@@ -255,93 +217,29 @@ struct EnhancedEmptyStateView: View {
 struct EnhancedQuizCard: View {
     let question: QuizQuestion
     let image: UIImage?
+    let imageFailed: Bool
+    let correctAnswer: String?
     let categories: [String]
     let showCorrect: Bool
     let showWrong: Bool
     let isSubmitting: Bool
     let pointsText: String
+    let onRetryImage: (() -> Void)?
     let onAnswer: (String) -> Void
-    private let theme = TrashTheme()
-
     var body: some View {
-        GeometryReader { geo in
-            ZStack(alignment: .bottom) {
-                // Image area
-                if let image = image {
-                    Image(uiImage: image)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: geo.size.width, height: geo.size.height)
-                        .clipped()
-                } else {
-                    Rectangle()
-                        .fill(theme.surfaceBackground)
-                        .overlay(
-                            VStack(spacing: 16) {
-                                ProgressView()
-                                    .scaleEffect(1.5)
-                                    .tint(theme.accents.blue)
-                                Text("Loading image...")
-                                    .font(.subheadline)
-                                    .foregroundColor(theme.palette.textSecondary)
-                            }
-                        )
-                }
-
-                // Answer buttons area
-                VStack(spacing: 16) {
-                    HStack {
-                        TrashIcon(systemName: "questionmark.circle.fill")
-                            .font(.title3)
-                        Text("What type of trash is this?")
-                            .font(.headline)
-                        Spacer()
-                    }
-                    .trashOnAccentForeground()
-                    .padding(.horizontal, 20)
-
-                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12)
-                    {
-                        ForEach(categories, id: \.self) { category in
-                            CategoryAnswerButton(
-                                category: category,
-                                isDisabled: isButtonDisabled,
-                                onTap: { onAnswer(category) }
-                            )
-                        }
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 28)
-                }
-                .padding(.top, 20)
-                .background(
-                    LinearGradient(
-                        colors: [.clear, .black.opacity(0.85)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-
-                // Correct/Wrong feedback overlays
-                if showCorrect {
-                    EnhancedCorrectFeedback(pointsText: pointsText)
-                }
-
-                if showWrong {
-                    EnhancedWrongFeedback(correctAnswer: question.correctCategory)
-                }
-            }
-            .clipShape(RoundedRectangle(cornerRadius: 28))
-            .overlay(
-                RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .stroke(theme.palette.divider.opacity(0.5), lineWidth: 1)
-            )
-            .shadow(color: Color.black.opacity(0.12), radius: 14, x: 0, y: 6)
-        }
-    }
-
-    private var isButtonDisabled: Bool {
-        showCorrect || showWrong || isSubmitting || image == nil
+        SharedQuizCard(
+            question: question,
+            image: image,
+            imageFailed: imageFailed,
+            correctAnswer: correctAnswer,
+            categories: categories,
+            showCorrect: showCorrect,
+            showWrong: showWrong,
+            isSubmitting: isSubmitting,
+            pointsText: pointsText,
+            onRetryImage: onRetryImage,
+            onAnswer: onAnswer
+        )
     }
 }
 
@@ -379,18 +277,18 @@ struct CategoryAnswerButton: View {
         ) {
             HStack(spacing: 8) {
                 TrashIcon(systemName: categoryIcon)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: 17, weight: .semibold))
                 Text(category)
-                    .font(.subheadline.bold())
+                    .font(theme.typography.subheadline.weight(.bold))
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 16)
+            .frame(minHeight: theme.components.buttonHeight)
             .background(
-                RoundedRectangle(cornerRadius: 14)
+                RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)
                     .fill(theme.palette.card.opacity(isDisabled ? 0.5 : 0.95))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 14)
+                RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)
                     .stroke(categoryColor.opacity(isDisabled ? 0.2 : 0.4), lineWidth: 1.5)
             )
             .foregroundColor(categoryColor)
@@ -407,29 +305,30 @@ struct CategoryAnswerButton: View {
 struct EnhancedCorrectFeedback: View {
     let pointsText: String
     @State private var animate = false
+    private let theme = TrashTheme()
 
     var body: some View {
         ZStack {
             LinearGradient(
-                colors: [.green.opacity(0.9), .mint.opacity(0.9)],
+                colors: [theme.semanticSuccess.opacity(0.92), theme.accents.green.opacity(0.92)],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
 
-            VStack(spacing: 12) {
+            VStack(spacing: theme.spacing.sm + 4) {
                 Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 70))
+                    .font(.system(size: 64))
                     .compatibleBounceEffect(value: animate)
                 Text("Correct!")
-                    .font(.system(size: 32, weight: .heavy, design: .rounded))
+                    .font(theme.typography.title.weight(.heavy))
                 Text(pointsText)
-                    .font(.headline)
+                    .font(theme.typography.headline)
                     .opacity(0.8)
             }
             .trashOnAccentForeground()
             .onAppear { animate = true }
         }
-        .clipShape(RoundedRectangle(cornerRadius: 28))
+        .clipShape(RoundedRectangle(cornerRadius: theme.corners.large + 4))
         .transition(.opacity)
     }
 }
@@ -438,29 +337,30 @@ struct EnhancedCorrectFeedback: View {
 struct EnhancedWrongFeedback: View {
     let correctAnswer: String
     @State private var animate = false
+    private let theme = TrashTheme()
 
     var body: some View {
         ZStack {
             LinearGradient(
-                colors: [.red.opacity(0.9), .orange.opacity(0.9)],
+                colors: [theme.semanticDanger.opacity(0.92), theme.semanticWarning.opacity(0.92)],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
 
-            VStack(spacing: 12) {
+            VStack(spacing: theme.spacing.sm + 4) {
                 Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 70))
+                    .font(.system(size: 64))
                     .compatibleWiggleEffect(value: animate)
                 Text("Wrong!")
-                    .font(.system(size: 32, weight: .heavy, design: .rounded))
+                    .font(theme.typography.title.weight(.heavy))
                 Text("Correct: \(correctAnswer)")
-                    .font(.headline)
+                    .font(theme.typography.headline)
                     .opacity(0.9)
             }
             .trashOnAccentForeground()
             .onAppear { animate = true }
         }
-        .clipShape(RoundedRectangle(cornerRadius: 28))
+        .clipShape(RoundedRectangle(cornerRadius: theme.corners.large + 4))
         .transition(.opacity)
     }
 }
@@ -472,39 +372,39 @@ struct EnhancedComboOverlay: View {
     private let theme = TrashTheme()
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: theme.spacing.sm + 4) {
             Image(systemName: "flame.fill")
-                .font(.system(size: 72, weight: .bold))
+                .font(.system(size: 64, weight: .bold))
                 .compatibleVariableColorEffect(isActive: true)
                 .foregroundStyle(
                     LinearGradient(
-                        colors: [.orange, .red, .yellow],
+                        colors: [theme.accents.orange, theme.semanticDanger, theme.semanticHighlight],
                         startPoint: .bottom,
                         endPoint: .top
                     )
                 )
                 .scaleEffect(scale)
-                .shadow(color: .orange.opacity(0.6), radius: 12)
+                .shadow(color: theme.accents.orange.opacity(0.45), radius: 10)
             Text("\(comboCount)x COMBO!")
-                .font(.system(size: 40, weight: .black, design: .rounded))
+                .font(.system(size: 36, weight: .black, design: .rounded))
                 .foregroundStyle(
                     LinearGradient(
-                        colors: [.orange, .red, .yellow],
+                        colors: [theme.accents.orange, theme.semanticDanger, theme.semanticHighlight],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
                 )
         }
-        .padding(50)
+        .padding(theme.spacing.xxl + 10)
         .background(
-            RoundedRectangle(cornerRadius: 36)
+            RoundedRectangle(cornerRadius: theme.corners.large + 12, style: .continuous)
                 .fill(theme.surfaceBackground.opacity(0.97))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 36, style: .continuous)
+                    RoundedRectangle(cornerRadius: theme.corners.large + 12, style: .continuous)
                         .stroke(theme.palette.divider.opacity(0.85), lineWidth: 1)
                 )
         )
-        .shadow(color: .orange.opacity(0.5), radius: 30)
+        .shadow(color: theme.accents.orange.opacity(0.35), radius: 24)
         .onAppear {
             withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
                 scale = 1.2
@@ -522,21 +422,21 @@ struct EnhancedComboBreakOverlay: View {
     private let theme = TrashTheme()
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: theme.spacing.sm + 4) {
             Image(systemName: "heart.slash.fill")
-                .font(.system(size: 56, weight: .bold))
+                .font(.system(size: 52, weight: .bold))
                 .foregroundColor(theme.semanticDanger)
                 .compatibleBounceEffect(value: opacity)
             Text("Combo Lost!")
                 .font(.title.bold())
                 .foregroundColor(theme.semanticDanger)
         }
-        .padding(40)
+        .padding(theme.spacing.xxl)
         .background(
-            RoundedRectangle(cornerRadius: 24)
+            RoundedRectangle(cornerRadius: theme.corners.large, style: .continuous)
                 .fill(theme.surfaceBackground.opacity(0.97))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    RoundedRectangle(cornerRadius: theme.corners.large, style: .continuous)
                         .stroke(theme.palette.divider.opacity(0.85), lineWidth: 1)
                 )
         )
@@ -552,7 +452,6 @@ struct EnhancedComboBreakOverlay: View {
 // Session summary
 struct EnhancedSessionSummaryView: View {
     @ObservedObject var viewModel: ArenaViewModel
-    @State private var showStats = false
     private let theme = TrashTheme()
 
     var accuracy: Int {
@@ -561,85 +460,20 @@ struct EnhancedSessionSummaryView: View {
     }
 
     var body: some View {
-        VStack(spacing: 28) {
-            // Trophy
-            ZStack {
-                Circle()
-                    .fill(theme.surfaceBackground)
-                    .frame(width: 140, height: 140)
-                    .overlay(
-                        Circle()
-                            .stroke(theme.palette.divider.opacity(0.85), lineWidth: 1)
-                    )
-
-                TrashIcon(systemName: accuracy >= 70 ? "trophy.fill" : "flag.checkered")
-                    .font(.system(size: 70))
-                    .foregroundStyle(
-                        accuracy >= 70
-                            ? LinearGradient(
-                                colors: [.yellow, .orange], startPoint: .top, endPoint: .bottom)
-                            : LinearGradient(
-                                colors: [.gray, theme.palette.textSecondary], startPoint: .top,
-                                endPoint: .bottom)
-                    )
+        GenericSessionSummaryView(
+            title: "Quiz Complete!",
+            icon: accuracy >= 70 ? "trophy.fill" : "flag.checkered",
+            isGoodResult: accuracy >= 70,
+            stats: [
+                (icon: "flame.fill", title: "Points Earned", value: "+\(viewModel.sessionScore)", color: theme.accents.orange),
+                (icon: "checkmark.circle.fill", title: "Correct Answers", value: "\(viewModel.correctCount)/\(viewModel.questions.count)", color: theme.accents.green),
+                (icon: "percent", title: "Accuracy", value: "\(accuracy)%", color: theme.accents.blue),
+                (icon: "bolt.fill", title: "Best Combo", value: "\(viewModel.maxCombo)x", color: theme.accents.purple)
+            ],
+            onPlayAgain: {
+                Task { await viewModel.startNewSession() }
             }
-
-            Text("Quiz Complete!")
-                .font(.system(size: 34, weight: .heavy, design: .rounded))
-                .foregroundColor(theme.palette.textPrimary)
-
-            // Stats Cards
-            VStack(spacing: 14) {
-                EnhancedStatRow(
-                    icon: "flame.fill", title: "Points Earned", value: "+\(viewModel.sessionScore)",
-                    color: theme.accents.orange)
-                EnhancedStatRow(
-                    icon: "checkmark.circle.fill", title: "Correct Answers",
-                    value: "\(viewModel.correctCount)/\(viewModel.questions.count)",
-                    color: theme.accents.green)
-                EnhancedStatRow(
-                    icon: "percent", title: "Accuracy", value: "\(accuracy)%",
-                    color: theme.accents.blue)
-                EnhancedStatRow(
-                    icon: "bolt.fill", title: "Best Combo", value: "\(viewModel.maxCombo)x",
-                    color: theme.accents.purple)
-            }
-            .padding(20)
-            .background(
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .fill(theme.surfaceBackground)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20, style: .continuous)
-                            .stroke(theme.palette.divider.opacity(0.85), lineWidth: 1)
-                    )
-            )
-            .padding(.horizontal)
-            .opacity(showStats ? 1 : 0)
-            .offset(y: showStats ? 0 : 20)
-
-            // Play Again Button
-            TrashButton(
-                baseColor: theme.accents.blue, cornerRadius: 999,
-                action: {
-                    Task { await viewModel.startNewSession() }
-                }
-            ) {
-                HStack(spacing: 10) {
-                    TrashIcon(systemName: "arrow.clockwise")
-                    Text("Play Again")
-                }
-                .font(.headline.bold())
-                .trashOnAccentForeground()
-                .padding(.horizontal, 40)
-                .padding(.vertical, 16)
-            }
-        }
-        .padding()
-        .onAppear {
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.2)) {
-                showStats = true
-            }
-        }
+        )
     }
 }
 
@@ -701,11 +535,14 @@ struct QuizCard: View {
         EnhancedQuizCard(
             question: question,
             image: image,
+            imageFailed: false,
+            correctAnswer: nil,
             categories: categories,
             showCorrect: showCorrect,
             showWrong: showWrong,
             isSubmitting: isSubmitting,
             pointsText: pointsText,
+            onRetryImage: nil,
             onAnswer: onAnswer
         )
     }

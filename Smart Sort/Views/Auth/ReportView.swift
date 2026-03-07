@@ -25,27 +25,27 @@ struct ReportView: View {
     @State private var showError = false
     @State private var errorMessage = ""
 
+    private var reportRows: some View {
+        VStack(alignment: .leading, spacing: theme.spacing.sm) {
+            reportRow(
+                label: "Recognized Item",
+                value: predictedResult.itemName,
+                valueColor: theme.palette.textPrimary
+            )
+            reportRow(
+                label: "Category",
+                value: predictedResult.category,
+                valueColor: predictedResult.color
+            )
+        }
+    }
+
     var body: some View {
         NavigationView {
             Form {
                 // AI Result Section
                 Section(header: Text("AI Prediction Result")) {
-                    HStack {
-                        Text("Recognized Item")
-                            .foregroundColor(.secondary)
-                        Spacer()
-                        Text(predictedResult.itemName)
-                            .bold()
-                            .foregroundColor(.primary)
-                    }
-                    HStack {
-                        Text("Category")
-                            .foregroundColor(.secondary)
-                        Spacer()
-                        Text(predictedResult.category)
-                            .bold()
-                            .foregroundColor(predictedResult.color)
-                    }
+                    reportRows
                 }
 
                 // Human Feedback Section
@@ -77,7 +77,6 @@ struct ReportView: View {
                                 .fontWeight(.semibold)
                                 .trashOnAccentForeground()
                                 .frame(maxWidth: .infinity)
-                                .padding(.vertical, 4)
                         }
                     }
                 }
@@ -105,7 +104,7 @@ struct ReportView: View {
                 TrashNoticeSheet(
                     title: "Submit Failed",
                     message: errorMessage,
-                    buttonColor: .red,
+                    buttonColor: theme.semanticDanger,
                     onClose: { showError = false }
                 )
                 .presentationDetents([.fraction(0.3), .medium])
@@ -145,5 +144,20 @@ struct ReportView: View {
                 }
             }
         }
+    }
+
+    private func reportRow(label: String, value: String, valueColor: Color) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: theme.spacing.sm) {
+            Text(label)
+                .font(theme.typography.caption)
+                .foregroundColor(theme.palette.textSecondary)
+            Spacer()
+            Text(value)
+                .font(theme.typography.subheadline)
+                .fontWeight(.bold)
+                .foregroundColor(valueColor)
+                .multilineTextAlignment(.trailing)
+        }
+        .frame(minHeight: theme.components.minimumHitTarget, alignment: .center)
     }
 }

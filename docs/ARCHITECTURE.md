@@ -54,6 +54,7 @@ Single theme: **Eco Skeuomorphism** (no runtime switching).
 ### SQL source of truth
 
 - `supabase/migrations/` is the **sole** backend schema source
+  - In practice, app-owned backend logic lives here, but `001_core_schema.sql` still assumes a small legacy bootstrap of pre-existing base objects/functions in the linked Supabase project
   - `20260303100000_001_core_schema.sql` — tables, triggers, Community/Admin/Profile/Achievement/Leaderboard/Friends RPCs
   - `20260303100001_002_arena.sql` — Arena tables, solo & duel RPCs, initial quiz seed data
   - `20260303100002_003_security_and_rls.sql` — search_path hardening, all RLS policies
@@ -62,6 +63,9 @@ Single theme: **Eco Skeuomorphism** (no runtime switching).
   - `20260307140000_005_quiz_images_bucket.sql` — Arena quiz image bucket bootstrap
   - `20260307143000_006_self_host_arena_quiz_images.sql` — move recoverable quiz images to Supabase Storage and disable dead seeds
   - `20260307152000_007_enforce_stale_duel_expiry_across_rpcs.sql` — stale duel expiry enforcement in gameplay RPCs
+  - `20260307170000_008_security_hardening_and_access_alignment.sql` — RLS tightening, community visibility fixes, profile/admin RPC alignment, friend privacy hardening
+  - `20260307173000_009_arena_server_verified_sessions.sql` — server-verified solo Arena sessions and hidden correct answers
+  - `20260307180000_010_feedback_storage_and_quiz_candidates.sql` — explicit feedback/candidate storage bootstrap and quiz candidate queue
 
 ### Key design decisions
 
@@ -83,6 +87,9 @@ Behavior notes:
 - Blurry photos are rejected before classification.
 - Photos containing faces can still be classified locally.
 - Face-containing photos are blocked from feedback upload on the client.
+- Correctly confirmed photos can be uploaded into `quiz_question_candidates` for later review.
+- App-level reviewers in `app_admins` can approve or reject candidates in the in-app `Quiz Review` flow; approved items are copied into `quiz-images` and inserted into `quiz_questions`.
+- The first `app_admins` entry is intentionally bootstrapped by migration via `scripts/manage_app_admin_migration.sh`, not by an in-app self-serve path.
 
 ### Community/Event flow
 
@@ -95,7 +102,8 @@ Behavior notes:
 
 1. Challenge/create/accept via `ArenaService`
 2. Quiz images load via `ArenaImageLoader`
-3. Question/answer submit RPC
+3. Solo Arena modes create server-side sessions; answers are verified server-side via RPC
+4. Duel answer validation also stays on the server; public question payloads no longer include `correct_category`
 4. Duel realtime broadcast sync via `DuelRealtimeManager`
 
 Behavior notes:
@@ -211,6 +219,7 @@ Single source of truth for all backend RPC functions and their Swift callers.
 - **Arena image drift**: recoverable quiz images are self-hosted in Supabase Storage; dead third-party seeds are disabled.
 - **Arena stale duel cleanup**: no longer limited to `get_my_challenges`; gameplay RPCs enforce the same expiry rule.
 - **Verify upload moderation**: blurry photos are blocked before inference; face-containing photos are prevented from being uploaded as feedback.
+- **Server-verified solo Arena**: Classic / Speed Sort / Streak / Daily no longer trust client-side scoring or exposed answer keys.
 
 ### Validation
 

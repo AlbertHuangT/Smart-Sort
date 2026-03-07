@@ -20,15 +20,17 @@ enum DuelPhase {
 }
 
 @MainActor
-class DuelViewModel: ObservableObject {
+class DuelViewModel: ObservableObject, ArenaImageManaging {
     @Published var phase: DuelPhase = .loading
     @Published var questions: [QuizQuestion] = []
     @Published var imageCache: [UUID: UIImage] = [:]
+    @Published var failedImageIDs: Set<UUID> = []
 
     // Session state
     @Published var currentQuestionIndex = 0
     @Published var correctCount = 0
     @Published var myScore = 0
+    @Published var lastCorrectCategory: String?
 
     // Animation states
     @Published var showCorrectFeedback = false
@@ -53,6 +55,8 @@ class DuelViewModel: ObservableObject {
     private let arenaService = ArenaService.shared
     private let client = SupabaseManager.shared.client
     private var answerStartTime: Date?
+    var imageLoadHandles: [UUID: ArenaImageLoadHandle] = [:]
+    let imageLogPrefix = "Duel"
 
     var currentQuestion: QuizQuestion? {
         guard currentQuestionIndex < questions.count else { return nil }
@@ -132,7 +136,7 @@ class DuelViewModel: ObservableObject {
             self.challengerId = response.challengerId
             self.opponentId = response.opponentId
 
-            await preloadImages()
+            _ = await primeArenaImages(for: response.questions)
             await realtimeManager.sendReady()
             observeBothReady()
         } catch {
@@ -163,7 +167,7 @@ class DuelViewModel: ObservableObject {
                 )
             }
 
-            await preloadImages()
+            _ = await primeArenaImages(for: response.questions)
             await realtimeManager.sendReady()
 
             // Watch for both ready
@@ -197,7 +201,7 @@ class DuelViewModel: ObservableObject {
                 )
             }
 
-            await preloadImages()
+            _ = await primeArenaImages(for: response.questions)
             await realtimeManager.sendReady()
 
             observeBothReady()
@@ -266,6 +270,8 @@ class DuelViewModel: ObservableObject {
                 answerTimeMs: answerTime
             )
 
+            lastCorrectCategory = response.correctCategory
+
             if response.isCorrect {
                 correctCount += 1
                 myScore += 20
@@ -302,6 +308,7 @@ class DuelViewModel: ObservableObject {
                 withAnimation(.easeInOut(duration: 0.3)) {
                     currentQuestionIndex += 1
                 }
+                scheduleUpcomingArenaImages(for: questions, startingAt: currentQuestionIndex)
             }
         } catch {
             print("❌ [Duel] Submit answer failed: \(error)")
@@ -374,6 +381,7 @@ class DuelViewModel: ObservableObject {
     // MARK: - Cleanup
 
     func cleanup() async {
+        cancelArenaImageLoads()
         countdownTask?.cancel()
         finalizeRetryTask?.cancel()
         _bothReadyCancellable?.cancel()
@@ -382,47 +390,8 @@ class DuelViewModel: ObservableObject {
         await realtimeManager.disconnect()
     }
 
-    // MARK: - Image Loading
-
-    private func preloadImages() async {
-        let priority = Array(questions.prefix(3))
-        for q in priority {
-            await loadImage(for: q)
-        }
-
-        await withTaskGroup(of: Void.self) { group in
-            var activeCount = 0
-            let maxConcurrent = 3
-
-            for q in questions.dropFirst(3) {
-                if imageCache[q.id] != nil { continue }
-                if activeCount >= maxConcurrent {
-                    await group.next()
-                    activeCount -= 1
-                }
-                activeCount += 1
-                group.addTask { [weak self] in
-                    await self?.loadImage(for: q)
-                }
-            }
-        }
-    }
-
-    private func loadImage(for question: QuizQuestion) async {
-        guard imageCache[question.id] == nil else { return }
-        do {
-            guard let url = URL(string: question.imageUrl) else { return }
-            var request = URLRequest(url: url)
-            request.cachePolicy = .returnCacheDataElseLoad
-            let (data, _) = try await URLSession.shared.data(for: request)
-            let decodedImage = await Task.detached(priority: .userInitiated) {
-                return UIImage(data: data)?.preparingForDisplay()
-            }.value
-            if let image = decodedImage {
-                await MainActor.run { imageCache[question.id] = image }
-            }
-        } catch {
-            print("⚠️ [Duel] Failed to load image: \(error)")
-        }
+    func retryCurrentImage() {
+        guard let question = currentQuestion else { return }
+        scheduleArenaImageLoad(for: question, forceReload: true)
     }
 }

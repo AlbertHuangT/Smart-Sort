@@ -67,17 +67,20 @@ struct EventsMapView: View {
                             }
                         }) {
                             TrashIcon(systemName: "location.fill")
-                                .padding(10)
+                                .frame(
+                                    width: theme.components.iconButtonSize,
+                                    height: theme.components.iconButtonSize
+                                )
                                 .background(theme.surfaceBackground)
                                 .overlay(
                                     Circle()
                                         .stroke(theme.palette.divider.opacity(0.85), lineWidth: 1)
                                 )
                                 .clipShape(Circle())
-                                .shadow(color: Color.black.opacity(0.08), radius: 6, x: 0, y: 2)
+                                .shadow(color: theme.shadows.dark.opacity(0.7), radius: 6, x: 0, y: 2)
                         }
                     }
-                    .padding()
+                    .padding(theme.components.contentInset)
                 }
                 Spacer()
             }
@@ -86,8 +89,8 @@ struct EventsMapView: View {
             if let event = selectedEvent {
                 VStack(spacing: 8) {
                     Capsule()
-                        .fill(Color.secondary)
-                        .frame(width: 40, height: 5)
+                        .fill(theme.palette.textSecondary.opacity(0.45))
+                        .frame(width: 40, height: 6)
                         .padding(.top, 8)
 
                     EnhancedEventCard(
@@ -97,8 +100,8 @@ struct EventsMapView: View {
                         onTap: {}
                     )
                     .allowsHitTesting(false)
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 20)
+                    .padding(.horizontal, theme.components.contentInset)
+                    .padding(.bottom, theme.spacing.lg)
                 }
                 .contentShape(Rectangle())
                 .offset(y: max(0, dragOffset.height))
@@ -154,7 +157,10 @@ struct EventsMapView: View {
             ZStack {
                 Circle()
                     .fill(theme.surfaceBackground)
-                    .frame(width: 36, height: 36)
+                    .frame(
+                        width: theme.components.minimumHitTarget,
+                        height: theme.components.minimumHitTarget
+                    )
                     .overlay(
                         Circle()
                             .stroke(theme.palette.divider.opacity(0.85), lineWidth: 1)
@@ -162,7 +168,7 @@ struct EventsMapView: View {
 
                 TrashIcon(systemName: event.imageSystemName)
                     .foregroundColor(event.category.color)
-                    .font(.system(size: 18))
+                    .font(.system(size: 17, weight: .semibold))
             }
             .scaleEffect(selectedEvent?.id == event.id ? 1.2 : 1.0)
             .animation(.spring(), value: selectedEvent == event)

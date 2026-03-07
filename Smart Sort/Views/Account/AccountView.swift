@@ -154,9 +154,12 @@ struct AccountView: View {
                         showEditNameAlert = true
                     } label: {
                         Image(systemName: "pencil")
-                            .font(.system(size: 15, weight: .semibold))
+                            .font(.system(size: 17, weight: .semibold))
                             .foregroundColor(theme.palette.textPrimary)
-                            .frame(width: 36, height: 36)
+                            .frame(
+                                width: theme.components.minimumHitTarget,
+                                height: theme.components.minimumHitTarget
+                            )
                             .background(theme.surfaceBackground, in: Circle())
                     }
                     .buttonStyle(.plain)
@@ -168,7 +171,7 @@ struct AccountView: View {
                 .font(.footnote)
                 .foregroundColor(theme.palette.textSecondary)
         }
-        .padding(20)
+        .padding(theme.spacing.lg)
         .background(sectionBackground)
     }
 
@@ -218,13 +221,13 @@ struct AccountView: View {
                     Spacer()
                 }
 
-                Button("Link Account") {
+                TrashButton(baseColor: theme.accents.blue, action: {
                     showUpgradeSheet = true
+                }) {
+                    Text("Link Account")
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(theme.accents.blue)
             }
-            .padding(18)
+            .padding(theme.spacing.md)
             .background(sectionBackground)
         }
     }
@@ -288,6 +291,18 @@ struct AccountView: View {
                     color: .red,
                     destination: BugReportView()
                 )
+
+                if profileVM.isAppAdmin {
+                    rowDivider
+
+                    destinationRow(
+                        title: "Quiz Review",
+                        subtitle: "Review and publish candidate Arena images",
+                        icon: "photo.badge.checkmark",
+                        color: theme.accents.green,
+                        destination: QuizCandidateReviewView()
+                    )
+                }
             }
             .background(sectionBackground)
         }
@@ -295,19 +310,16 @@ struct AccountView: View {
 
     private var signOutSection: some View {
         VStack(spacing: 14) {
-            Button {
+            TrashButton(baseColor: theme.semanticDanger, action: {
                 Task { await authVM.signOut() }
-            } label: {
+            }) {
                 HStack(spacing: 8) {
                     Image(systemName: "rectangle.portrait.and.arrow.right")
                     Text("Log Out")
                         .fontWeight(.semibold)
                 }
-                .foregroundColor(.red)
-                .frame(maxWidth: .infinity, minHeight: 52)
+                .trashOnAccentForeground()
             }
-            .buttonStyle(.bordered)
-            .tint(.red)
 
             Text("Smart Sort • Version 1.0.0")
                 .font(.caption)
@@ -348,8 +360,11 @@ struct AccountView: View {
             Image(systemName: icon)
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundColor(color)
-                .frame(width: 38, height: 38)
-                .background(theme.surfaceBackground, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .frame(width: theme.components.minimumHitTarget, height: theme.components.minimumHitTarget)
+                .background(
+                    theme.surfaceBackground,
+                    in: RoundedRectangle(cornerRadius: theme.corners.small, style: .continuous)
+                )
 
             Text(value)
                 .font(.system(size: 22, weight: .bold, design: .rounded))
@@ -369,7 +384,7 @@ struct AccountView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
+        .padding(theme.components.cardPadding)
         .background(sectionBackground)
     }
 
@@ -385,8 +400,11 @@ struct AccountView: View {
                 Image(systemName: icon)
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(color)
-                    .frame(width: 38, height: 38)
-                    .background(theme.surfaceBackground, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .frame(width: theme.components.minimumHitTarget, height: theme.components.minimumHitTarget)
+                    .background(
+                        theme.surfaceBackground,
+                        in: RoundedRectangle(cornerRadius: theme.corners.small, style: .continuous)
+                    )
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(title)
@@ -404,7 +422,8 @@ struct AccountView: View {
                     .foregroundColor(theme.palette.textSecondary.opacity(0.55))
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 14)
+            .padding(.vertical, 12)
+            .frame(minHeight: theme.components.rowHeight)
         }
         .buttonStyle(.plain)
     }
@@ -422,8 +441,8 @@ struct AccountView: View {
         Text(title)
             .font(.caption.weight(.semibold))
             .foregroundColor(color)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
+            .padding(.horizontal, 14)
+            .frame(minHeight: theme.components.pillHeight)
             .background(
                 Capsule(style: .continuous)
                     .fill(color.opacity(0.12))
@@ -431,10 +450,10 @@ struct AccountView: View {
     }
 
     private var sectionBackground: some View {
-        RoundedRectangle(cornerRadius: 22, style: .continuous)
+        RoundedRectangle(cornerRadius: theme.corners.large, style: .continuous)
             .fill(theme.surfaceBackground)
             .overlay(
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                RoundedRectangle(cornerRadius: theme.corners.large, style: .continuous)
                     .stroke(theme.palette.divider.opacity(0.8), lineWidth: 1)
             )
     }

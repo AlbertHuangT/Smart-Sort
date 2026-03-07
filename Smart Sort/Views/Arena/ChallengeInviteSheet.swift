@@ -74,7 +74,7 @@ struct InviteMemberRow: View {
         HStack(spacing: 14) {
             Circle()
                 .fill(theme.surfaceBackground)
-                .frame(width: 44, height: 44)
+                .frame(width: theme.components.minimumHitTarget, height: theme.components.minimumHitTarget)
                 .overlay(
                     Text(String(member.displayName.prefix(1)).uppercased())
                         .font(.headline.bold())
@@ -96,17 +96,16 @@ struct InviteMemberRow: View {
                 }
                 .font(.caption.bold())
                 .trashOnAccentForeground()
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
             }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, theme.components.contentInset)
         .padding(.vertical, 12)
+        .frame(minHeight: theme.components.rowHeight)
         .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
+            RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)
                 .fill(theme.surfaceBackground)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)
                         .stroke(theme.palette.divider.opacity(0.8), lineWidth: 1)
                 )
         )
@@ -115,14 +114,14 @@ struct InviteMemberRow: View {
 
 // MARK: - Models & ViewModel
 
-private struct RawProfile: Codable {
-    let id: UUID
-    let username: String?
-}
-
-struct InvitableMember: Identifiable {
+struct InvitableMember: Identifiable, Codable {
     let id: UUID
     let displayName: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case displayName = "display_name"
+    }
 }
 
 @MainActor
@@ -136,24 +135,14 @@ class ChallengeInviteViewModel: ObservableObject {
         isLoading = true
         defer { isLoading = false }
 
-        guard let myId = client.auth.currentUser?.id else { return }
-
         do {
-            // Fetch profiles (excluding self) — simple approach
-            // username is nullable, so decode as optional first then filter
-            let raw: [RawProfile] =
+            let raw: [InvitableMember] =
                 try await client
-                .from("profiles")
-                .select("id, username")
-                .neq("id", value: myId)
-                .limit(50)
+                .rpc("get_invitable_members", params: ["p_limit": 50])
                 .execute()
                 .value
 
-            self.members = raw.compactMap { p in
-                guard let name = p.username, !name.isEmpty else { return nil }
-                return InvitableMember(id: p.id, displayName: name)
-            }
+            self.members = raw.filter { !$0.displayName.isEmpty }
         } catch {
             print("❌ [ChallengeInvite] Failed: \(error)")
         }

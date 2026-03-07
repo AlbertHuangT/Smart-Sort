@@ -16,13 +16,16 @@ struct StatCard: View {
     var body: some View {
         VStack(spacing: 12) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    RoundedRectangle(cornerRadius: theme.corners.small, style: .continuous)
                         .fill(theme.surfaceBackground)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            RoundedRectangle(cornerRadius: theme.corners.small, style: .continuous)
                                 .stroke(theme.palette.divider.opacity(0.8), lineWidth: 1)
                         )
-                        .frame(width: 44, height: 44)
+                        .frame(
+                            width: theme.components.minimumHitTarget,
+                            height: theme.components.minimumHitTarget
+                        )
 
                 TrashIcon(systemName: icon)
                     .font(.system(size: 20, weight: .bold))
@@ -41,7 +44,7 @@ struct StatCard: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 16)
-        .surfaceCard(cornerRadius: 18)
+        .surfaceCard(cornerRadius: theme.corners.large)
     }
 }
 
@@ -58,16 +61,19 @@ struct SettingsRow: View {
         TrashTapArea(action: action) {
             HStack(spacing: 16) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    RoundedRectangle(cornerRadius: theme.corners.small, style: .continuous)
                         .fill(theme.surfaceBackground)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            RoundedRectangle(cornerRadius: theme.corners.small, style: .continuous)
                                 .stroke(theme.palette.divider.opacity(0.8), lineWidth: 1)
                         )
-                        .frame(width: 36, height: 36)
+                        .frame(
+                            width: theme.components.minimumHitTarget,
+                            height: theme.components.minimumHitTarget
+                        )
 
                     TrashIcon(systemName: icon)
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.system(size: 17, weight: .bold))
                         .foregroundColor(theme.accents.blue)
                 }
 
@@ -93,7 +99,8 @@ struct SettingsRow: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
-            .surfaceCard(cornerRadius: 14)
+            .frame(minHeight: theme.components.rowHeight)
+            .surfaceCard(cornerRadius: theme.corners.medium)
         }
     }
 }
@@ -125,6 +132,6 @@ struct InfoCard: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(16)
-        .surfaceCard(cornerRadius: 18)
+        .surfaceCard(cornerRadius: theme.corners.large)
     }
 }

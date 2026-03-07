@@ -26,5 +26,21 @@ enum AppState: Equatable {
     case finished(TrashAnalysisResult)
     // ✨ 新增：Tinder 交互需要的状态
     case collectingFeedback(TrashAnalysisResult)
+    case submittingFeedback(TrashAnalysisResult)
     case error(String)
+}
+
+extension TrashAnalysisResult {
+    var representsClassifierFailure: Bool {
+        switch category {
+        case "Error", "Retry", "Please Wait":
+            return true
+        default:
+            return itemName == "System Error"
+                || itemName == "AI Warming Up..."
+                || itemName == "Analysis Failed"
+                || itemName == "Image Error"
+                || itemName == "Processing Error"
+        }
+    }
 }

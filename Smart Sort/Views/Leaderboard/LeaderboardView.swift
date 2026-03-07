@@ -303,12 +303,15 @@ struct LeaderboardView: View {
         if let existingIndex = combined.firstIndex(where: { $0.id == myId }) {
             // 当前用户已经在列表中，更新为最新的 credits
             combined[existingIndex] = FriendUser(
-                id: myId, username: me.username ?? "Me", credits: me.credits ?? 0,
-                email: combined[existingIndex].email, phone: combined[existingIndex].phone
+                id: myId,
+                username: me.username ?? "Me",
+                credits: me.credits ?? 0
             )
         } else {
             let myEntry = FriendUser(
-                id: myId, username: me.username ?? "Me", credits: me.credits ?? 0, email: nil, phone: nil
+                id: myId,
+                username: me.username ?? "Me",
+                credits: me.credits ?? 0
             )
             combined.append(myEntry)
         }

@@ -12,6 +12,7 @@ struct BindPhoneSheet: View {
     @Binding var inputOTP: String
     @ObservedObject var authVM: AuthViewModel
     @Binding var isPresented: Bool
+    private let theme = TrashTheme()
 
     var body: some View {
         NavigationView {
@@ -48,8 +49,8 @@ struct BindPhoneSheet: View {
                 if let error = authVM.errorMessage {
                     Section {
                         Text(error)
-                            .foregroundColor(.red)
-                            .font(.caption)
+                            .foregroundColor(theme.semanticDanger)
+                            .font(theme.typography.caption)
                     }
                 }
             }

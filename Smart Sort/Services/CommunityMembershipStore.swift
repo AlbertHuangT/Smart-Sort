@@ -1,28 +1,42 @@
 import Combine
 import Foundation
+import Supabase
 
 @MainActor
 final class CommunityMembershipStore: ObservableObject {
     static let shared = CommunityMembershipStore()
 
     @Published private(set) var joinedCommunityIds: Set<String> = []
+    @Published private(set) var pendingCommunityIds: Set<String> = []
     @Published private(set) var communitiesInCity: [Community] = []
     @Published private(set) var joinedCommunities: [Community] = []
     @Published private(set) var isLoadingCommunities = false
 
     private let joinedCommunitiesKey = "joinedCommunityIds"
+    private let pendingCommunitiesKey = "pendingCommunityIds"
 
     private var communityService: CommunityService {
         CommunityService.shared
     }
 
     private init() {
-        loadSavedJoinedCommunityIds()
+        refreshForCurrentUser()
     }
 
-    private func loadSavedJoinedCommunityIds() {
-        if let ids = UserDefaults.standard.array(forKey: joinedCommunitiesKey) as? [String] {
+    func refreshForCurrentUser() {
+        joinedCommunityIds = []
+        pendingCommunityIds = []
+        joinedCommunities = []
+        communitiesInCity = []
+        loadSavedMembershipState()
+    }
+
+    private func loadSavedMembershipState() {
+        if let ids = UserDefaults.standard.array(forKey: scopedKey(joinedCommunitiesKey)) as? [String] {
             joinedCommunityIds = Set(ids)
+        }
+        if let ids = UserDefaults.standard.array(forKey: scopedKey(pendingCommunitiesKey)) as? [String] {
+            pendingCommunityIds = Set(ids)
         }
     }
 
@@ -40,8 +54,9 @@ final class CommunityMembershipStore: ObservableObject {
 
             for community in communitiesInCity where community.isMember {
                 joinedCommunityIds.insert(community.id)
+                pendingCommunityIds.remove(community.id)
             }
-            saveJoinedCommunities()
+            saveMembershipState()
         } catch {
             print("❌ Get communities error: \(error)")
         }
@@ -72,7 +87,8 @@ final class CommunityMembershipStore: ObservableObject {
             }
 
             joinedCommunityIds = Set(joinedCommunities.map(\.id))
-            saveJoinedCommunities()
+            pendingCommunityIds.subtract(joinedCommunityIds)
+            saveMembershipState()
         } catch {
             print("❌ Get my communities error: \(error)")
         }
@@ -83,7 +99,12 @@ final class CommunityMembershipStore: ObservableObject {
     }
 
     func joinCommunity(_ community: Community) async -> (success: Bool, requiresApproval: Bool) {
+        if pendingCommunityIds.contains(community.id) {
+            return (true, true)
+        }
+
         setOptimisticMembership(community: community, isMember: true)
+        setPending(community: community, isPending: false)
 
         do {
             let result = try await communityService.joinCommunity(community.id)
@@ -92,16 +113,19 @@ final class CommunityMembershipStore: ObservableObject {
             }
 
             setOptimisticMembership(community: community, isMember: false)
+            setPending(community: community, isPending: result.requiresApproval)
             return (result.success, result.requiresApproval)
         } catch {
             print("❌ Join community error: \(error)")
             setOptimisticMembership(community: community, isMember: false)
+            setPending(community: community, isPending: false)
             return (false, false)
         }
     }
 
     func leaveCommunity(_ community: Community) async -> Bool {
         setOptimisticMembership(community: community, isMember: false)
+        setPending(community: community, isPending: false)
 
         do {
             let success = try await communityService.leaveCommunity(community.id)
@@ -122,6 +146,10 @@ final class CommunityMembershipStore: ObservableObject {
 
     func isAdmin(of community: Community) -> Bool {
         joinedCommunities.first(where: { $0.id == community.id })?.isAdmin ?? false
+    }
+
+    func isPending(of community: Community) -> Bool {
+        pendingCommunityIds.contains(community.id)
     }
 
     func getJoinedCommunities() -> [Community] {
@@ -149,10 +177,11 @@ final class CommunityMembershipStore: ObservableObject {
     private func setOptimisticMembership(community: Community, isMember: Bool) {
         if isMember {
             joinedCommunityIds.insert(community.id)
+            pendingCommunityIds.remove(community.id)
         } else {
             joinedCommunityIds.remove(community.id)
         }
-        saveJoinedCommunities()
+        saveMembershipState()
 
         if let index = communitiesInCity.firstIndex(where: { $0.id == community.id }) {
             if communitiesInCity[index].isMember != isMember {
@@ -180,7 +209,22 @@ final class CommunityMembershipStore: ObservableObject {
         }
     }
 
-    private func saveJoinedCommunities() {
-        UserDefaults.standard.set(Array(joinedCommunityIds), forKey: joinedCommunitiesKey)
+    private func setPending(community: Community, isPending: Bool) {
+        if isPending {
+            pendingCommunityIds.insert(community.id)
+        } else {
+            pendingCommunityIds.remove(community.id)
+        }
+        saveMembershipState()
+    }
+
+    private func saveMembershipState() {
+        UserDefaults.standard.set(Array(joinedCommunityIds), forKey: scopedKey(joinedCommunitiesKey))
+        UserDefaults.standard.set(Array(pendingCommunityIds), forKey: scopedKey(pendingCommunitiesKey))
+    }
+
+    private func scopedKey(_ base: String) -> String {
+        let userNamespace = SupabaseManager.shared.client.auth.currentUser?.id.uuidString ?? "guest"
+        return "\(base):\(userNamespace)"
     }
 }

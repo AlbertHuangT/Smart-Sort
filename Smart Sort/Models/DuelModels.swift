@@ -41,6 +41,44 @@ struct ArenaChallenge: Codable, Identifiable {
     }
 }
 
+extension ArenaChallenge {
+    private static let internetDateTimeFormatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter
+    }()
+
+    private static let internetDateTimeFractionalFormatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
+
+    private static func parseTimestamp(_ value: String?) -> Date? {
+        guard let value else { return nil }
+        if let date = internetDateTimeFractionalFormatter.date(from: value) {
+            return date
+        }
+        return internetDateTimeFormatter.date(from: value)
+    }
+
+    var createdAtDate: Date? {
+        Self.parseTimestamp(createdAt)
+    }
+
+    var startedAtDate: Date? {
+        Self.parseTimestamp(startedAt)
+    }
+
+    var completedAtDate: Date? {
+        Self.parseTimestamp(completedAt)
+    }
+
+    var lastActivityDate: Date? {
+        completedAtDate ?? startedAtDate ?? createdAtDate
+    }
+}
+
 // MARK: - Create Challenge Response
 
 struct CreateChallengeResponse: Codable {

@@ -1,103 +1,138 @@
 # Smart Sort
 
-Smart Sort 是一个 iOS 原生环保应用：用端侧 AI 识别垃圾类别，并通过 Arena、社区活动、排行榜等机制提升用户参与度。
+<p align="center">
+  <strong>An iOS-native trash sorting app with on-device AI, Arena gameplay, and community-driven sustainability loops.</strong>
+</p>
 
-## 核心能力
+<p align="center">
+  <a href="https://github.com/AlbertHuangT/Smart-Sort">
+    <img src="https://img.shields.io/badge/platform-iOS-4F7D78?style=for-the-badge&logo=apple&logoColor=white" alt="iOS">
+  </a>
+  <a href="https://developer.apple.com/xcode/swiftui/">
+    <img src="https://img.shields.io/badge/UI-SwiftUI-4E6532?style=for-the-badge&logo=swift&logoColor=white" alt="SwiftUI">
+  </a>
+  <a href="https://supabase.com/">
+    <img src="https://img.shields.io/badge/backend-Supabase-2A9D8F?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase">
+  </a>
+  <a href="https://developer.apple.com/documentation/coreml">
+    <img src="https://img.shields.io/badge/ML-CoreML-C96B2C?style=for-the-badge&logo=apple&logoColor=white" alt="CoreML">
+  </a>
+  <a href="./docs/ARCHITECTURE.md">
+    <img src="https://img.shields.io/badge/docs-Architecture-8A5A6B?style=for-the-badge&logo=readme&logoColor=white" alt="Architecture">
+  </a>
+  <a href="./docs/UI_GUIDELINES.md">
+    <img src="https://img.shields.io/badge/design-UI%20Guidelines-6B7A40?style=for-the-badge&logo=storybook&logoColor=white" alt="UI Guidelines">
+  </a>
+  <a href="https://creativecommons.org/licenses/by-sa/4.0/">
+    <img src="https://img.shields.io/badge/license-CC%20BY--SA%204.0-7A4A2E?style=for-the-badge" alt="License">
+  </a>
+</p>
 
-- 端侧识别：MobileCLIP + CoreML，本地推理，离线可用
-- 主题化 UI：Eco Skeuomorphism（单主题，`TrashTheme`）
-- 社区与活动：创建、加入、报名、管理员审批与积分发放
-- Arena 对战：单人模式 + 1v1 Duel + Realtime 同步
-- 排行榜：好友榜 + 社区榜
+## Overview
 
-## 技术栈
+Smart Sort is a native iOS app that helps users identify trash categories with on-device AI, then keeps them engaged through Arena challenges, community events, leaderboards, and feedback-driven data improvement.
 
-- 前端：SwiftUI
-- 模型：CoreML (`MobileCLIPImage.mlpackage`)
-- 后端：Supabase (Auth / Postgres / RPC / Realtime / Storage)
-- 依赖：`supabase-swift`（SPM）
+The project combines:
 
-## 项目结构（当前）
+- On-device classification with CoreML
+- A custom SwiftUI design system (`TrashTheme`)
+- Supabase-backed auth, RPC, storage, and realtime flows
+- Game loops for repeat engagement
+- Community tooling for local sustainability participation
+
+## What It Does
+
+### Verify
+
+- Uses the camera to identify an item locally
+- Runs blur and face checks before feedback upload
+- Supports correction flows that feed a quiz-candidate pipeline
+
+### Arena
+
+- Classic, Speed Sort, Streak, Daily Challenge, and Duel
+- Solo modes use server-verified sessions and server-side answer validation
+- Duel uses backend validation plus realtime synchronization
+- Quiz images are served from Supabase Storage
+
+### Community
+
+- Browse and join communities by location
+- Create and join events
+- Support community admin tools and moderation flows
+
+### Progress
+
+- Credits, achievements, badges, and leaderboards
+- Friend and community engagement loops
+
+## Stack
+
+| Layer | Tech |
+| --- | --- |
+| App | SwiftUI |
+| ML | CoreML (`MobileCLIPImage.mlpackage`) |
+| Backend | Supabase Auth / Postgres / RPC / Storage / Realtime |
+| Package manager | Swift Package Manager |
+| Design system | `TrashTheme` + shared primitives |
+
+## Project Structure
 
 ```text
 Smart Sort/
 ├── App/
-│   ├── Smart_SortApp.swift
-│   └── ContentView.swift
+├── Models/
+├── Services/
 ├── Theme/
-│   ├── TrashTheme.swift          (single theme: Eco Skeuomorphism)
-│   ├── ThemeManager.swift        (plain singleton, UIKit appearance wiring)
-│   ├── TrashCorePrimitives.swift
-│   ├── TrashSegmentedControl.swift
-│   ├── TrashBottomTabBar.swift
-│   ├── TrashPageHeader.swift
-│   └── TrashFormControls.swift
 ├── Views/
 │   ├── Verify/
 │   ├── Arena/
-│   ├── Leaderboard/
 │   ├── Community/
+│   ├── Leaderboard/
 │   ├── Account/
 │   ├── Auth/
 │   ├── Admin/
 │   └── Shared/
-├── Services/
-├── ViewModels/          (app-level: AuthViewModel, TrashViewModel)
-├── Models/
 └── trash_knowledge.json
 
 supabase/
 └── migrations/
-    ├── 20260303100000_001_core_schema.sql
-    ├── 20260303100001_002_arena.sql
-    ├── 20260303100002_003_security_and_rls.sql
-    ├── 20260305100000_004_bug_reports.sql
-    ├── 20260307120000_004_expire_stale_active_arena_challenges.sql
-    ├── 20260307140000_005_quiz_images_bucket.sql
-    ├── 20260307143000_006_self_host_arena_quiz_images.sql
-    └── 20260307152000_007_enforce_stale_duel_expiry_across_rpcs.sql
 
 scripts/
 ├── check_backend_contracts.sh
+├── manage_app_admin_migration.sh
 └── migrate_arena_quiz_images.sh
 
 docs/
-└── ARCHITECTURE.md
+├── ARCHITECTURE.md
+└── UI_GUIDELINES.md
 ```
 
-## 前后端交互梳理
+## Documentation
 
-详细架构与交互流程见：`docs/ARCHITECTURE.md`
+- [Architecture](docs/ARCHITECTURE.md)
+- [UI Guidelines](docs/UI_GUIDELINES.md)
+- [Audit](AUDIT.md)
 
-关键链路：
+## Getting Started
 
-1. Verify 链路
-   - `CameraManager` 拍照 -> `PhotoModerationService` 本地模糊/人脸预检 -> `RealClassifierService` 本地分类 -> `TrashViewModel` 状态驱动 UI
-   - 用户纠错 -> `FeedbackService` 上传图片与日志（含人脸照片前端直接拦截上传） -> 积分与成就触发
+### Requirements
 
-2. Community/Event 链路
-   - `UserSettings` 位置 -> `CommunityService` RPC 拉取社区/活动
-   - 加入社区、活动报名、管理员操作全部通过 RPC
+- Xcode 16+
+- A configured Supabase project
+- Local `Secrets.swift`
+- `MobileCLIPImage.mlpackage` present in `Smart Sort/`
 
-3. Arena 链路
-   - `ArenaService` 处理挑战创建/应答/提交
-   - `DuelRealtimeManager` 通过 Realtime 广播同步对战状态
-   - Arena 图片由 Supabase Storage `quiz-images` 提供，前端统一经过 `ArenaImageLoader`
-
-## 构建与运行
-
-要求：Xcode 16+，iOS deployment target 按工程设置。
+### Build
 
 ```bash
-open "Smart Sort.xcodeproj"
-
 xcodebuild -project "Smart Sort.xcodeproj" \
   -scheme "Smart Sort" \
   -destination 'platform=iOS Simulator,name=iPhone 17' \
   build
 ```
 
-真机构建：
+### Device Build
 
 ```bash
 xcodebuild -project "Smart Sort.xcodeproj" \
@@ -106,46 +141,61 @@ xcodebuild -project "Smart Sort.xcodeproj" \
   build
 ```
 
-## 配置
+## Backend Workflow
 
-1. 本地创建 `Secrets.swift`（不要提交）
-2. 将 `MobileCLIPImage.mlpackage` 放入 `Smart Sort/`
-3. 确保 Supabase 项目已应用迁移
-
-## 质量检查
-
-### 1) 编译检查
+Apply migrations:
 
 ```bash
-xcodebuild -project "Smart Sort.xcodeproj" -scheme "Smart Sort" -destination 'generic/platform=iOS' build
+supabase db push --linked --yes
 ```
 
-### 2) 后端契约检查（新增）
+Check RPC drift and direct table access:
 
 ```bash
 scripts/check_backend_contracts.sh
 ```
 
-该脚本会对比：
-- Swift 中实际 `rpc("...")` 调用
-- `supabase/migrations` 中函数定义
+Bootstrap the first app reviewer:
 
-用于发现前后端契约漂移。
+```bash
+scripts/manage_app_admin_migration.sh grant <user_uuid>
+supabase db push --linked --include-all --yes
+```
 
-## 当前后端状态（摘要）
+## Current Backend Notes
 
-- Arena 题图已从失效的第三方 Unsplash 外链迁到 Supabase Storage；当前恢复了 21 张活题，11 张死链题目已停用
-- Duel 收件箱会自动过期陈旧的 `accepted` / `in_progress` 挑战；核心 Duel RPC 也统一执行同样的 stale-active 过期校验
-- Arena 图片加载已统一到共享 loader，支持缓存、请求去重、失败态和重试
-- Verify 新增本地照片预检：模糊照片会在识别前拦截；含人脸照片仍可识别，但不能上传反馈
-- `scripts/check_backend_contracts.sh` 仍用于检测 Swift RPC 与 SQL migration 定义是否一致
+- Arena solo modes are server-verified
+- Duel stale challenges are expired consistently across gameplay RPCs
+- Recoverable Arena quiz images were migrated off third-party dead links into Supabase Storage
+- Correctly confirmed Verify photos can enter `quiz_question_candidates`
+- Face-containing photos are never uploaded as feedback
+- `app_admins` can review and publish quiz candidates through the in-app `Quiz Review` flow
 
-## 注意事项
+## Design System Notes
 
-- `supabase/migrations/` 是 SQL 唯一 source of truth
-- `member_count` 和 `participant_count` 由数据库触发器独占维护，RPC 函数中不得手动更新
-- 若改动 RPC 名称，必须同步更新对应 Service 调用和迁移
-- 运行 `scripts/check_backend_contracts.sh` 可检测前后端契约漂移
+The app now uses a shared UI metric system aligned to Apple HIG-sized controls:
+
+- Minimum hit target: `44pt`
+- Button/input height: `50pt`
+- Standard row height: `56pt`
+- Corner radii: `10 / 16 / 24 / pill`
+
+Use shared primitives before writing feature-local styling:
+
+- `TrashButton`
+- `TrashPill`
+- `TrashIconButton`
+- `TrashForm*`
+- `TrashCard` / `.surfaceCard(...)`
+- `TrashSegmentedControl`
+
+See [UI Guidelines](docs/UI_GUIDELINES.md) for the full rules.
+
+## Source Of Truth
+
+- App-owned SQL logic lives in `supabase/migrations/`
+- UI tokens and interaction metrics live in `TrashTheme`
+- Shared component primitives should be extended before creating one-off visual systems
 
 ## License
 

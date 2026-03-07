@@ -39,7 +39,7 @@ struct EventsView: View {
                     .transition(.opacity)
                 } else {
                     ScrollView {
-                        LazyVStack(spacing: 16) {
+                        LazyVStack(spacing: theme.spacing.md) {
                             ForEach(viewModel.events) { event in
                                 EnhancedEventCard(
                                     event: event,
@@ -50,9 +50,9 @@ struct EventsView: View {
                                 }
                             }
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.top, 12)
-                        .padding(.bottom, 20)
+                        .padding(.horizontal, theme.components.contentInset)
+                        .padding(.top, theme.spacing.sm + 4)
+                        .padding(.bottom, theme.spacing.lg)
                     }
                     .refreshable {
                         await viewModel.loadEvents()
@@ -116,13 +116,13 @@ struct EventsView: View {
 
     // MARK: - Loading View
     private var loadingView: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: theme.spacing.md) {
             Spacer()
             ProgressView()
                 .scaleEffect(1.2)
                 .tint(theme.accents.blue)
             Text("Loading events...")
-                .font(.subheadline)
+                .font(theme.typography.subheadline)
                 .foregroundColor(theme.palette.textSecondary)
             Spacer()
         }
@@ -131,7 +131,7 @@ struct EventsView: View {
     // MARK: - Control Bar
     private var controlBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 12) {
+            HStack(spacing: theme.spacing.sm + 4) {
                 // 位置显示
                 if let location = userSettings.selectedLocation {
                     TrashPill(
@@ -182,9 +182,9 @@ struct EventsView: View {
                     showSortMenu = true
                 }
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, theme.components.contentInset)
         }
-        .padding(.vertical, 10)
+        .padding(.vertical, theme.spacing.sm + 2)
         .background(Color.clear)
         .animation(.none, value: viewModel.sortOption)  // 🚀 禁用整个控制栏的布局动画
     }
@@ -193,11 +193,11 @@ struct EventsView: View {
     private var categoryFilter: some View {
         ScrollViewReader { proxy in
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
+                HStack(spacing: theme.spacing.sm + 2) {
                     TrashPill(
                         title: "All",
                         icon: "square.grid.2x2.fill",
-                        color: .gray,
+                        color: theme.palette.textSecondary,
                         isSelected: viewModel.selectedCategory == nil
                     ) {
                         viewModel.selectedCategory = nil
@@ -216,8 +216,8 @@ struct EventsView: View {
                         .id(category.rawValue)
                     }
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
+                .padding(.horizontal, theme.components.contentInset)
+                .padding(.vertical, theme.spacing.sm + 2)
             }
             .background(Color.clear)
             // 🚀 优化：选中时自动滚动到选中项
@@ -235,7 +235,7 @@ struct EventsView: View {
 
     // MARK: - No Location View
     private var noLocationView: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: theme.spacing.lg) {
             Spacer()
 
             EmptyStateView(
@@ -245,7 +245,7 @@ struct EventsView: View {
             )
 
             TrashButton(
-                baseColor: theme.accents.blue, cornerRadius: 20,
+                baseColor: theme.accents.blue, cornerRadius: theme.corners.large,
                 action: { showLocationPicker = true }
             ) {
                 HStack {
@@ -255,8 +255,6 @@ struct EventsView: View {
                 .font(theme.typography.subheadline)
                 .fontWeight(.bold)
                 .trashOnAccentForeground()
-                .padding(.horizontal, 24)
-                .padding(.vertical, 12)
             }
 
             Spacer()
@@ -265,7 +263,7 @@ struct EventsView: View {
 
     // MARK: - Empty State
     private var emptyState: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: theme.spacing.md) {
             Spacer()
             EmptyStateView(
                 icon: "calendar.badge.exclamationmark",
@@ -321,21 +319,21 @@ struct EventDetailSheet: View {
             ZStack {
 
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: theme.spacing.lg) {
                         // Header — neumorphic concave
                         ZStack {
                             Color.clear
                                 .frame(height: 180)
                                 .background(
-                                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                    RoundedRectangle(cornerRadius: theme.corners.large, style: .continuous)
                                         .fill(theme.surfaceBackground)
                                         .overlay(
-                                            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                            RoundedRectangle(cornerRadius: theme.corners.large, style: .continuous)
                                                 .stroke(theme.palette.divider.opacity(0.85), lineWidth: 1)
                                         )
                                 )
 
-                            VStack(spacing: 12) {
+                            VStack(spacing: theme.spacing.sm + 4) {
                                 TrashIcon(systemName: event.imageSystemName)
                                     .font(.system(size: 50))
                                     .foregroundColor(event.category.color)
@@ -344,11 +342,11 @@ struct EventDetailSheet: View {
                                     .foregroundColor(theme.palette.textSecondary)
                             }
                         }
-                        .cornerRadius(20)
-                        .padding(.horizontal)
+                        .clipShape(RoundedRectangle(cornerRadius: theme.corners.large, style: .continuous))
+                        .padding(.horizontal, theme.components.contentInset)
 
                         // Title & Organizer
-                        VStack(alignment: .leading, spacing: 6) {
+                        VStack(alignment: .leading, spacing: theme.spacing.xs + 2) {
                             Text(event.title)
                                 .font(theme.typography.title)
                                 .foregroundColor(theme.palette.textPrimary)
@@ -361,10 +359,10 @@ struct EventDetailSheet: View {
                             }
                             .font(theme.typography.subheadline)
                         }
-                        .padding(.horizontal)
+                        .padding(.horizontal, theme.components.contentInset)
 
                         // Info Cards
-                        VStack(spacing: 12) {
+                        VStack(spacing: theme.spacing.sm + 4) {
                             InfoRow(
                                 icon: "calendar", title: "Date & Time",
                                 value: dateFormatter.string(from: event.date))
@@ -376,7 +374,7 @@ struct EventDetailSheet: View {
                                 icon: "person.2.fill", title: "Participants",
                                 value: "\(event.participantCount) / \(event.maxParticipants)")
                         }
-                        .padding(.horizontal)
+                        .padding(.horizontal, theme.components.contentInset)
 
                         // Description
                         VStack(alignment: .leading, spacing: 8) {
@@ -387,7 +385,7 @@ struct EventDetailSheet: View {
                                 .font(theme.typography.body)
                                 .foregroundColor(theme.palette.textSecondary)
                         }
-                        .padding(.horizontal)
+                        .padding(.horizontal, theme.components.contentInset)
 
                         Spacer(minLength: 100)
                     }
@@ -407,8 +405,8 @@ struct EventDetailSheet: View {
                         baseColor: currentEvent.isRegistered
                             ? theme.accents.green
                             : (currentEvent.participantCount >= currentEvent.maxParticipants
-                                ? .gray : event.category.color),
-                        cornerRadius: 14,
+                                ? theme.palette.textSecondary : event.category.color),
+                        cornerRadius: theme.corners.medium,
                         action: {
                             Task {
                                 await viewModel.toggleRegistration(for: event)
@@ -424,14 +422,13 @@ struct EventDetailSheet: View {
                         .font(theme.typography.headline)
                         .trashOnAccentForeground()
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
                     }
                     .disabled(
                         currentEvent.participantCount >= currentEvent.maxParticipants
                             && !currentEvent.isRegistered
                     )
-                    .padding(.horizontal)
-                    .padding(.bottom, 8)
+                    .padding(.horizontal, theme.components.contentInset)
+                    .padding(.bottom, theme.spacing.sm)
                 }
                 .background(theme.appBackground)
             }
@@ -464,12 +461,12 @@ struct InfoRow: View {
 
             Spacer()
         }
-        .padding(12)
+        .padding(theme.components.cardPadding)
         .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
+            RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)
                 .fill(theme.surfaceBackground)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)
                         .stroke(theme.palette.divider.opacity(0.85), lineWidth: 1)
                 )
         )
@@ -485,7 +482,7 @@ private struct SortOptionSheet: View {
         NavigationStack {
             ZStack {
                 ScrollView {
-                    VStack(spacing: 12) {
+                    VStack(spacing: theme.spacing.sm + 4) {
                         ForEach(EventSortOption.allCases, id: \.self) { option in
                             TrashTapArea(action: {
                                 selection = option
@@ -508,21 +505,21 @@ private struct SortOptionSheet: View {
                                             .foregroundColor(theme.accents.green)
                                     }
                                 }
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 12)
+                                .padding(.horizontal, theme.components.contentInset)
+                                .frame(minHeight: theme.components.rowHeight)
                                 .background(
-                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)
                                         .fill(theme.surfaceBackground)
                                         .overlay(
-                                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                            RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)
                                                 .stroke(theme.palette.divider.opacity(0.85), lineWidth: 1)
                                         )
                                 )
                             }
                         }
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
+                    .padding(.horizontal, theme.components.contentInset)
+                    .padding(.vertical, theme.spacing.sm + 4)
                 }
             }
             .navigationTitle("Sort Events")

@@ -3,243 +3,244 @@
 //  Smart Sort
 //
 //  Streak Mode: infinite questions until you get one wrong.
-//  Batch-fetches 20 questions at a time, deduplicates, pre-fetches when 5 remain.
 //
 
-import SwiftUI
 import Combine
 import Supabase
+import SwiftUI
 
 @MainActor
-class StreakModeViewModel: ObservableObject {
-   @Published var questions: [QuizQuestion] = []
-   @Published var isLoading = false
-   @Published var imageCache: [UUID: UIImage] = [:]
+class StreakModeViewModel: ObservableObject, ArenaImageManaging {
+    @Published var questions: [QuizQuestion] = []
+    @Published var isLoading = false
+    @Published var imageCache: [UUID: UIImage] = [:]
+    @Published var failedImageIDs: Set<UUID> = []
 
-   // Session state
-   @Published var currentQuestionIndex = 0
-   @Published var sessionScore = 0
-   @Published var streakCount = 0
-   @Published var sessionCompleted = false
+    @Published var currentQuestionIndex = 0
+    @Published var sessionScore = 0
+    @Published var streakCount = 0
+    @Published var sessionCompleted = false
 
-   // Animation states
-   @Published var showCorrectFeedback = false
-   @Published var showWrongFeedback = false
-   @Published var isSubmitting = false
+    @Published var showCorrectFeedback = false
+    @Published var showWrongFeedback = false
+    @Published var isSubmitting = false
 
-   @Published var showError = false
-   @Published var errorMessage: String?
+    @Published var showError = false
+    @Published var errorMessage: String?
+    @Published var lastCorrectCategory: String?
 
-   // Deduplication
-   private var seenQuestionIds: Set<UUID> = []
-   private var isFetchingMore = false
+    private var seenQuestionIds: Set<UUID> = []
+    private var isFetchingMore = false
 
-   private let batchSize = 20
-   private let prefetchThreshold = 5
+    private let batchSize = 20
+    private let prefetchThreshold = 5
 
-   private let client = SupabaseManager.shared.client
-   private let gamificationService: GamificationServicing
+    private let client = SupabaseManager.shared.client
+    private var sessionId: UUID?
+    var imageLoadHandles: [UUID: ArenaImageLoadHandle] = [:]
+    let imageLogPrefix = "Streak"
 
-   var currentQuestion: QuizQuestion? {
-       guard currentQuestionIndex < questions.count else { return nil }
-       return questions[currentQuestionIndex]
-   }
+    var currentQuestion: QuizQuestion? {
+        guard currentQuestionIndex < questions.count else { return nil }
+        return questions[currentQuestionIndex]
+    }
 
-   var questionsRemaining: Int {
-       max(0, questions.count - currentQuestionIndex)
-   }
+    var questionsRemaining: Int {
+        max(0, questions.count - currentQuestionIndex)
+    }
 
-   init() {
-       self.gamificationService = GamificationService.shared
-   }
+    init() {}
 
-   init(gamificationService: GamificationServicing) {
-       self.gamificationService = gamificationService
-   }
+    func fetchInitialQuestions() async {
+        isLoading = true
+        errorMessage = nil
+        showError = false
+        resetSession()
 
-   // MARK: - Data Fetching
+        do {
+            let response: SoloQuizSessionResponse = try await client
+                .rpc(
+                    "get_quiz_questions_batch",
+                    params: QuizQuestionBatchParams(p_limit: batchSize, p_session_id: nil)
+                )
+                .execute()
+                .value
 
-   func fetchInitialQuestions() async {
-       isLoading = true
-       errorMessage = nil
-       showError = false
-       resetSession()
+            sessionId = response.sessionId
+            let newQuestions = registerQuestionsForSession(response.questions)
+            questions = newQuestions
+            _ = await primeArenaImages(for: newQuestions)
+        } catch {
+            errorMessage = "Failed to load questions: \(error.localizedDescription)"
+            showError = true
+        }
+        isLoading = false
+    }
+
+    private func fetchMoreQuestions() async {
+        guard !isFetchingMore else { return }
+        guard let sessionId else { return }
+
+        isFetchingMore = true
+        defer { isFetchingMore = false }
 
        do {
-           let fetched: [QuizQuestion] = try await client
-               .rpc("get_quiz_questions_batch", params: ["p_limit": batchSize])
+           let params = QuizQuestionBatchParams(
+               p_limit: batchSize,
+               p_session_id: sessionId.uuidString
+           )
+           let response: SoloQuizSessionResponse = try await client
+               .rpc("get_quiz_questions_batch", params: params)
                .execute()
                .value
 
-           let newQuestions = fetched.filter { !seenQuestionIds.contains($0.id) }
-           for q in newQuestions {
-               seenQuestionIds.insert(q.id)
-           }
-           self.questions = newQuestions
-           await preloadImages(for: newQuestions)
-       } catch {
-           errorMessage = "Failed to load questions: \(error.localizedDescription)"
-           showError = true
-       }
-       isLoading = false
-   }
+            let newQuestions = registerQuestionsForSession(response.questions)
+            if !newQuestions.isEmpty {
+                questions.append(contentsOf: newQuestions)
+                scheduleUpcomingArenaImages(
+                    for: questions,
+                    startingAt: currentQuestionIndex,
+                    prefetchCount: prefetchThreshold
+                )
+            }
+        } catch {
+            errorMessage = "Failed to load more streak questions: \(error.localizedDescription)"
+            showError = true
+        }
+    }
 
-   private func fetchMoreQuestions() async {
-       guard !isFetchingMore else { return }
-       isFetchingMore = true
-       defer { isFetchingMore = false }
+    func submitAnswer(selectedCategory: String) async {
+        guard !isSubmitting else { return }
+        guard currentQuestion != nil else { return }
+        guard let sessionId else { return }
 
+        isSubmitting = true
+        defer { isSubmitting = false }
+
+       let answerResponse: SoloAnswerResponse
        do {
-           let fetched: [QuizQuestion] = try await client
-               .rpc("get_quiz_questions_batch", params: ["p_limit": batchSize])
+           let params = SubmitSoloAnswerParams(
+               p_session_id: sessionId.uuidString,
+               p_question_index: currentQuestionIndex,
+               p_selected_category: selectedCategory,
+               p_answer_time_ms: 0
+           )
+           answerResponse = try await client
+               .rpc("submit_solo_answer", params: params)
                .execute()
-               .value
+                .value
+        } catch {
+            errorMessage = "Failed to submit streak answer: \(error.localizedDescription)"
+            showError = true
+            return
+        }
 
-           let newQuestions = fetched.filter { !seenQuestionIds.contains($0.id) }
-           for q in newQuestions {
-               seenQuestionIds.insert(q.id)
-           }
+        let isCorrect = answerResponse.isCorrect
+        lastCorrectCategory = answerResponse.correctCategory
 
-           if !newQuestions.isEmpty {
-               self.questions.append(contentsOf: newQuestions)
-               await preloadImages(for: newQuestions)
-           }
-       } catch {
-           print("⚠️ [Streak] Failed to fetch more questions: \(error)")
-       }
-   }
+        if isCorrect {
+            streakCount += 1
+            sessionScore += 5
 
-   // MARK: - Answer Submission
+            withAnimation(.easeInOut(duration: 0.3)) {
+                showCorrectFeedback = true
+            }
 
-   func submitAnswer(selectedCategory: String) async {
-       guard !isSubmitting else { return }
-       guard let question = currentQuestion else { return }
+            try? await Task.sleep(nanoseconds: 600_000_000)
 
-       isSubmitting = true
-       defer { isSubmitting = false }
+            withAnimation(.easeOut(duration: 0.2)) {
+                showCorrectFeedback = false
+            }
 
-       let isCorrect = selectedCategory == question.correctCategory
+            withAnimation(.easeInOut(duration: 0.3)) {
+                currentQuestionIndex += 1
+            }
+            scheduleUpcomingArenaImages(
+                for: questions,
+                startingAt: currentQuestionIndex,
+                prefetchCount: prefetchThreshold
+            )
 
-       if isCorrect {
-           streakCount += 1
-           let pointsEarned = 5
+            if questionsRemaining <= prefetchThreshold {
+                Task { await fetchMoreQuestions() }
+            }
+        } else {
+            withAnimation(.easeInOut(duration: 0.3)) {
+                showWrongFeedback = true
+            }
 
-           sessionScore += pointsEarned
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
 
-           withAnimation(.easeInOut(duration: 0.3)) {
-               showCorrectFeedback = true
-           }
+            withAnimation(.easeOut(duration: 0.2)) {
+                showWrongFeedback = false
+            }
 
-           do {
-               try await gamificationService.awardCredits(pointsEarned)
-           } catch {
-               sessionScore -= pointsEarned
-               streakCount -= 1
-               print("❌ [Streak] Credit update failed: \(error)")
-           }
+            if await submitStreakRecord() {
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                    sessionCompleted = true
+                }
+            }
+        }
+    }
 
-           try? await Task.sleep(nanoseconds: 600_000_000)
+    private func submitStreakRecord() async -> Bool {
+        guard let sessionId else {
+            errorMessage = "Streak session missing"
+            showError = true
+            return false
+        }
 
-           withAnimation(.easeOut(duration: 0.2)) {
-               showCorrectFeedback = false
-           }
+        do {
+            let response: StreakSessionCompletionResponse = try await client
+                .rpc("submit_streak_record", params: ["p_session_id": sessionId.uuidString])
+                .execute()
+                .value
 
-           // Advance
-           withAnimation(.easeInOut(duration: 0.3)) {
-               currentQuestionIndex += 1
-           }
+            streakCount = response.streakCount
+            sessionScore = response.pointsAwarded
+            return true
+        } catch {
+            errorMessage = "Streak result could not be saved: \(error.localizedDescription)"
+            showError = true
+            return false
+        }
+    }
 
-           // Pre-fetch if running low
-           if questionsRemaining <= prefetchThreshold {
-               Task { await fetchMoreQuestions() }
-           }
+    private func registerQuestionsForSession(_ fetched: [QuizQuestion]) -> [QuizQuestion] {
+        let uniqueQuestions = fetched.filter { !seenQuestionIds.contains($0.id) }
+        if !uniqueQuestions.isEmpty {
+            for question in uniqueQuestions {
+                seenQuestionIds.insert(question.id)
+            }
+            return uniqueQuestions
+        }
 
-       } else {
-           // Wrong — streak over
-           withAnimation(.easeInOut(duration: 0.3)) {
-               showWrongFeedback = true
-           }
+        seenQuestionIds = Set(fetched.map(\.id))
+        return fetched
+    }
 
-           // Submit streak record
-           if streakCount > 0 {
-               await submitStreakRecord()
-           }
+    private func resetSession() {
+        cancelArenaImageLoads()
+        currentQuestionIndex = 0
+        sessionScore = 0
+        streakCount = 0
+        sessionId = nil
+        sessionCompleted = false
+        lastCorrectCategory = nil
+        showCorrectFeedback = false
+        showWrongFeedback = false
+        seenQuestionIds.removeAll()
+        imageCache.removeAll()
+        failedImageIDs.removeAll()
+        questions.removeAll()
+    }
 
-           try? await Task.sleep(nanoseconds: 1_000_000_000)
+    func startNewSession() async {
+        await fetchInitialQuestions()
+    }
 
-           withAnimation(.easeOut(duration: 0.2)) {
-               showWrongFeedback = false
-           }
-
-           withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-               sessionCompleted = true
-           }
-       }
-   }
-
-   private func submitStreakRecord() async {
-       do {
-           let _: UUID = try await client
-               .rpc("submit_streak_record", params: ["p_streak_count": streakCount])
-               .execute()
-               .value
-       } catch {
-           print("❌ [Streak] Failed to submit streak record: \(error)")
-       }
-   }
-
-   // MARK: - Session Management
-
-   private func resetSession() {
-       currentQuestionIndex = 0
-       sessionScore = 0
-       streakCount = 0
-       sessionCompleted = false
-       showCorrectFeedback = false
-       showWrongFeedback = false
-       seenQuestionIds.removeAll()
-       imageCache.removeAll()
-       questions.removeAll()
-   }
-
-   func startNewSession() async {
-       await fetchInitialQuestions()
-   }
-
-   // MARK: - Image Loading
-
-   private func preloadImages(for questionList: [QuizQuestion]) async {
-       // Load all images in the batch concurrently
-       await withTaskGroup(of: Void.self) { group in
-           for q in questionList {
-               if imageCache[q.id] != nil { continue }
-               group.addTask { [weak self] in
-                   await self?.loadImage(for: q)
-               }
-           }
-       }
-   }
-
-   private func loadImage(for question: QuizQuestion) async {
-       guard imageCache[question.id] == nil else { return }
-
-       do {
-           guard let url = URL(string: question.imageUrl) else { return }
-           var request = URLRequest(url: url)
-           request.cachePolicy = .returnCacheDataElseLoad
-
-           let (data, _) = try await URLSession.shared.data(for: request)
-           let decodedImage = await Task.detached(priority: .userInitiated) {
-               return UIImage(data: data)?.preparingForDisplay()
-           }.value
-
-           if let image = decodedImage {
-               await MainActor.run {
-                   imageCache[question.id] = image
-               }
-           }
-       } catch {
-           print("⚠️ [Streak] Failed to load image: \(error.localizedDescription)")
-       }
-   }
+    func retryCurrentImage() {
+        guard let question = currentQuestion else { return }
+        scheduleArenaImageLoad(for: question, forceReload: true)
+    }
 }

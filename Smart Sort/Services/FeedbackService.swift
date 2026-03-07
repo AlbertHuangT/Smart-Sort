@@ -17,16 +17,29 @@ protocol FeedbackSubmitting: AnyObject {
         correctedName: String,
         userId: UUID?
     ) async throws
+    func submitConfirmedQuizCandidate(
+        image: UIImage,
+        predictedLabel: String,
+        predictedCategory: String,
+        userId: UUID?
+    ) async throws
 }
 
 // Data structure definition
 struct FeedbackRecord: Encodable {
-    let user_id: UUID?
+    let user_id: UUID
     let predicted_label: String
     let predicted_category: String
     let user_correction: String
     let user_comment: String
     let image_path: String
+}
+
+struct QuizQuestionCandidateRecord: Encodable {
+    let user_id: UUID
+    let image_path: String
+    let predicted_label: String
+    let predicted_category: String
 }
 
 @MainActor
@@ -45,10 +58,89 @@ class FeedbackService: FeedbackSubmitting {
         correctedName: String,
         userId: UUID?
     ) async throws {
-        
+        guard let userId else {
+            throw NSError(
+                domain: "FeedbackService",
+                code: -2,
+                userInfo: [NSLocalizedDescriptionKey: "No authenticated user"]
+            )
+        }
+
         LogManager.shared.log("Start submitting feedback...", level: .info, category: "Feedback")
-        
-        // 1. Image processing
+
+        let filePath = try await uploadImage(
+            image,
+            bucket: "feedback_images",
+            pathPrefix: "\(userId.uuidString)/feedback"
+        )
+
+        LogManager.shared.log("Image uploaded successfully", level: .info, category: "Feedback")
+
+        let record = FeedbackRecord(
+            user_id: userId,
+            predicted_label: predictedLabel,
+            predicted_category: predictedCategory,
+            user_correction: correctedName.trimmingCharacters(in: .whitespacesAndNewlines),
+            user_comment: "",
+            image_path: filePath
+        )
+
+        do {
+            try await client
+                .from("feedback_logs")
+                .insert(record)
+                .execute()
+
+            LogManager.shared.log("Database write successful", level: .info, category: "Feedback")
+        } catch {
+            await cleanupUploadedObject(bucket: "feedback_images", path: filePath)
+            throw error
+        }
+    }
+
+    func submitConfirmedQuizCandidate(
+        image: UIImage,
+        predictedLabel: String,
+        predictedCategory: String,
+        userId: UUID?
+    ) async throws {
+        guard let userId else {
+            throw NSError(
+                domain: "FeedbackService",
+                code: -3,
+                userInfo: [NSLocalizedDescriptionKey: "No authenticated user"]
+            )
+        }
+
+        let filePath = try await uploadImage(
+            image,
+            bucket: "quiz-candidate-images",
+            pathPrefix: "\(userId.uuidString)/verified"
+        )
+
+        let record = QuizQuestionCandidateRecord(
+            user_id: userId,
+            image_path: filePath,
+            predicted_label: predictedLabel,
+            predicted_category: predictedCategory
+        )
+
+        do {
+            try await client
+                .from("quiz_question_candidates")
+                .insert(record)
+                .execute()
+        } catch {
+            await cleanupUploadedObject(bucket: "quiz-candidate-images", path: filePath)
+            throw error
+        }
+    }
+
+    private func uploadImage(
+        _ image: UIImage,
+        bucket: String,
+        pathPrefix: String
+    ) async throws -> String {
         guard let imageData = image.jpegData(compressionQuality: 0.5) else {
             throw NSError(
                 domain: "FeedbackService",
@@ -56,45 +148,32 @@ class FeedbackService: FeedbackSubmitting {
                 userInfo: [NSLocalizedDescriptionKey: "Image processing failed"]
             )
         }
-        
-        // 2. Generate path
-        let fileName = "\(UUID().uuidString).jpg"
-        let filePath = "uploads/\(fileName)"
-        
+
+        let filePath = "\(pathPrefix)/\(UUID().uuidString).jpg"
         let fileOptions = FileOptions(
             cacheControl: "3600",
             contentType: "image/jpeg",
             upsert: false
         )
-        
-        // Fix: upload method updated
-        // Old usage: .upload(path: filePath, file: imageData, ...)
-        // New usage: .upload(filePath, data: imageData, ...)
+
         _ = try await client.storage
-            .from("feedback_images")
-            .upload(
-                filePath,           // First parameter is path, no label needed
-                data: imageData,    // Second parameter renamed to data
-                options: fileOptions
+            .from(bucket)
+            .upload(filePath, data: imageData, options: fileOptions)
+
+        return filePath
+    }
+
+    private func cleanupUploadedObject(bucket: String, path: String) async {
+        do {
+            _ = try await client.storage
+                .from(bucket)
+                .remove(paths: [path])
+        } catch {
+            LogManager.shared.log(
+                "Failed to clean up orphaned upload \(bucket)/\(path): \(error)",
+                level: .warning,
+                category: "Feedback"
             )
-        
-        LogManager.shared.log("Image uploaded successfully", level: .info, category: "Feedback")
-        
-        // 3. Write to database
-        let record = FeedbackRecord(
-            user_id: userId,
-            predicted_label: predictedLabel,
-            predicted_category: predictedCategory,
-            user_correction: correctedName,
-            user_comment: "",
-            image_path: filePath
-        )
-        
-        try await client
-            .from("feedback_logs")
-            .insert(record)
-            .execute()
-            
-        LogManager.shared.log("Database write successful", level: .info, category: "Feedback")
+        }
     }
 }

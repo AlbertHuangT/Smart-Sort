@@ -12,8 +12,10 @@ final class SupabaseManager: @unchecked Sendable {
     static let shared = SupabaseManager()
     
     let client: SupabaseClient
+    let baseURL: URL
     
     private init() {
+        self.baseURL = Secrets.supabaseUrl
         self.client = SupabaseClient(
             supabaseURL: Secrets.supabaseUrl,
             supabaseKey: Secrets.supabaseAnonKey,

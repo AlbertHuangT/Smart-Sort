@@ -21,6 +21,7 @@ struct ArenaHubView: View {
     @State private var activeOpponentId: UUID?
     @State private var pendingOpponentId: UUID?
     @State private var pendingBadgeCount = 0
+    private let theme = TrashTheme()
 
     // Polling timer for pending challenges
     @State private var pollTimer: AnyCancellable?
@@ -33,19 +34,19 @@ struct ArenaHubView: View {
                 } else {
                     ScrollView(.vertical, showsIndicators: false) {
                         VStack(alignment: .leading, spacing: 24) {
-                            VStack(alignment: .leading, spacing: 8) {
+                            VStack(alignment: .leading, spacing: theme.spacing.sm) {
                                 Text("Pick a mode")
-                                    .font(.system(size: 30, weight: .bold, design: .rounded))
-                                    .foregroundColor(TrashTheme().palette.textPrimary)
+                                    .font(theme.typography.title)
+                                    .foregroundColor(theme.palette.textPrimary)
                                 Text("Quick rounds, daily goals, and duels all live here.")
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
+                                    .font(theme.typography.subheadline)
+                                    .foregroundColor(theme.palette.textSecondary)
                             }
-                            .padding(.horizontal, 16)
+                            .padding(.horizontal, theme.components.contentInset)
 
                             LazyVGrid(
                                 columns: [GridItem(.flexible()), GridItem(.flexible())],
-                                spacing: 20
+                                spacing: theme.spacing.md
                             ) {
                                 ForEach(ArenaGameMode.allCases) { mode in
                                     GameModeCard(mode: mode) {
@@ -57,12 +58,12 @@ struct ArenaHubView: View {
                                     }
                                 }
                             }
-                            .padding(.horizontal, 16)
+                            .padding(.horizontal, theme.components.contentInset)
 
                             Spacer(minLength: 40)
                         }
-                        .padding(.top, 16)
-                        .padding(.bottom, 28)
+                        .padding(.top, theme.spacing.md)
+                        .padding(.bottom, theme.spacing.xl)
                     }
                 }
             }
@@ -203,8 +204,8 @@ struct GameModeCard: View {
 
     var body: some View {
         Button(action: onTap) {
-            VStack(spacing: 16) {
-                let circleSize: CGFloat = 42
+            VStack(spacing: theme.spacing.md) {
+                let circleSize = theme.components.minimumHitTarget
                 ZStack {
                     Circle()
                         .frame(width: circleSize, height: circleSize)
@@ -216,29 +217,31 @@ struct GameModeCard: View {
                 }
 
                 Text(mode.title)
-                    .font(.headline)
+                    .font(theme.typography.subheadline)
+                    .foregroundColor(theme.palette.textPrimary)
                     .multilineTextAlignment(.center)
 
                 Text(mode.subtitle)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(theme.typography.caption)
+                    .foregroundColor(theme.palette.textSecondary)
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 28)
-            .padding(.horizontal, 8)
+            .frame(minHeight: 184)
+            .padding(.vertical, theme.spacing.lg)
+            .padding(.horizontal, theme.spacing.xs)
             .background(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)
                     .fill(theme.surfaceBackground)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)
                             .stroke(theme.palette.divider.opacity(0.8), lineWidth: 1)
                     )
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)
                     .stroke(gradient, lineWidth: 1.25)
                     .opacity(0.28)
             )

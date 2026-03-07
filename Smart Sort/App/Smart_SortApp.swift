@@ -60,6 +60,7 @@ struct Smart_SortApp: App {
             .animation(.spring(), value: authVM.deepLinkStatus)
             .onChange(of: authVM.session?.user.id) { _ in
                 trashVM.reset()  // Clear Verify state when session changes (logout/login)
+                UserSettings.shared.refreshForCurrentUser()
             }
             .preferredColorScheme(.light)
         }

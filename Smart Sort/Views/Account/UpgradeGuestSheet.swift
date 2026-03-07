@@ -46,7 +46,6 @@ struct UpgradeGuestSheet: View {
                         }
                         .trashOnAccentForeground()
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
                     }
                     .disabled(authVM.isLoading)
                 }
@@ -54,8 +53,8 @@ struct UpgradeGuestSheet: View {
                 if let message = localError ?? authVM.errorMessage {
                     Section {
                         Text(message)
-                            .font(.caption)
-                            .foregroundColor(.red)
+                            .font(theme.typography.caption)
+                            .foregroundColor(theme.semanticDanger)
                     }
                 }
             }

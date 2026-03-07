@@ -13,9 +13,12 @@ struct TrashIconButton: View {
    var body: some View {
        Button(action: action) {
            TrashIcon(systemName: icon)
-               .font(.system(size: 14, weight: .semibold))
+               .font(.system(size: 17, weight: .semibold))
                .foregroundColor(foreground)
-               .frame(width: 38, height: 38)
+               .frame(
+                   width: theme.components.iconButtonSize,
+                   height: theme.components.iconButtonSize
+               )
                .background {
                    Circle()
                        .fill(background)
@@ -98,8 +101,8 @@ struct TrashPill: View {
                .foregroundColor(foreground)
                .lineLimit(1)
        }
-       .padding(.horizontal, 12)
-       .padding(.vertical, 8)
+       .padding(.horizontal, 14)
+       .frame(minHeight: action == nil ? 32 : theme.components.pillHeight)
        .background {
            RoundedRectangle(cornerRadius: theme.corners.pill, style: .continuous)
                .fill(background)
@@ -147,7 +150,7 @@ struct TrashSearchField: View {
    var body: some View {
        HStack(spacing: 10) {
            TrashIcon(systemName: "magnifyingglass")
-               .font(.system(size: 14, weight: .semibold))
+               .font(.system(size: 17, weight: .semibold))
                .foregroundColor(theme.palette.textSecondary)
 
            TextField(placeholder, text: $text)
@@ -160,7 +163,7 @@ struct TrashSearchField: View {
                    text = ""
                } label: {
                    TrashIcon(systemName: "xmark.circle.fill")
-                       .font(.system(size: 14, weight: .semibold))
+                       .font(.system(size: 17, weight: .semibold))
                        .foregroundColor(theme.palette.textSecondary)
                }
                .buttonStyle(.plain)
@@ -178,8 +181,9 @@ struct TrashInputSurface: ViewModifier {
 
    func body(content: Content) -> some View {
        content
-           .padding(.horizontal, 12)
-           .padding(.vertical, 10)
+           .frame(minHeight: theme.components.inputHeight)
+           .padding(.horizontal, 14)
+           .padding(.vertical, 12)
            .background {
                background
            }
@@ -240,6 +244,7 @@ struct TrashTextButton: View {
                .font(theme.typography.subheadline)
                .fontWeight(.medium)
                .foregroundColor(resolvedColor)
+               .frame(minHeight: theme.components.minimumHitTarget)
        }
        .buttonStyle(.plain)
    }
@@ -294,7 +299,7 @@ struct TrashIconInputField: View {
    var body: some View {
        HStack(spacing: 14) {
            TrashIcon(systemName: icon)
-               .font(.system(size: 16, weight: .medium))
+               .font(.system(size: 17, weight: .medium))
                .foregroundColor(isFocused ? theme.accents.blue : theme.palette.textSecondary)
                .frame(width: 24)
 
@@ -312,9 +317,10 @@ struct TrashIconInputField: View {
            }
        }
        .padding(16)
-       .trashInputStyle(cornerRadius: 14)
+       .frame(minHeight: theme.components.inputHeight)
+       .trashInputStyle(cornerRadius: theme.corners.medium)
        .overlay(
-           RoundedRectangle(cornerRadius: 14)
+           RoundedRectangle(cornerRadius: theme.corners.medium)
                .stroke(isFocused ? theme.accents.blue.opacity(0.5) : Color.clear, lineWidth: 2)
        )
        .animation(.easeInOut(duration: 0.2), value: isFocused)
@@ -348,6 +354,7 @@ struct TrashFormToggle: View {
                .font(theme.typography.subheadline)
                .foregroundColor(theme.palette.textPrimary)
        }
+       .frame(minHeight: theme.components.minimumHitTarget)
    }
 }
 
@@ -364,6 +371,7 @@ struct TrashFormStepper: View {
                .font(theme.typography.subheadline)
                .foregroundColor(theme.palette.textPrimary)
        }
+       .frame(minHeight: theme.components.minimumHitTarget)
    }
 }
 
@@ -377,6 +385,7 @@ struct TrashFormDatePicker: View {
        DatePicker(title, selection: $selection, in: range)
            .font(theme.typography.subheadline)
            .foregroundColor(theme.palette.textPrimary)
+           .frame(minHeight: theme.components.minimumHitTarget)
    }
 }
 
@@ -419,6 +428,7 @@ struct TrashFormPicker<Value: Hashable>: View {
        .tint(theme.accents.blue)
        .font(theme.typography.subheadline)
        .foregroundColor(theme.palette.textPrimary)
+       .frame(minHeight: theme.components.minimumHitTarget)
    }
 
    @ViewBuilder
@@ -456,6 +466,7 @@ struct TrashOptionalFormPicker<Value: Hashable>: View {
        .tint(theme.accents.blue)
        .font(theme.typography.subheadline)
        .foregroundColor(theme.palette.textPrimary)
+       .frame(minHeight: theme.components.minimumHitTarget)
    }
 }
 
@@ -486,7 +497,7 @@ struct TrashNoticeSheet: View {
 
    var body: some View {
        ZStack {
-           VStack(spacing: 18) {
+           VStack(spacing: theme.spacing.md) {
                Text(title)
                    .font(theme.typography.title)
                    .foregroundColor(theme.palette.textPrimary)
@@ -509,20 +520,19 @@ struct TrashNoticeSheet: View {
                ) {
                    Text(buttonTitle)
                        .frame(maxWidth: .infinity)
-                       .padding(.vertical, 12)
-               }
-           }
-           .padding(22)
+                }
+            }
+           .padding(theme.components.sheetPadding)
            .background(
-               RoundedRectangle(cornerRadius: 20, style: .continuous)
+               RoundedRectangle(cornerRadius: theme.corners.large, style: .continuous)
                    .fill(theme.surfaceBackground)
                    .overlay(
-                       RoundedRectangle(cornerRadius: 20, style: .continuous)
+                       RoundedRectangle(cornerRadius: theme.corners.large, style: .continuous)
                            .stroke(theme.palette.divider.opacity(0.85), lineWidth: 1)
                    )
                    .shadow(color: Color.black.opacity(0.08), radius: 10, x: 0, y: 4)
            )
-           .padding(.horizontal, 20)
+           .padding(.horizontal, theme.spacing.lg)
        }
    }
 }
@@ -558,7 +568,7 @@ struct TrashConfirmSheet: View {
 
    var body: some View {
        ZStack {
-           VStack(spacing: 18) {
+           VStack(spacing: theme.spacing.md) {
                Text(title)
                    .font(theme.typography.title)
                    .foregroundColor(theme.palette.textPrimary)
@@ -572,7 +582,6 @@ struct TrashConfirmSheet: View {
                TrashButton(baseColor: confirmColor ?? theme.accents.blue, action: onConfirm) {
                    Text(confirmTitle)
                        .frame(maxWidth: .infinity)
-                       .padding(.vertical, 12)
                }
 
                TrashTextButton(title: cancelTitle) {
@@ -583,17 +592,17 @@ struct TrashConfirmSheet: View {
                    }
                }
            }
-           .padding(22)
+           .padding(theme.components.sheetPadding)
            .background(
-               RoundedRectangle(cornerRadius: 20, style: .continuous)
+               RoundedRectangle(cornerRadius: theme.corners.large, style: .continuous)
                    .fill(theme.surfaceBackground)
                    .overlay(
-                       RoundedRectangle(cornerRadius: 20, style: .continuous)
+                       RoundedRectangle(cornerRadius: theme.corners.large, style: .continuous)
                            .stroke(theme.palette.divider.opacity(0.85), lineWidth: 1)
                    )
                    .shadow(color: Color.black.opacity(0.08), radius: 10, x: 0, y: 4)
            )
-           .padding(.horizontal, 20)
+           .padding(.horizontal, theme.spacing.lg)
        }
    }
 }
@@ -610,7 +619,7 @@ struct TrashTextInputSheet: View {
 
    var body: some View {
        ZStack {
-           VStack(spacing: 18) {
+           VStack(spacing: theme.spacing.md) {
                Text(title)
                    .font(theme.typography.title)
                    .foregroundColor(theme.palette.textPrimary)
@@ -641,23 +650,22 @@ struct TrashTextInputSheet: View {
                    ) {
                        Text(confirmTitle)
                            .frame(maxWidth: .infinity)
-                           .padding(.vertical, 10)
                    }
                    .frame(maxWidth: .infinity)
                    .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                }
            }
-           .padding(22)
+           .padding(theme.components.sheetPadding)
            .background(
-               RoundedRectangle(cornerRadius: 20, style: .continuous)
+               RoundedRectangle(cornerRadius: theme.corners.large, style: .continuous)
                    .fill(theme.surfaceBackground)
                    .overlay(
-                       RoundedRectangle(cornerRadius: 20, style: .continuous)
+                       RoundedRectangle(cornerRadius: theme.corners.large, style: .continuous)
                            .stroke(theme.palette.divider.opacity(0.85), lineWidth: 1)
                    )
                    .shadow(color: Color.black.opacity(0.08), radius: 10, x: 0, y: 4)
            )
-           .padding(.horizontal, 20)
+           .padding(.horizontal, theme.spacing.lg)
        }
    }
 }

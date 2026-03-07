@@ -16,6 +16,7 @@ class ProfileViewModel: ObservableObject {
     @Published var levelName: String = "Novice Recycler"
     @Published var isLoading = false
     @Published var errorMessage: String?
+    @Published var isAppAdmin = false
     
     // 成就展示
     @Published var equippedAchievementIcon: String?
@@ -27,9 +28,10 @@ class ProfileViewModel: ObservableObject {
     private var hasFetchedOnce = false
 
     private let client = SupabaseManager.shared.client
+    private let adminService = AdminService.shared
 
     func fetchProfile(forceRefresh: Bool = false) async {
-        guard let userId = client.auth.currentUser?.id else { return }
+        guard client.auth.currentUser?.id != nil else { return }
 
         if !forceRefresh && hasFetchedOnce,
            let lastTime = lastFetchTime,
@@ -43,9 +45,7 @@ class ProfileViewModel: ObservableObject {
         errorMessage = nil
         do {
             let profile: UserProfileDTO = try await client
-                .from("profiles")
-                .select("credits, username, selected_achievement_id")
-                .eq("id", value: userId)
+                .rpc("get_my_profile")
                 .single()
                 .execute()
                 .value
@@ -55,6 +55,7 @@ class ProfileViewModel: ObservableObject {
             self.lastFetchTime = Date()
             self.hasFetchedOnce = true
             calculateLevel()
+            await fetchAdminStatus()
             
             // 获取装备的成就信息
             if let achievementId = profile.selectedAchievementId {
@@ -71,6 +72,14 @@ class ProfileViewModel: ObservableObject {
             }
         }
         isLoading = false
+    }
+
+    private func fetchAdminStatus() async {
+        do {
+            isAppAdmin = try await adminService.isAppAdmin()
+        } catch {
+            isAppAdmin = false
+        }
     }
     
     private func fetchEquippedAchievement(_ achievementId: UUID) async {
@@ -106,7 +115,7 @@ class ProfileViewModel: ObservableObject {
     }
 
     func updateUsername(_ newName: String) async {
-        guard let userId = client.auth.currentUser?.id else { return }
+        guard client.auth.currentUser?.id != nil else { return }
         guard !newName.trimmingCharacters(in: .whitespaces).isEmpty else { return }
 
         let previousName = self.username
@@ -114,14 +123,8 @@ class ProfileViewModel: ObservableObject {
         errorMessage = nil
 
         do {
-            struct UpdateName: Encodable {
-                let username: String
-            }
-
             try await client
-                .from("profiles")
-                .update(UpdateName(username: newName))
-                .eq("id", value: userId)
+                .rpc("update_my_username", params: ["p_username": newName])
                 .execute()
 
             print("✅ Username updated to: \(newName)")

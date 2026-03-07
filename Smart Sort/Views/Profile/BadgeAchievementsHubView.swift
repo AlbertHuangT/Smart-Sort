@@ -25,15 +25,15 @@ struct BadgeAchievementsHubView: View {
     private let theme = TrashTheme()
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: theme.spacing.md) {
             TrashSegmentedControl(
                 options: Segment.allCases.map {
                     TrashSegmentOption(value: $0, title: $0.title, icon: $0.icon)
                 },
                 selection: $selectedSegment
             )
-            .padding(.horizontal, 16)
-            .padding(.top, 12)
+            .padding(.horizontal, theme.components.contentInset)
+            .padding(.top, theme.spacing.sm + 4)
 
             Group {
                 switch selectedSegment {
@@ -46,7 +46,7 @@ struct BadgeAchievementsHubView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding(.top, 4)
+            .padding(.top, theme.spacing.xs)
         }
         .navigationTitle("Badges & Achievements")
         .animation(.easeInOut, value: selectedSegment)

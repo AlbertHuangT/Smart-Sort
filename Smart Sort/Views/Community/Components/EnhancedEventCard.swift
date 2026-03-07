@@ -51,14 +51,14 @@ struct EnhancedEventCard: View {
 
     private var ecoEventCard: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .top, spacing: 10) {
-                VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .top, spacing: theme.spacing.sm) {
+                VStack(alignment: .leading, spacing: theme.spacing.xs + 2) {
                     Text(event.title)
                         .font(theme.typography.headline)
                         .foregroundColor(theme.palette.textPrimary)
                         .lineLimit(2)
 
-                    HStack(spacing: 8) {
+                    HStack(spacing: theme.spacing.sm) {
                         StampedIcon(
                             systemName: event.imageSystemName, size: 14, weight: .semibold,
                             color: event.category.color)
@@ -75,8 +75,8 @@ struct EnhancedEventCard: View {
                     Text(distanceText)
                         .font(theme.typography.caption)
                         .foregroundColor(theme.palette.textSecondary)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 5)
+                        .padding(.horizontal, 12)
+                        .frame(minHeight: theme.components.minimumHitTarget)
                         .background(
                             Capsule()
                                 .fill(theme.surfaceBackground)
@@ -87,17 +87,17 @@ struct EnhancedEventCard: View {
                         )
                 }
             }
-            .padding(.horizontal, 14)
-            .padding(.top, 14)
-            .padding(.bottom, 10)
+            .padding(.horizontal, theme.components.cardPadding)
+            .padding(.top, theme.components.cardPadding)
+            .padding(.bottom, theme.spacing.sm)
 
             Rectangle()
                 .stroke(style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
                 .foregroundColor(theme.palette.divider.opacity(0.72))
                 .frame(height: 1)
-                .padding(.horizontal, 14)
+                .padding(.horizontal, theme.components.cardPadding)
 
-            VStack(alignment: .leading, spacing: 9) {
+            VStack(alignment: .leading, spacing: theme.spacing.sm + 1) {
                 TrashLabel(dateFormatter.string(from: event.date), icon: "calendar")
                     .font(theme.typography.body)
                     .foregroundColor(theme.palette.textSecondary)
@@ -107,7 +107,7 @@ struct EnhancedEventCard: View {
                     .lineLimit(1)
 
                 HStack {
-                    HStack(spacing: 6) {
+                    HStack(spacing: theme.spacing.xs + 2) {
                         StampedIcon(
                             systemName: "person.crop.circle", size: 13, weight: .semibold,
                             color: theme.palette.textSecondary)
@@ -121,16 +121,16 @@ struct EnhancedEventCard: View {
                     HStack(spacing: 4) {
                         StampedIcon(
                             systemName: "person.2.fill", size: 12, weight: .semibold,
-                            color: isFull ? .red : theme.accents.blue)
+                            color: isFull ? theme.semanticDanger : theme.accents.blue)
                         Text("\(event.participantCount)/\(event.maxParticipants)")
                             .font(theme.typography.caption)
                             .fontWeight(.bold)
                     }
-                    .foregroundColor(isFull ? .red : theme.accents.blue)
+                    .foregroundColor(isFull ? theme.semanticDanger : theme.accents.blue)
                 }
             }
-            .padding(.horizontal, 14)
-            .padding(.top, 10)
+            .padding(.horizontal, theme.components.cardPadding)
+            .padding(.top, theme.spacing.sm)
 
             HStack {
                 if isAlmostFull && !isFull {
@@ -149,15 +149,15 @@ struct EnhancedEventCard: View {
 
                 ecoJoinTag
             }
-            .padding(.horizontal, 14)
-            .padding(.top, 12)
-            .padding(.bottom, 14)
+            .padding(.horizontal, theme.components.cardPadding)
+            .padding(.top, theme.spacing.md - 4)
+            .padding(.bottom, theme.components.cardPadding)
         }
         .background {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
+            RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)
                 .fill(theme.surfaceBackground)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)
                         .stroke(theme.palette.divider, lineWidth: 1)
                 )
         }
@@ -182,13 +182,13 @@ struct EnhancedEventCard: View {
                 .fontWeight(.bold)
                 .foregroundColor(theme.onAccentForeground)
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 7)
+        .padding(.horizontal, 12)
+        .frame(minHeight: theme.components.minimumHitTarget)
         .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
+            RoundedRectangle(cornerRadius: theme.corners.small, style: .continuous)
                 .fill(tagColor)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    RoundedRectangle(cornerRadius: theme.corners.small, style: .continuous)
                         .stroke(theme.palette.textPrimary.opacity(0.25), lineWidth: 1)
                 )
         )

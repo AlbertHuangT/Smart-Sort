@@ -42,14 +42,14 @@ struct ChangePasswordSheet: View {
                 if let message = localError ?? authVM.errorMessage {
                     Section {
                         Text(message)
-                            .font(.caption)
-                            .foregroundColor(.red)
+                            .font(theme.typography.caption)
+                            .foregroundColor(theme.semanticDanger)
                     }
                 } else if let success = successMessage {
                     Section {
                         Text(success)
-                            .font(.caption)
-                            .foregroundColor(.green)
+                            .font(theme.typography.caption)
+                            .foregroundColor(theme.semanticSuccess)
                     }
                 }
             }

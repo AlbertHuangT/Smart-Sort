@@ -11,6 +11,7 @@ struct BindEmailSheet: View {
     @Binding var inputEmail: String
     @ObservedObject var authVM: AuthViewModel
     @Binding var isPresented: Bool
+    private let theme = TrashTheme()
 
     var body: some View {
         NavigationView {
@@ -34,8 +35,8 @@ struct BindEmailSheet: View {
                 if let error = authVM.errorMessage {
                     Section {
                         Text(error)
-                            .foregroundColor(.red)
-                            .font(.caption)
+                            .foregroundColor(theme.semanticDanger)
+                            .font(theme.typography.caption)
                     }
                 }
             }

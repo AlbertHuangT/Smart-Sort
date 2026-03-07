@@ -15,7 +15,7 @@ struct BadgePickerView: View {
     }
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: theme.spacing.md) {
             if service.isLoading {
                 Spacer(minLength: 0)
                 ProgressView("Loading badges...")
@@ -29,9 +29,9 @@ struct BadgePickerView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 16) {
+                    VStack(alignment: .leading, spacing: theme.spacing.md) {
                         if let equipped = equippedBadge {
-                            VStack(alignment: .leading, spacing: 8) {
+                            VStack(alignment: .leading, spacing: theme.spacing.sm) {
                                 sectionHeader("Currently Equipped")
 
                                 AchievementCard(achievement: equipped) {
@@ -56,9 +56,9 @@ struct BadgePickerView: View {
                             }
                         }
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 16)
-                    .padding(.bottom, 32)
+                    .padding(.horizontal, theme.components.contentInset)
+                    .padding(.top, theme.components.contentInset)
+                    .padding(.bottom, theme.spacing.xl)
                 }
             }
         }
@@ -75,6 +75,6 @@ struct BadgePickerView: View {
             .font(.footnote.weight(.semibold))
             .foregroundColor(theme.palette.textSecondary)
             .textCase(.uppercase)
-            .tracking(0.8)
+            .tracking(0.6)
     }
 }

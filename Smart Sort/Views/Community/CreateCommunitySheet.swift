@@ -48,13 +48,13 @@ struct CreateCommunitySheet: View {
                     if userSettings.selectedLocation != nil {
                         HStack(spacing: 12) {
                             TrashIcon(systemName: "mappin.circle.fill")
-                                .font(.title2)
+                                .font(.system(size: 17, weight: .semibold))
                                 .foregroundColor(theme.semanticInfo)
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(selectedCity)
-                                    .font(.headline)
+                                    .font(theme.typography.headline)
                                 Text(selectedState)
-                                    .font(.caption)
+                                    .font(theme.typography.caption)
                                     .foregroundColor(theme.palette.textSecondary)
                             }
                             Spacer()
@@ -102,6 +102,7 @@ struct CreateCommunitySheet: View {
                             TrashIcon(systemName: "exclamationmark.triangle.fill")
                                 .foregroundColor(theme.semanticDanger)
                             Text(error)
+                                .font(theme.typography.subheadline)
                                 .foregroundColor(theme.semanticDanger)
                         }
                     }

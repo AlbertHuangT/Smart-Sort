@@ -66,6 +66,29 @@ struct ThemeCornerRadius {
     let pill: CGFloat
 }
 
+struct ThemeComponentMetrics {
+    /// Apple HIG minimum tappable target.
+    let minimumHitTarget: CGFloat
+    /// Standard square icon button size.
+    let iconButtonSize: CGFloat
+    /// Default prominent button height.
+    let buttonHeight: CGFloat
+    /// Default text input height.
+    let inputHeight: CGFloat
+    /// Standard list/settings row height.
+    let rowHeight: CGFloat
+    /// Segmented control minimum height.
+    let segmentedControlHeight: CGFloat
+    /// Interactive pill height.
+    let pillHeight: CGFloat
+    /// Default card body padding.
+    let cardPadding: CGFloat
+    /// Default sheet/dialog content padding.
+    let sheetPadding: CGFloat
+    /// Default horizontal content inset.
+    let contentInset: CGFloat
+}
+
 struct ThemeGradients {
     let primary: LinearGradient
     let accent: LinearGradient
@@ -95,6 +118,7 @@ struct TrashTheme {
     let typography: ThemeTypography
     let spacing: ThemeSpacing
     let corners: ThemeCornerRadius
+    let components: ThemeComponentMetrics
     let gradients: ThemeGradients
     let appearance: ThemeAppearance
     let animations: ThemeAnimations
@@ -134,7 +158,19 @@ struct TrashTheme {
 
         // 8pt grid-aligned spacing system
         spacing = ThemeSpacing(xs: 4, sm: 8, md: 16, lg: 20, xl: 28, xxl: 40)
-        corners = ThemeCornerRadius(small: 8, medium: 14, large: 22, pill: 30)
+        corners = ThemeCornerRadius(small: 10, medium: 16, large: 24, pill: 22)
+        components = ThemeComponentMetrics(
+            minimumHitTarget: 44,
+            iconButtonSize: 44,
+            buttonHeight: 50,
+            inputHeight: 50,
+            rowHeight: 56,
+            segmentedControlHeight: 44,
+            pillHeight: 44,
+            cardPadding: 16,
+            sheetPadding: 24,
+            contentInset: 16
+        )
 
         // Standardized animation presets for consistency across the app
         animations = ThemeAnimations(
@@ -214,7 +250,6 @@ struct TrashTheme {
     }
 
     func configureAppearance() {
-        let paperColor = UIColor(red: 0.949, green: 0.941, blue: 0.918, alpha: 1)
         let inkColor = UIColor(red: 0.239, green: 0.231, blue: 0.196, alpha: 1)
         let selectedColor = UIColor(red: 0.310, green: 0.490, blue: 0.471, alpha: 1)
 
