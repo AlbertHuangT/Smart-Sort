@@ -19,7 +19,7 @@ struct SharedQuizCard: View {
     var pointsText: String = "+10 pts"
     let onAnswer: (String) -> Void
     var timerView: AnyView? = nil
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     var body: some View {
         GeometryReader { geo in
@@ -31,14 +31,10 @@ struct SharedQuizCard: View {
                         .scaledToFill()
                         .frame(width: geo.size.width, height: geo.size.height)
                         .clipped()
+                        .accessibilityLabel("Quiz item photo")
                 } else {
                     RoundedRectangle(cornerRadius: 28)
                         .fill(theme.palette.card)
-                        .overlay(
-                            PaperTextureView(baseColor: theme.palette.card)
-                                .clipShape(RoundedRectangle(cornerRadius: 28))
-                                .opacity(theme.visualStyle == .ecoPaper ? 0.4 : 0)
-                        )
                         .overlay(
                             VStack(spacing: 16) {
                                 ProgressView()
@@ -109,11 +105,11 @@ struct SharedQuizCard: View {
     }
 
     private var cardShadowDark: Color {
-        theme.visualStyle == .ecoPaper ? Color.black.opacity(0.2) : theme.shadows.dark
+        theme.shadows.dark
     }
 
     private var cardShadowLight: Color {
-        theme.visualStyle == .ecoPaper ? Color.white.opacity(0.45) : theme.shadows.light
+        theme.shadows.light
     }
 }
 
@@ -125,7 +121,7 @@ struct ArenaStatusBar: View {
     let showProgress: Bool
     @Binding var pulseAnimation: Bool
     var extraContent: AnyView? = nil
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     var body: some View {
         HStack(spacing: 12) {
@@ -156,7 +152,7 @@ struct ArenaStatusBar: View {
                 .padding(.vertical, 6)
                 .neumorphicConcave(cornerRadius: 20)
                 .scaleEffect(pulseAnimation ? 1.05 : 1.0)
-                .animation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true), value: pulseAnimation)
+                .animation(theme.animations.pulse, value: pulseAnimation)
             }
 
             if let extra = extraContent {
@@ -171,27 +167,6 @@ struct ArenaStatusBar: View {
     }
 }
 
-// MARK: - Arena Header
-
-struct ArenaHeader: View {
-    let title: String
-    var showBackButton: Bool = false
-    var onBack: (() -> Void)? = nil
-
-    @EnvironmentObject var authViewModel: AuthViewModel
-
-    var body: some View {
-        TrashPageHeader(title: title, leading: {
-            if showBackButton {
-                TrashIconButton(icon: "chevron.left", action: { onBack?() })
-            }
-        }) {
-            AccountButton()
-                .environmentObject(authViewModel)
-        }
-    }
-}
-
 // MARK: - Generic Session Summary
 
 struct GenericSessionSummaryView: View {
@@ -203,7 +178,7 @@ struct GenericSessionSummaryView: View {
     var onViewLeaderboard: (() -> Void)? = nil
 
     @State private var showStats = false
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     var body: some View {
         VStack(spacing: 28) {
@@ -290,19 +265,19 @@ struct GenericSessionSummaryView: View {
 struct TimerBarView: View {
     let timeRemaining: Double
     let totalTime: Double
-    @Environment(\.trashTheme) private var theme
-
+    private let theme = TrashTheme()
+    
     var progress: Double {
         guard totalTime > 0 else { return 0 }
         return timeRemaining / totalTime
     }
-
+    
     var timerColor: Color {
-        if progress > 0.5 { return .green }
-        if progress > 0.25 { return .orange }
-        return .red
+        if progress > 0.5 { return theme.semanticSuccess }
+        if progress > 0.25 { return theme.semanticWarning }
+        return theme.semanticDanger
     }
-
+    
     var body: some View {
         VStack(spacing: 4) {
             HStack {
@@ -314,13 +289,13 @@ struct TimerBarView: View {
             }
             .foregroundColor(timerTextColor)
             .padding(.horizontal, 20)
-
+            
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     Capsule()
                         .fill(timerTrackColor)
                         .frame(height: 6)
-
+                    
                     Capsule()
                         .fill(timerColor)
                         .frame(width: geo.size.width * progress, height: 6)
@@ -331,24 +306,12 @@ struct TimerBarView: View {
             .padding(.horizontal, 20)
         }
     }
-
+    
     private var timerTextColor: Color {
-        switch theme.visualStyle {
-        case .vibrantGlass:
-            return .white
-        case .neumorphic, .ecoPaper:
-            return theme.palette.textPrimary
-        }
+        theme.palette.textPrimary
     }
-
+    
     private var timerTrackColor: Color {
-        switch theme.visualStyle {
-        case .vibrantGlass:
-            return theme.palette.textSecondary.opacity(0.32)
-        case .neumorphic:
-            return theme.palette.divider.opacity(0.75)
-        case .ecoPaper:
-            return theme.palette.divider.opacity(0.9)
-        }
+        theme.palette.divider.opacity(0.9)
     }
 }

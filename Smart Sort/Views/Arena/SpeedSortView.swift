@@ -11,7 +11,7 @@ struct SpeedSortView: View {
     @StateObject private var viewModel = SpeedSortViewModel()
     @EnvironmentObject var authViewModel: AuthViewModel
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
     @State private var pulseAnimation = false
     // showAccountSheet managed by ContentView via environment
 
@@ -19,17 +19,10 @@ struct SpeedSortView: View {
 
     var body: some View {
         ZStack {
-            ThemeBackground()
+            ThemeBackgroundView()
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                // Header with back button
-                ArenaHeader(
-                    title: "Speed Sort",
-                    showBackButton: true,
-                    onBack: { dismiss() }
-                )
-
                 if viewModel.sessionCompleted {
                     speedSortSummary
                 } else {
@@ -59,6 +52,13 @@ struct SpeedSortView: View {
             pulseAnimation = true
             await viewModel.fetchQuestions()
         }
+        .navigationTitle("Speed Sort")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                AccountButton()
+            }
+        }
         .onDisappear {
             viewModel.stopTimer()
         }
@@ -82,7 +82,7 @@ struct SpeedSortView: View {
                             .fontWeight(.black)
                     }
                     .font(.subheadline)
-                    .foregroundColor(.neuAccentBlue)
+                    .foregroundColor(theme.accents.blue)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
                     .neumorphicConcave(cornerRadius: 20)
@@ -141,18 +141,18 @@ struct SpeedSortView: View {
         HStack(spacing: 12) {
             TrashIcon(systemName: "exclamationmark.triangle.fill")
                 .foregroundColor(theme.semanticWarning)
-            Text(viewModel.errorMessage)
+            Text(viewModel.errorMessage ?? "")
                 .font(.subheadline)
-                .foregroundColor(.neuText)
+                .foregroundColor(theme.palette.textPrimary)
             Spacer()
             TrashIconButton(icon: "xmark", action: { viewModel.showError = false })
         }
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color.neuBackground)
-                .shadow(color: .neuDarkShadow, radius: 6, x: 4, y: 4)
-                .shadow(color: .neuLightShadow, radius: 6, x: -3, y: -3)
+                .fill(theme.palette.background)
+                .shadow(color: theme.shadows.dark, radius: 6, x: 4, y: 4)
+                .shadow(color: theme.shadows.light, radius: 6, x: -3, y: -3)
         )
         .padding(.horizontal)
         .transition(.move(edge: .top).combined(with: .opacity))
@@ -187,17 +187,17 @@ struct SpeedSortView: View {
             stats: [
                 (
                     icon: "flame.fill", title: "Total Score", value: "+\(viewModel.sessionScore)",
-                    color: .neuAccentOrange
+                    color: theme.accents.orange
                 ),
                 (
                     icon: "checkmark.circle.fill", title: "Correct",
                     value: "\(viewModel.correctCount)/\(viewModel.questions.count)",
-                    color: .neuAccentGreen
+                    color: theme.accents.green
                 ),
-                (icon: "percent", title: "Accuracy", value: "\(accuracy)%", color: .neuAccentBlue),
+                (icon: "percent", title: "Accuracy", value: "\(accuracy)%", color: theme.accents.blue),
                 (
                     icon: "bolt.fill", title: "Best Combo", value: "\(viewModel.maxCombo)x",
-                    color: .neuAccentPurple
+                    color: theme.accents.purple
                 ),
             ],
             onPlayAgain: {

@@ -12,7 +12,7 @@ struct AchievementToastView: View {
     let onDismiss: () -> Void
 
     @State private var isVisible = false
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     var rarity: AchievementRarity {
         result.rarity ?? .common
@@ -74,9 +74,9 @@ struct AchievementToastView: View {
                 .padding(theme.spacing.lg)
                 .background(
                     RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)
-                        .fill(Color.neuBackground)
-                        .shadow(color: .neuDarkShadow, radius: 8, x: 5, y: 5)
-                        .shadow(color: .neuLightShadow, radius: 8, x: -4, y: -4)
+                        .fill(theme.palette.background)
+                        .shadow(color: theme.shadows.dark, radius: 8, x: 5, y: 5)
+                        .shadow(color: theme.shadows.light, radius: 8, x: -4, y: -4)
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)

@@ -11,7 +11,7 @@ struct AchievementsListView: View {
     var showsNavigationTitle: Bool = true
     @StateObject private var service = AchievementService.shared
     @State private var selectedTab = 0 // 0: Official, 1: Community
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     var body: some View {
         VStack(spacing: 0) {
@@ -66,19 +66,12 @@ struct AchievementsListView: View {
     // MARK: - Empty State
 
     private var emptyStateView: some View {
-        VStack(spacing: 16) {
-            TrashIcon(systemName: selectedTab == 0 ? "trophy" : "person.3")
-                .font(.system(size: 50))
-                .foregroundColor(.neuSecondaryText)
-            Text("No Achievements Yet")
-                .font(.headline)
-                .foregroundColor(.neuText)
+        CompatibleContentUnavailableView {
+            Label("No Achievements Yet", systemImage: selectedTab == 0 ? "trophy" : "person.3")
+        } description: {
             Text(selectedTab == 0
-                 ? "Start scanning trash to earn\nyour first achievement!"
-                 : "Join communities and participate\nto earn community achievements")
-                .font(.subheadline)
-                .foregroundColor(.neuSecondaryText)
-                .multilineTextAlignment(.center)
+                 ? "Start scanning trash to earn your first achievement!"
+                 : "Join communities and participate to earn community achievements")
         }
     }
 
@@ -96,6 +89,7 @@ struct AchievementsListView: View {
 struct AchievementCard: View {
     let achievement: UserAchievement
     let onToggleEquip: () -> Void
+    private let theme = TrashTheme()
 
     var body: some View {
         HStack(spacing: 14) {
@@ -121,7 +115,7 @@ struct AchievementCard: View {
                 HStack(spacing: 6) {
                     Text(achievement.name)
                         .font(.headline)
-                        .foregroundColor(.neuText)
+                        .foregroundColor(theme.palette.textPrimary)
 
                     // 稀有度标签
                     Text(achievement.rarity.displayName)
@@ -136,7 +130,7 @@ struct AchievementCard: View {
                 if let desc = achievement.description {
                     Text(desc)
                         .font(.caption)
-                        .foregroundColor(.neuSecondaryText)
+                        .foregroundColor(theme.palette.textSecondary)
                         .lineLimit(2)
                 }
 
@@ -148,7 +142,7 @@ struct AchievementCard: View {
                             Text(communityName)
                                 .font(.caption2)
                         }
-                        .foregroundColor(.neuAccentBlue)
+                        .foregroundColor(theme.accents.blue)
                     }
 
                     HStack(spacing: 3) {
@@ -157,7 +151,7 @@ struct AchievementCard: View {
                         Text(achievement.grantedAt, style: .date)
                             .font(.caption2)
                     }
-                    .foregroundColor(.neuSecondaryText)
+                    .foregroundColor(theme.palette.textSecondary)
                 }
             }
 
@@ -186,14 +180,14 @@ struct AchievementCard: View {
                 } else {
                     Text("Equip")
                         .font(.caption2.bold())
-                        .foregroundColor(.neuAccentBlue)
+                        .foregroundColor(theme.accents.blue)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
                         .background(
                             RoundedRectangle(cornerRadius: 8)
-                                .fill(Color.neuBackground)
-                                .shadow(color: .neuDarkShadow, radius: 2, x: 1, y: 1)
-                                .shadow(color: .neuLightShadow, radius: 2, x: -1, y: -1)
+                                .fill(theme.palette.background)
+                                .shadow(color: theme.shadows.dark, radius: 2, x: 1, y: 1)
+                                .shadow(color: theme.shadows.light, radius: 2, x: -1, y: -1)
                         )
                 }
             }
@@ -201,9 +195,9 @@ struct AchievementCard: View {
         .padding(14)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color.neuBackground)
-                .shadow(color: .neuDarkShadow, radius: 6, x: 4, y: 4)
-                .shadow(color: .neuLightShadow, radius: 6, x: -3, y: -3)
+                .fill(theme.palette.background)
+                .shadow(color: theme.shadows.dark, radius: 6, x: 4, y: 4)
+                .shadow(color: theme.shadows.light, radius: 6, x: -3, y: -3)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)

@@ -10,23 +10,27 @@ struct EnhancedSwipeableCard: View {
     let result: TrashAnalysisResult
     @Binding var offset: CGSize
     let onSwipe: (SwipeDirection) -> Void
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     var body: some View {
         ZStack {
-            VStack(spacing: 12) {
+            VStack(spacing: 10) {
                 // Header: Item Name
                 HStack {
                     Text(result.itemName)
-                        .font(theme.typography.headline)
+                        .font(theme.typography.subheadline)
                         .foregroundColor(theme.palette.textPrimary)
                     Spacer()
                     Text("\(Int(result.confidence * 100))%")
                         .font(theme.typography.caption)
-                        .foregroundColor(result.color)
+                        .fontWeight(.bold)
+                        .foregroundColor(theme.palette.textPrimary)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
-                        .trashCard(cornerRadius: 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .fill(result.color.opacity(0.18))
+                        )
                 }
 
                 Divider().background(theme.palette.divider)
@@ -36,22 +40,20 @@ struct EnhancedSwipeableCard: View {
                     TrashIcon(systemName: categoryIcon)
                     Text(result.category)
                 }
-                .font(theme.typography.subheadline)
+                .font(theme.typography.caption)
                 .fontWeight(.bold)
-                .trashOnAccentForeground()
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(result.color)
+                .foregroundColor(theme.palette.textPrimary)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 6)
+                .background(result.color.opacity(0.2))
                 .clipShape(Capsule())
 
                 // Action Tip
                 Text(result.actionTip)
-                    .font(theme.typography.body)
+                    .font(theme.typography.caption)
                     .foregroundColor(theme.palette.textSecondary)
                     .multilineTextAlignment(.center)
-                    .padding(.top, 4)
-
-                Spacer(minLength: 0)
+                    .lineLimit(2)
 
                 // Swipe hints
                 HStack {
@@ -63,8 +65,8 @@ struct EnhancedSwipeableCard: View {
                 }
                 .font(.caption2.bold())
             }
-            .padding(24)
-            .trashCard(cornerRadius: 28)
+            .padding(16)
+            .trashCard(cornerRadius: 20)
         }
         .offset(x: offset.width, y: offset.height * 0.4)
         .rotationEffect(.degrees(Double(offset.width / 20)))
@@ -100,12 +102,12 @@ struct EnhancedSwipeableCard: View {
 // MARK: - Enhanced Feedback Form
 struct EnhancedFeedbackForm: View {
     @Binding var itemName: String
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 12) {
             Text("Help us improve")
-                .font(theme.typography.headline)
+                .font(theme.typography.subheadline)
                 .foregroundColor(theme.palette.textPrimary)
 
             Text("What was the item? Your correction helps the AI learn.")
@@ -118,8 +120,8 @@ struct EnhancedFeedbackForm: View {
                 textInputAutocapitalization: .never
             )
         }
-        .padding(24)
-        .trashCard(cornerRadius: 28)
+        .padding(16)
+        .trashCard(cornerRadius: 20)
     }
 }
 
@@ -127,7 +129,7 @@ struct EnhancedFeedbackForm: View {
 struct ErrorCard: View {
     let message: String
     let onRetry: () -> Void
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     var body: some View {
         VStack(spacing: 16) {
@@ -162,7 +164,7 @@ enum SwipeDirection {
 // MARK: - Scan Line Overlay
 struct ScanLineOverlay: View {
     @State private var scanPos: CGFloat = 0
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     var body: some View {
         GeometryReader { geo in

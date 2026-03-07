@@ -8,7 +8,7 @@ import SwiftUI
 struct ChangePasswordSheet: View {
     @ObservedObject var authVM: AuthViewModel
     @Binding var isPresented: Bool
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
     @State private var newPassword: String = ""
     @State private var confirmPassword: String = ""
     @State private var localError: String?

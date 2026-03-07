@@ -13,17 +13,18 @@ The app is a SwiftUI iOS client with a local CoreML classifier and Supabase back
 ### App shell
 
 - `Smart Sort/App/Smart_SortApp.swift`
-  - App entry, dependency wiring (`AuthViewModel`, `TrashViewModel`, `ThemeManager`)
+  - App entry, dependency wiring (`AuthViewModel`, `TrashViewModel`); theme applied once via `ThemeManager.shared`
 - `Smart Sort/App/ContentView.swift`
   - Root tab shell and custom bottom tab bar
 
 ### Theme abstraction layer
 
-- `Smart Sort/Theme/TrashTheme.swift` (protocol + semantic tokens)
-- `Smart Sort/Theme/ThemeComponents.swift` (cross-feature shared controls)
-- `Smart Sort/Theme/NeumorphicTheme.swift`
-- `Smart Sort/Theme/VibrantTheme.swift`
-- `Smart Sort/Theme/EcoSkeuomorphicTheme.swift`
+Single theme: **Eco Skeuomorphism** (no runtime switching).
+
+- `Smart Sort/Theme/TrashTheme.swift` — token struct + `@Environment(\.trashTheme)` key
+- `Smart Sort/Theme/ThemeManager.swift` — plain singleton; wires UIKit appearance proxies on launch
+- `Smart Sort/Theme/ThemeComponents.swift` — index file (splits into the files below)
+- `Smart Sort/Theme/TrashCorePrimitives.swift`, `TrashBottomTabBar.swift`, `TrashPageHeader.swift`, `TrashFormControls.swift`, `TrashSegmentedControl.swift`
 
 ### Feature modules
 

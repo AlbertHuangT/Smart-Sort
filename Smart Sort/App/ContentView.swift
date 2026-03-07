@@ -3,64 +3,63 @@ import Supabase
 import SwiftUI
 
 struct ContentView: View {
-    @State private var selectedTab = 0
+    @State private var selectedTab = Tab.verify
     @State private var showAccountSheet = false
     @ObservedObject private var arenaRouter = ArenaRouter.shared
     @EnvironmentObject var authVM: AuthViewModel
-    @Environment(\.trashTheme) private var theme
+
+    enum Tab: Hashable {
+        case verify
+        case arena
+        case leaderboard
+        case community
+    }
 
     var body: some View {
-        ZStack {
-            ThemeBackgroundView()
-                .ignoresSafeArea()
-
-            GeometryReader { proxy in
-                tabContent
-                    .frame(width: proxy.size.width, height: proxy.size.height, alignment: .top)
-                    .clipped()
-                    .environment(\.showAccountSheet, $showAccountSheet)
+        TabView(selection: $selectedTab) {
+            NavigationStack {
+                VerifyView()
             }
-        }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            TrashBottomTabBar(items: tabItems, selection: $selectedTab)
-                .tint(Color(uiColor: theme.appearance.tabBarSelectedTint))
+            .tabItem {
+                Label("Verify", systemImage: "camera")
+            }
+            .tag(Tab.verify)
+
+            ArenaHubView()
+                .tabItem {
+                    Label("Arena", systemImage: "flag.checkered")
+                }
+                .tag(Tab.arena)
+
+            NavigationStack {
+                LeaderboardView()
+            }
+            .tabItem {
+                Label("Leaderboard", systemImage: "chart.bar")
+            }
+            .tag(Tab.leaderboard)
+
+            NavigationStack {
+                CommunityView()
+            }
+            .tabItem {
+                Label("Community", systemImage: "person.3")
+            }
+            .tag(Tab.community)
         }
         .sheet(isPresented: $showAccountSheet) {
             AccountView()
                 .environmentObject(authVM)
                 .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
-                .presentationCornerRadius(32)
-                .presentationBackground(theme.appearance.sheetBackground)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .showAccountSheet)) { _ in
+            showAccountSheet = true
         }
         .onChange(of: arenaRouter.pendingChallengeId) { newValue in
             if newValue != nil {
-                selectedTab = 1  // Switch to Arena tab
+                selectedTab = .arena
             }
         }
-    }
-
-    private var tabItems: [TrashTabItem<Int>] {
-        [
-            TrashTabItem(value: 0, title: "Verify", icon: "camera.viewfinder"),
-            TrashTabItem(value: 1, title: "Arena", icon: "flame.fill"),
-            TrashTabItem(value: 2, title: "Leaderboard", icon: "chart.bar.fill"),
-            TrashTabItem(value: 3, title: "Community", icon: "person.3.fill"),
-        ]
-    }
-
-    private var tabContent: some View {
-        Group {
-            if selectedTab == 0 {
-                VerifyView()
-            } else if selectedTab == 1 {
-                ArenaHubView()
-            } else if selectedTab == 2 {
-                LeaderboardView(selectedTab: $selectedTab)
-            } else {
-                CommunityView()
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 }

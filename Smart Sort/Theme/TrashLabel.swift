@@ -7,7 +7,7 @@ struct TrashLabel<Title: View>: View {
     let iconColor: Color?
     @ViewBuilder let title: () -> Title
 
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     init(
         icon: String, spacing: CGFloat = 6, iconSize: CGFloat? = nil, iconColor: Color? = nil,
@@ -29,18 +29,7 @@ struct TrashLabel<Title: View>: View {
 
     @ViewBuilder
     private var iconView: some View {
-        if theme.visualStyle == .ecoPaper {
-            StampedIcon(systemName: icon, size: iconSize ?? 12, weight: .semibold, color: iconColor)
-        } else {
-            if let iconColor {
-                TrashIcon(systemName: icon)
-                    .font(.system(size: iconSize ?? 12, weight: .semibold))
-                    .foregroundColor(iconColor)
-            } else {
-                TrashIcon(systemName: icon)
-                    .font(.system(size: iconSize ?? 12, weight: .semibold))
-            }
-        }
+        StampedIcon(systemName: icon, size: iconSize ?? 12, weight: .semibold, color: iconColor)
     }
 }
 

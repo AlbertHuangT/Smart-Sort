@@ -5,7 +5,7 @@ Smart Sort 是一个 iOS 原生环保应用：用端侧 AI 识别垃圾类别，
 ## 核心能力
 
 - 端侧识别：MobileCLIP + CoreML，本地推理，离线可用
-- 主题化 UI：Neumorphic / Vibrant / Eco-Skeuomorphic
+- 主题化 UI：Eco Skeuomorphism（单主题，`TrashTheme`）
 - 社区与活动：创建、加入、报名、管理员审批与积分发放
 - Arena 对战：单人模式 + 1v1 Duel + Realtime 同步
 - 排行榜：好友榜 + 社区榜
@@ -25,15 +25,13 @@ Smart Sort/
 │   ├── Smart_SortApp.swift
 │   └── ContentView.swift
 ├── Theme/
-│   ├── TrashTheme.swift
+│   ├── TrashTheme.swift          (single theme: Eco Skeuomorphism)
+│   ├── ThemeManager.swift        (plain singleton, UIKit appearance wiring)
 │   ├── TrashCorePrimitives.swift
 │   ├── TrashSegmentedControl.swift
 │   ├── TrashBottomTabBar.swift
 │   ├── TrashPageHeader.swift
-│   ├── TrashFormControls.swift
-│   ├── NeumorphicTheme.swift
-│   ├── VibrantTheme.swift
-│   └── EcoSkeuomorphicTheme.swift
+│   └── TrashFormControls.swift
 ├── Views/
 │   ├── Verify/
 │   ├── Arena/

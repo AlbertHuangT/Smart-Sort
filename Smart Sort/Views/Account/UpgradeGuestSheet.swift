@@ -12,7 +12,7 @@ struct UpgradeGuestSheet: View {
     @Binding var confirmPassword: String
     @Binding var isPresented: Bool
     @State private var localError: String?
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     var body: some View {
         NavigationView {

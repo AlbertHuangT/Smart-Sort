@@ -10,7 +10,7 @@ import SwiftUI
 struct EditCommunityInfoView: View {
     let community: Community
     @Environment(\.dismiss) var dismiss
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     @State private var description: String
     @State private var welcomeMessage: String

@@ -11,7 +11,7 @@ struct StatCard: View {
     let value: String
     let icon: String
     let color: Color
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     var body: some View {
         VStack(spacing: 12) {
@@ -48,7 +48,7 @@ struct SettingsRow: View {
     var subtitle: String? = nil
     var showChevron: Bool = true
     let action: () -> Void
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     var body: some View {
         TrashTapArea(action: action) {
@@ -104,7 +104,7 @@ struct SectionHeader: View {
 // MARK: - Info Card
 struct InfoCard: View {
     let content: String
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     var body: some View {
         HStack(spacing: 12) {

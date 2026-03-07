@@ -42,7 +42,7 @@ class SpeedSortViewModel: ObservableObject {
     @Published var isSubmitting = false
 
     @Published var showError = false
-    @Published var errorMessage = ""
+    @Published var errorMessage: String?
 
     // Time bonus tracking
     @Published var lastTimeBonus = 0
@@ -63,7 +63,7 @@ class SpeedSortViewModel: ObservableObject {
 
     func fetchQuestions() async {
         isLoading = true
-        errorMessage = ""
+        errorMessage = nil
         showError = false
         resetSession()
 

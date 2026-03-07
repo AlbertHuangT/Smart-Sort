@@ -11,15 +11,10 @@ import Combine
 
 @MainActor
 class CurrentUserViewModel: ObservableObject {
-    @Published var myProfile: UserProfile?
+    @Published var myProfile: UserProfileDTO?
 
     private var lastFetchTime: Date?
     private let cacheValidDuration: TimeInterval = 30
-
-    struct UserProfile: Decodable {
-        let username: String?
-        let credits: Int
-    }
 
     func fetchMyScore(forceRefresh: Bool = false) async {
         if !forceRefresh,
@@ -32,7 +27,7 @@ class CurrentUserViewModel: ObservableObject {
         guard let uid = SupabaseManager.shared.client.auth.currentUser?.id else { return }
 
         do {
-            let profile: UserProfile = try await SupabaseManager.shared.client
+            let profile: UserProfileDTO = try await SupabaseManager.shared.client
                 .from("profiles")
                 .select("username, credits")
                 .eq("id", value: uid)

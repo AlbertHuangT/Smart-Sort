@@ -22,7 +22,7 @@ struct BadgeAchievementsHubView: View {
     }
 
     @State private var selectedSegment: Segment = .badges
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     var body: some View {
         VStack(spacing: 16) {

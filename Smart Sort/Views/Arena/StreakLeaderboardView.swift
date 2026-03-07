@@ -12,11 +12,12 @@ import Combine
 struct StreakLeaderboardView: View {
     @StateObject private var viewModel = StreakLeaderboardViewModel()
     @Environment(\.dismiss) private var dismiss
+    private let theme = TrashTheme()
 
     var body: some View {
         NavigationStack {
             ZStack {
-                Color.neuBackground
+                theme.palette.background
                     .ignoresSafeArea()
 
                 if viewModel.isLoading {
@@ -49,16 +50,10 @@ struct StreakLeaderboardView: View {
     }
 
     private var emptyState: some View {
-        VStack(spacing: 16) {
-            TrashIcon(systemName: "chart.bar.xaxis")
-                .font(.system(size: 50))
-                .foregroundColor(.neuSecondaryText)
-            Text("No streak records yet")
-                .font(.headline)
-                .foregroundColor(.neuText)
+        CompatibleContentUnavailableView {
+            Label("No streak records yet", systemImage: "chart.bar.xaxis")
+        } description: {
             Text("Be the first to set a record!")
-                .font(.subheadline)
-                .foregroundColor(.neuSecondaryText)
         }
     }
 }
@@ -68,13 +63,14 @@ struct StreakLeaderboardView: View {
 struct StreakLeaderboardRow: View {
     let rank: Int
     let entry: StreakLeaderboardEntry
+    private let theme = TrashTheme()
 
     var rankColor: Color {
         switch rank {
         case 1: return .yellow
         case 2: return .gray
         case 3: return .orange
-        default: return .neuSecondaryText
+        default: return theme.palette.textSecondary
         }
     }
 
@@ -92,7 +88,7 @@ struct StreakLeaderboardRow: View {
                 } else {
                     Text("\(rank)")
                         .font(.subheadline.bold())
-                        .foregroundColor(.neuSecondaryText)
+                        .foregroundColor(theme.palette.textSecondary)
                         .frame(width: 36, height: 36)
                 }
             }
@@ -100,10 +96,10 @@ struct StreakLeaderboardRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(entry.displayName)
                     .font(.subheadline.bold())
-                    .foregroundColor(.neuText)
+                    .foregroundColor(theme.palette.textPrimary)
                 Text("\(entry.totalGames) games played")
                     .font(.caption)
-                    .foregroundColor(.neuSecondaryText)
+                    .foregroundColor(theme.palette.textSecondary)
             }
 
             Spacer()
@@ -111,18 +107,18 @@ struct StreakLeaderboardRow: View {
             VStack(alignment: .trailing, spacing: 2) {
                 Text("\(entry.bestStreak)")
                     .font(.title3.bold())
-                    .foregroundColor(.neuAccentPurple)
+                    .foregroundColor(theme.accents.purple)
                 Text("best streak")
                     .font(.caption2)
-                    .foregroundColor(.neuSecondaryText)
+                    .foregroundColor(theme.palette.textSecondary)
             }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .background(Color.neuBackground)
+        .background(theme.palette.background)
         .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: .neuDarkShadow, radius: 8, x: 5, y: 5)
-        .shadow(color: .neuLightShadow, radius: 8, x: -4, y: -4)
+        .shadow(color: theme.shadows.dark, radius: 8, x: 5, y: 5)
+        .shadow(color: theme.shadows.light, radius: 8, x: -4, y: -4)
     }
 }
 

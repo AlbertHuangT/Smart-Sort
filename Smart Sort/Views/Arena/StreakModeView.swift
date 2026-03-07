@@ -11,7 +11,7 @@ struct StreakModeView: View {
     @StateObject private var viewModel = StreakModeViewModel()
     @EnvironmentObject var authViewModel: AuthViewModel
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
     @State private var pulseAnimation = false
     // showAccountSheet managed by ContentView via environment
     @State private var showLeaderboard = false
@@ -20,16 +20,10 @@ struct StreakModeView: View {
 
     var body: some View {
         ZStack {
-            ThemeBackground()
+            ThemeBackgroundView()
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                ArenaHeader(
-                    title: "Streak Mode",
-                    showBackButton: true,
-                    onBack: { dismiss() }
-                )
-
                 if viewModel.sessionCompleted {
                     streakSummary
                 } else {
@@ -39,6 +33,13 @@ struct StreakModeView: View {
         }
         .sheet(isPresented: $showLeaderboard) {
             StreakLeaderboardView()
+        }
+        .navigationTitle("Streak Mode")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                AccountButton()
+            }
         }
         .task {
             pulseAnimation = true
@@ -59,7 +60,7 @@ struct StreakModeView: View {
                     Text("Streak: \(viewModel.streakCount)")
                         .font(.subheadline.bold())
                 }
-                .foregroundColor(.neuAccentPurple)
+                .foregroundColor(theme.accents.purple)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .neumorphicConcave(cornerRadius: 20)
@@ -71,7 +72,7 @@ struct StreakModeView: View {
                         .fontWeight(.black)
                 }
                 .font(.subheadline)
-                .foregroundColor(.neuAccentOrange)
+                .foregroundColor(theme.accents.orange)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .neumorphicConcave(cornerRadius: 20)
@@ -128,9 +129,9 @@ struct StreakModeView: View {
                         )
                     Text("No more questions!")
                         .font(.title2.bold())
-                        .foregroundColor(.neuText)
+                        .foregroundColor(theme.palette.textPrimary)
                     Text("Incredible streak of \(viewModel.streakCount)!")
-                        .foregroundColor(.neuSecondaryText)
+                        .foregroundColor(theme.palette.textSecondary)
                 }
             }
         }
@@ -142,18 +143,18 @@ struct StreakModeView: View {
         HStack(spacing: 12) {
             TrashIcon(systemName: "exclamationmark.triangle.fill")
                 .foregroundColor(theme.semanticWarning)
-            Text(viewModel.errorMessage)
+            Text(viewModel.errorMessage ?? "")
                 .font(.subheadline)
-                .foregroundColor(.neuText)
+                .foregroundColor(theme.palette.textPrimary)
             Spacer()
             TrashIconButton(icon: "xmark", action: { viewModel.showError = false })
         }
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color.neuBackground)
-                .shadow(color: .neuDarkShadow, radius: 6, x: 4, y: 4)
-                .shadow(color: .neuLightShadow, radius: 6, x: -3, y: -3)
+                .fill(theme.palette.background)
+                .shadow(color: theme.shadows.dark, radius: 6, x: 4, y: 4)
+                .shadow(color: theme.shadows.light, radius: 6, x: -3, y: -3)
         )
         .padding(.horizontal)
         .transition(.move(edge: .top).combined(with: .opacity))
@@ -169,11 +170,11 @@ struct StreakModeView: View {
             stats: [
                 (
                     icon: "arrow.up.right", title: "Streak", value: "\(viewModel.streakCount)",
-                    color: .neuAccentPurple
+                    color: theme.accents.purple
                 ),
                 (
                     icon: "flame.fill", title: "Points Earned", value: "+\(viewModel.sessionScore)",
-                    color: .neuAccentOrange
+                    color: theme.accents.orange
                 ),
             ],
             onPlayAgain: {

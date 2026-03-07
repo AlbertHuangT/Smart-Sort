@@ -2,19 +2,6 @@ import SwiftUI
 import UIKit
 
 enum ThemeIconResolver {
-    static let vibrantMap: [String: String] = [
-        "camera.viewfinder": "camera.aperture",
-        "flame.fill": "bolt.fill",
-        "chart.bar.fill": "chart.bar.xaxis",
-        "chart.bar.xaxis": "chart.xyaxis.line",
-        "person.3.fill": "person.2.fill",
-        "calendar.badge.clock": "calendar.circle.fill",
-        "building.2.fill": "building.columns.fill",
-        "building.2.crop.circle": "building.columns.circle.fill",
-        "location.fill": "location.circle.fill",
-        "location.slash.fill": "location.slash.circle.fill",
-    ]
-
     static let ecoMap: [String: String] = [
         "camera.viewfinder": "camera",
         "flame.fill": "leaf.fill",
@@ -37,21 +24,14 @@ enum ThemeIconResolver {
         "gift.fill": "gift",
     ]
 
-    static func resolve(systemName: String, style: VisualStyle) -> String {
-        switch style {
-        case .neumorphic:
-            return systemName
-        case .vibrantGlass:
-            return vibrantMap[systemName] ?? systemName
-        case .ecoPaper:
-            if let mapped = ecoMap[systemName] {
-                return mapped
-            }
-            if let plain = inferredPlainVariant(for: systemName) {
-                return plain
-            }
-            return systemName
+    static func resolve(systemName: String) -> String {
+        if let mapped = ecoMap[systemName] {
+            return mapped
         }
+        if let plain = inferredPlainVariant(for: systemName) {
+            return plain
+        }
+        return systemName
     }
 
     private static func inferredPlainVariant(for systemName: String) -> String? {
@@ -64,29 +44,10 @@ enum ThemeIconResolver {
 
 struct TrashIcon: View {
     let systemName: String
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     var body: some View {
-        let resolvedName = ThemeIconResolver.resolve(
-            systemName: systemName, style: theme.visualStyle)
-        let symbol = Image(systemName: resolvedName)
-
-        symbol
-            .overlay {
-                if theme.visualStyle == .ecoPaper {
-                    symbol
-                        .foregroundColor(Color.white.opacity(0.26))
-                        .offset(x: -0.8, y: -0.8)
-                        .blendMode(.screen)
-                }
-            }
-            .overlay {
-                if theme.visualStyle == .ecoPaper {
-                    symbol
-                        .foregroundColor(Color.black.opacity(0.30))
-                        .offset(x: 1.2, y: 1.2)
-                        .blendMode(.multiply)
-                }
-            }
+        let resolvedName = ThemeIconResolver.resolve(systemName: systemName)
+        Image(systemName: resolvedName)
     }
 }

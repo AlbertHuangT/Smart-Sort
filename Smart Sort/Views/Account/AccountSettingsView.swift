@@ -8,12 +8,12 @@ import Auth
 
 struct AccountSettingsView: View {
     @EnvironmentObject var authVM: AuthViewModel
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
         ZStack {
-            ThemeBackground()
+            ThemeBackgroundView()
             
             ScrollView {
                 VStack(spacing: 24) {

@@ -11,13 +11,10 @@ import SwiftUI
 @main
 struct Smart_SortApp: App {
     @StateObject private var authVM = AuthViewModel()
-
-    // 🔥 新增：在这里初始化真实的 ViewModel，连接 RealClassifierService
     @StateObject private var trashVM = TrashViewModel(classifier: RealClassifierService.shared)
-    @StateObject private var themeManager: ThemeManager
 
     init() {
-        _themeManager = StateObject(wrappedValue: ThemeManager.shared)
+        TrashTheme().configureAppearance()
     }
 
     var body: some Scene {
@@ -44,10 +41,6 @@ struct Smart_SortApp: App {
                 }
             }
             .environmentObject(authVM)
-            .environmentObject(themeManager)
-            .trashTheme(themeManager.currentTheme)
-            .themeOption(themeManager.currentOption)
-            .id(themeManager.themeIdentity)
             // Observe URL
             .onOpenURL { url in
                 print("🔗 Received Deep Link: \(url)")
@@ -66,6 +59,7 @@ struct Smart_SortApp: App {
             .onChange(of: authVM.session?.user.id) { _ in
                 trashVM.reset()  // Clear Verify state when session changes (logout/login)
             }
+            .preferredColorScheme(.light)
         }
     }
 }
@@ -73,7 +67,7 @@ struct Smart_SortApp: App {
 // --- 3. Extracted Stylish Overlay Component ---
 struct DeepLinkOverlay: View {
     let status: AuthDeepLinkStatus
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     var body: some View {
         VStack {

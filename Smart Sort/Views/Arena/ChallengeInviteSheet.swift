@@ -11,7 +11,7 @@ import SwiftUI
 
 struct ChallengeInviteSheet: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
     @StateObject private var viewModel = ChallengeInviteViewModel()
     let onChallenge: (UUID) -> Void
 
@@ -22,7 +22,7 @@ struct ChallengeInviteSheet: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                ThemeBackground()
+                ThemeBackgroundView()
                     .ignoresSafeArea()
 
                 if viewModel.isLoading {
@@ -61,13 +61,13 @@ struct ChallengeInviteSheet: View {
         VStack(spacing: 16) {
             TrashIcon(systemName: "person.crop.circle.badge.questionmark")
                 .font(.system(size: 50))
-                .foregroundColor(.neuSecondaryText)
+                .foregroundColor(theme.palette.textSecondary)
             Text("No members found")
                 .font(.headline)
-                .foregroundColor(.neuText)
+                .foregroundColor(theme.palette.textPrimary)
             Text("Join a community to find opponents!")
                 .font(.subheadline)
-                .foregroundColor(.neuSecondaryText)
+                .foregroundColor(theme.palette.textSecondary)
         }
     }
 }
@@ -77,23 +77,23 @@ struct ChallengeInviteSheet: View {
 struct InviteMemberRow: View {
     let member: InvitableMember
     let onChallenge: () -> Void
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     var body: some View {
         HStack(spacing: 14) {
             Circle()
-                .fill(Color.neuAccentBlue.opacity(0.2))
+                .fill(theme.accents.blue.opacity(0.2))
                 .frame(width: 44, height: 44)
                 .overlay(
                     Text(String(member.displayName.prefix(1)).uppercased())
                         .font(.headline.bold())
-                        .foregroundColor(.neuAccentBlue)
+                        .foregroundColor(theme.accents.blue)
                 )
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(member.displayName)
                     .font(.subheadline.bold())
-                    .foregroundColor(.neuText)
+                    .foregroundColor(theme.palette.textPrimary)
             }
 
             Spacer()
@@ -111,10 +111,10 @@ struct InviteMemberRow: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .background(Color.neuBackground)
+        .background(theme.palette.background)
         .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: .neuDarkShadow, radius: 8, x: 5, y: 5)
-        .shadow(color: .neuLightShadow, radius: 8, x: -4, y: -4)
+        .shadow(color: theme.shadows.dark, radius: 8, x: 5, y: 5)
+        .shadow(color: theme.shadows.light, radius: 8, x: -4, y: -4)
     }
 }
 

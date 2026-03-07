@@ -11,7 +11,7 @@ struct CommunitySelectionSheet: View {
     @ObservedObject private var userSettings = UserSettings.shared
     @State private var searchText = ""
     @State private var selectedTab = 0
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     var body: some View {
         NavigationView {
@@ -33,7 +33,7 @@ struct CommunitySelectionSheet: View {
                     communitiesView
                 }
             }
-            .background(ThemeBackground())
+            .background(ThemeBackgroundView())
             .navigationTitle("Location & Communities")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -202,7 +202,7 @@ struct CommunitySelectionSheet: View {
 struct LocationRowView: View {
     let location: UserLocation
     let onSelect: () -> Void
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     var body: some View {
         TrashTapArea(action: onSelect) {
@@ -247,7 +247,7 @@ struct CommunityCardView: View {
     @State private var showDetail = false
     @State private var showApprovalAlert = false
     @State private var showAdminDashboard = false
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     var isMember: Bool {
         userSettings.isMember(of: community)

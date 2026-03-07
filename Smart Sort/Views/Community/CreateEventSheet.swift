@@ -9,7 +9,7 @@ import SwiftUI
 
 struct CreateEventSheet: View {
     @Binding var isPresented: Bool
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
     @State private var title = ""
     @State private var description = ""
     @State private var eventDate = Date()

@@ -83,10 +83,11 @@ class TrashHistoryViewModel: ObservableObject {
 // MARK: - Main View
 struct TrashHistoryView: View {
     @StateObject private var viewModel = TrashHistoryViewModel()
+    private let theme = TrashTheme()
     
     var body: some View {
         ZStack {
-            Color.neuBackground.ignoresSafeArea()
+            theme.palette.background.ignoresSafeArea()
             
             if viewModel.isLoading && viewModel.historyItems.isEmpty {
                 ProgressView("Loading history...")
@@ -116,25 +117,10 @@ struct TrashHistoryView: View {
     
     // 空状态视图
     var emptyState: some View {
-        VStack(spacing: 20) {
-            ZStack {
-                Circle()
-                    .fill(Color.neuBackground)
-                    .frame(width: 120, height: 120)
-                    .shadow(color: .neuDarkShadow, radius: 10, x: 5, y: 5)
-                    .shadow(color: .neuLightShadow, radius: 10, x: -5, y: -5)
-                
-                TrashIcon(systemName: "clock.arrow.circlepath")
-                    .font(.system(size: 50))
-                    .foregroundColor(.neuSecondaryText)
-            }
-            
-            Text("No History Yet")
-                .font(.title3).bold()
-                .foregroundColor(.neuText)
+        CompatibleContentUnavailableView {
+            Label("No History Yet", systemImage: "clock.arrow.circlepath")
+        } description: {
             Text("Items you identify and correct will appear here.")
-                .font(.caption)
-                .foregroundColor(.neuSecondaryText)
         }
     }
 }
@@ -142,6 +128,7 @@ struct TrashHistoryView: View {
 // MARK: - Subviews
 struct HistoryRow: View {
     let item: HistoryItem
+    private let theme = TrashTheme()
     
     var body: some View {
         // Neumorphic Card
@@ -150,7 +137,7 @@ struct HistoryRow: View {
             AsyncImage(url: item.publicImageUrl) { phase in
                 switch phase {
                 case .empty:
-                    Rectangle().fill(Color.neuBackground)
+                    Rectangle().fill(theme.palette.background)
                         .overlay(ProgressView())
                 case .success(let image):
                     image.resizable().scaledToFill()
@@ -164,11 +151,10 @@ struct HistoryRow: View {
             .frame(width: 80, height: 80)
             .cornerRadius(12)
             .clipped()
-            // Optional: Inner shadow frame for image
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.neuBackground, lineWidth: 2)
-                    .shadow(color: .neuDarkShadow, radius: 3, x: 2, y: 2)
+                    .stroke(theme.palette.background, lineWidth: 2)
+                    .shadow(color: theme.shadows.dark, radius: 3, x: 2, y: 2)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
             )
             
@@ -177,12 +163,12 @@ struct HistoryRow: View {
                 HStack {
                     Text(item.predictedLabel.capitalized)
                         .font(.headline)
-                        .foregroundColor(.neuText)
+                        .foregroundColor(theme.palette.textPrimary)
                         .lineLimit(1)
                     Spacer()
                     Text(item.createdAt.formatted(.dateTime.month().day()))
                         .font(.caption2)
-                        .foregroundColor(.neuSecondaryText)
+                        .foregroundColor(theme.palette.textSecondary)
                 }
                 
                 // 显示用户的修正行为
@@ -190,26 +176,26 @@ struct HistoryRow: View {
                     HStack(spacing: 4) {
                         Text(item.predictedCategory)
                             .strikethrough()
-                            .foregroundColor(.red.opacity(0.7))
+                            .foregroundColor(theme.semanticDanger.opacity(0.7))
                         TrashIcon(systemName: "arrow.right")
                             .font(.caption2)
-                            .foregroundColor(.neuSecondaryText)
+                            .foregroundColor(theme.palette.textSecondary)
                         Text(item.userCorrection)
                             .fontWeight(.semibold)
-                            .foregroundColor(.green)
+                            .foregroundColor(theme.semanticSuccess)
                     }
                     .font(.caption)
                 } else {
                     Text(item.predictedCategory)
                         .font(.caption)
-                        .foregroundColor(.neuSecondaryText)
+                        .foregroundColor(theme.palette.textSecondary)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
                         .background(
                             Capsule()
-                                .fill(Color.neuBackground)
-                                .shadow(color: .neuLightShadow, radius: 2, x: -1, y: -1)
-                                .shadow(color: .neuDarkShadow, radius: 2, x: 1, y: 1)
+                                .fill(theme.palette.background)
+                                .shadow(color: theme.shadows.light, radius: 2, x: -1, y: -1)
+                                .shadow(color: theme.shadows.dark, radius: 2, x: 1, y: 1)
                         )
                 }
                 
@@ -217,7 +203,7 @@ struct HistoryRow: View {
                     Text("\"\(comment)\"")
                         .font(.caption2)
                         .italic()
-                        .foregroundColor(.neuSecondaryText)
+                        .foregroundColor(theme.palette.textSecondary)
                         .lineLimit(1)
                 }
             }
@@ -225,10 +211,10 @@ struct HistoryRow: View {
             Spacer()
         }
         .padding(16)
-        .background(Color.neuBackground)
+        .background(theme.palette.background)
         .cornerRadius(20)
-        .shadow(color: .neuDarkShadow, radius: 8, x: 5, y: 5)
-        .shadow(color: .neuLightShadow, radius: 8, x: -5, y: -5)
+        .shadow(color: theme.shadows.dark, radius: 8, x: 5, y: 5)
+        .shadow(color: theme.shadows.light, radius: 8, x: -5, y: -5)
         .padding(.horizontal, 16)
     }
 }

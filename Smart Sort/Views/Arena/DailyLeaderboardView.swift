@@ -12,11 +12,12 @@ import SwiftUI
 struct DailyLeaderboardView: View {
     @StateObject private var viewModel = DailyLeaderboardViewModel()
     @Environment(\.dismiss) private var dismiss
+    private let theme = TrashTheme()
 
     var body: some View {
         NavigationStack {
             ZStack {
-                Color.neuBackground
+                theme.palette.background
                     .ignoresSafeArea()
 
                 if viewModel.isLoading {
@@ -49,16 +50,10 @@ struct DailyLeaderboardView: View {
     }
 
     private var emptyState: some View {
-        VStack(spacing: 16) {
-            TrashIcon(systemName: "calendar.badge.clock")
-                .font(.system(size: 50))
-                .foregroundColor(.neuSecondaryText)
-            Text("No results yet")
-                .font(.headline)
-                .foregroundColor(.neuText)
+        CompatibleContentUnavailableView {
+            Label("No results yet", systemImage: "calendar.badge.clock")
+        } description: {
             Text("Be the first to complete today's challenge!")
-                .font(.subheadline)
-                .foregroundColor(.neuSecondaryText)
         }
     }
 }
@@ -67,13 +62,14 @@ struct DailyLeaderboardView: View {
 
 struct DailyLeaderboardRow: View {
     let entry: DailyLeaderboardEntry
+    private let theme = TrashTheme()
 
     var rankColor: Color {
         switch entry.rank {
         case 1: return .yellow
         case 2: return .gray
         case 3: return .orange
-        default: return .neuSecondaryText
+        default: return theme.palette.textSecondary
         }
     }
 
@@ -101,7 +97,7 @@ struct DailyLeaderboardRow: View {
                 } else {
                     Text("\(entry.rank)")
                         .font(.subheadline.bold())
-                        .foregroundColor(.neuSecondaryText)
+                        .foregroundColor(theme.palette.textSecondary)
                         .frame(width: 36, height: 36)
                 }
             }
@@ -109,14 +105,14 @@ struct DailyLeaderboardRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(entry.displayName)
                     .font(.subheadline.bold())
-                    .foregroundColor(.neuText)
+                    .foregroundColor(theme.palette.textPrimary)
 
                 HStack(spacing: 8) {
                     TrashLabel("\(entry.correctCount)/10", icon: "checkmark.circle")
                     TrashLabel(formattedTime, icon: "timer")
                 }
                 .font(.caption)
-                .foregroundColor(.neuSecondaryText)
+                .foregroundColor(theme.palette.textSecondary)
             }
 
             Spacer()
@@ -124,18 +120,18 @@ struct DailyLeaderboardRow: View {
             VStack(alignment: .trailing, spacing: 2) {
                 Text("\(entry.score)")
                     .font(.title3.bold())
-                    .foregroundColor(.neuAccentGreen)
+                    .foregroundColor(theme.accents.green)
                 Text("pts")
                     .font(.caption2)
-                    .foregroundColor(.neuSecondaryText)
+                    .foregroundColor(theme.palette.textSecondary)
             }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .background(Color.neuBackground)
+        .background(theme.palette.background)
         .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: .neuDarkShadow, radius: 8, x: 5, y: 5)
-        .shadow(color: .neuLightShadow, radius: 8, x: -4, y: -4)
+        .shadow(color: theme.shadows.dark, radius: 8, x: 5, y: 5)
+        .shadow(color: theme.shadows.light, radius: 8, x: -4, y: -4)
     }
 }
 

@@ -16,7 +16,7 @@ struct EnhancedEventCard: View {
     let onTap: () -> Void
 
     @State private var imageURL: URL?  // For future image loading
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     private var dateFormatter: DateFormatter {
         let formatter = DateFormatter()
@@ -45,33 +45,27 @@ struct EnhancedEventCard: View {
 
     var body: some View {
         TrashTapArea(action: onTap) {
-            Group {
-                if theme.visualStyle == .ecoPaper {
-                    ecoEventCard
-                } else {
-                    legacyEventCard
-                }
-            }
+            ecoEventCard
         }
     }
 
     private var legacyEventCard: some View {
         VStack(alignment: .leading, spacing: 0) {
             ZStack(alignment: .topLeading) {
-                Color.neuBackground
+                theme.palette.background
                     .frame(height: 140)
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)
-                            .stroke(Color.neuBackground, lineWidth: 3)
-                            .shadow(color: .neuDarkShadow, radius: 4, x: 3, y: 3)
+                            .stroke(theme.palette.background, lineWidth: 3)
+                            .shadow(color: theme.shadows.dark, radius: 4, x: 3, y: 3)
                             .clipShape(RoundedRectangle(cornerRadius: 16))
-                            .shadow(color: .neuLightShadow, radius: 4, x: -3, y: -3)
+                            .shadow(color: theme.shadows.light, radius: 4, x: -3, y: -3)
                             .clipShape(RoundedRectangle(cornerRadius: 16))
                     )
                     .overlay(
                         TrashIcon(systemName: event.imageSystemName)
                             .font(.system(size: 60))
-                            .foregroundColor(.neuSecondaryText.opacity(0.3))
+                            .foregroundColor(theme.palette.textSecondary.opacity(0.3))
                     )
 
                 HStack {
@@ -80,10 +74,10 @@ struct EnhancedEventCard: View {
                         .foregroundColor(event.category.color)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
-                        .background(Color.neuBackground)
+                        .background(theme.palette.background)
                         .cornerRadius(8)
-                        .shadow(color: .neuDarkShadow, radius: 2, x: 1, y: 1)
-                        .shadow(color: .neuLightShadow, radius: 2, x: -1, y: -1)
+                        .shadow(color: theme.shadows.dark, radius: 2, x: 1, y: 1)
+                        .shadow(color: theme.shadows.light, radius: 2, x: -1, y: -1)
 
                     Spacer()
 
@@ -116,14 +110,14 @@ struct EnhancedEventCard: View {
                     Text(event.title)
                         .font(.title3.bold())
                         .lineLimit(2)
-                        .foregroundColor(.neuText)
+                        .foregroundColor(theme.palette.textPrimary)
 
                     Spacer()
 
                     if !distanceText.isEmpty {
                         TrashLabel(distanceText, icon: "location.fill")
                             .font(.caption)
-                            .foregroundColor(.neuSecondaryText)
+                            .foregroundColor(theme.palette.textSecondary)
                     }
                 }
 
@@ -134,18 +128,18 @@ struct EnhancedEventCard: View {
                         .lineLimit(1)
                 }
                 .font(.subheadline)
-                .foregroundColor(.neuSecondaryText)
+                .foregroundColor(theme.palette.textSecondary)
 
-                Color.neuDivider.frame(height: 1)
+                theme.palette.divider.frame(height: 1)
                     .padding(.vertical, 4)
 
                 HStack {
                     HStack(spacing: 6) {
                         TrashIcon(systemName: "person.circle.fill")
-                            .foregroundColor(.neuSecondaryText)
+                            .foregroundColor(theme.palette.textSecondary)
                         Text(event.organizer)
                             .font(.caption)
-                            .foregroundColor(.neuSecondaryText)
+                            .foregroundColor(theme.palette.textSecondary)
                     }
 
                     Spacer()
@@ -156,25 +150,25 @@ struct EnhancedEventCard: View {
                         Text("\(event.participantCount)/\(event.maxParticipants)")
                             .font(.caption.bold())
                     }
-                    .foregroundColor(isFull ? .red : .neuAccentBlue)
+                    .foregroundColor(isFull ? theme.semanticDanger : theme.accents.blue)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
                     .neumorphicConcave(cornerRadius: 6)
 
                     if event.isRegistered {
                         TrashIcon(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.neuAccentGreen)
+                            .foregroundColor(theme.accents.green)
                             .font(.title3)
                             .padding(.leading, 8)
                     }
                 }
             }
             .padding(16)
-            .background(Color.neuBackground)
+            .background(theme.palette.background)
         }
         .cornerRadius(16)
-        .shadow(color: .neuDarkShadow, radius: 8, x: 5, y: 5)
-        .shadow(color: .neuLightShadow, radius: 8, x: -4, y: -4)
+        .shadow(color: theme.shadows.dark, radius: 8, x: 5, y: 5)
+        .shadow(color: theme.shadows.light, radius: 8, x: -4, y: -4)
     }
 
     private var ecoEventCard: some View {
@@ -193,7 +187,7 @@ struct EnhancedEventCard: View {
                         Text(event.category.rawValue.uppercased())
                             .font(theme.typography.caption)
                             .fontWeight(.bold)
-                            .foregroundColor(event.category.color)
+                            .foregroundColor(theme.palette.textSecondary)
                     }
                 }
 
@@ -278,25 +272,14 @@ struct EnhancedEventCard: View {
             .padding(.bottom, 14)
         }
         .background {
-            ZStack {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(theme.palette.divider.opacity(0.58))
-                    .offset(x: 0, y: 3)
-
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(theme.palette.card)
-                    .overlay(
-                        PaperTextureView(baseColor: theme.palette.card)
-                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                            .opacity(0.38)
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .stroke(theme.palette.divider.opacity(0.88), lineWidth: 1)
-                    )
-            }
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(theme.palette.card)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(theme.palette.divider, lineWidth: 1)
+                )
         }
-        .shadow(color: theme.shadows.dark.opacity(0.42), radius: 8, x: 0, y: 4)
+        .shadow(color: theme.shadows.dark.opacity(0.3), radius: 4, x: 0, y: 2)
     }
 
     private var ecoJoinTag: some View {

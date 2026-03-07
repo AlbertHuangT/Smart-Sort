@@ -20,7 +20,7 @@ struct GrantCreditsView: View {
     @State private var isProcessing = false
     @State private var showSuccessAlert = false
     @State private var grantedCount = 0
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     init(event: CommunityEvent) {
         self.event = event

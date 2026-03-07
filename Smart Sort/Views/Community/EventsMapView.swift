@@ -12,7 +12,7 @@ struct EventsMapView: View {
     let events: [CommunityEvent]
     @ObservedObject var userSettings: UserSettings
     let onEventSelected: (CommunityEvent) -> Void
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     @State private var region: MKCoordinateRegion
 
@@ -68,7 +68,7 @@ struct EventsMapView: View {
                         }) {
                             TrashIcon(systemName: "location.fill")
                                 .padding(10)
-                                .background(Color(.systemBackground))
+                                .background(theme.surfaceBackground)
                                 .clipShape(Circle())
                                 .shadow(radius: 2)
                         }

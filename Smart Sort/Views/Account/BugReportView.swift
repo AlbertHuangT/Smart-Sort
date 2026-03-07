@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct BugReportView: View {
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
     @Environment(\.dismiss) private var dismiss
 
     @State private var title = ""
@@ -21,7 +21,7 @@ struct BugReportView: View {
 
     var body: some View {
         ZStack {
-            ThemeBackground()
+            ThemeBackgroundView()
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {

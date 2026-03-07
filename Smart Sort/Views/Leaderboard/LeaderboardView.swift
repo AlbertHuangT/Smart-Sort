@@ -16,8 +16,7 @@ struct LeaderboardView: View {
     @StateObject private var friendService = FriendService()
     @StateObject private var currentUserVM = CurrentUserViewModel()
     @EnvironmentObject var authVM: AuthViewModel
-    @Environment(\.trashTheme) private var theme
-    @Binding var selectedTab: Int
+    private let theme = TrashTheme()
     @State private var selectedType: LeaderboardType = .friends
 
     // Community leaderboard state
@@ -28,18 +27,12 @@ struct LeaderboardView: View {
 
     var body: some View {
         ZStack {
-            ThemeBackground()
+            ThemeBackgroundView()
 
             VStack(spacing: 0) {
-                TrashPageHeader(title: "Leaderboard") {
-                    AccountButton()
-                }
-
-                // 🎨 Segmented Picker for leaderboard type
                 leaderboardTypePicker
 
                 ZStack(alignment: .bottom) {
-                    // 内部内容
                     if authVM.isAnonymous {
                         anonymousRestrictionView
                     } else {
@@ -51,17 +44,16 @@ struct LeaderboardView: View {
                         }
                     }
 
-                    // 底部悬浮排名
                     if selectedType == .friends && !authVM.isAnonymous
                         && friendService.permissionStatus == .authorized,
                         let me = currentUserVM.myProfile
                     {
                         let myRank = calculateMyRank(
-                            friends: friendService.friends, myScore: me.credits)
+                            friends: friendService.friends, myScore: me.credits ?? 0)
                         VStack {
                             Spacer()
                             MyRankBar(
-                                rank: myRank, username: me.username ?? "You", credits: me.credits
+                                rank: myRank, username: me.username ?? "You", credits: me.credits ?? 0
                             )
                             .padding(.bottom, 0)
                         }
@@ -74,14 +66,16 @@ struct LeaderboardView: View {
         .task {
             await refreshData()
         }
-        .onChange(of: selectedTab) { newTab in
-            if newTab == 2 {
-                Task { await refreshData() }
-            }
-        }
         .onChange(of: selectedType) { newType in
             if newType == .community {
                 Task { await loadMyCommunities() }
+            }
+        }
+        .navigationTitle("Leaderboard")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                AccountButton()
             }
         }
     }
@@ -94,8 +88,6 @@ struct LeaderboardView: View {
         async let scoreTask: Void = currentUserVM.fetchMyScore(forceRefresh: true)
         _ = await (friendsTask, scoreTask)
     }
-
-    // MARK: - Leaderboard Type Picker
 
     private var leaderboardTypePicker: some View {
         TrashSegmentedControl(
@@ -160,7 +152,6 @@ struct LeaderboardView: View {
     @ViewBuilder
     private var communityLeaderboardContent: some View {
         VStack(spacing: 0) {
-            // Community Selector
             if !myCommunities.isEmpty {
                 communitySelector
             }
@@ -341,12 +332,12 @@ struct LeaderboardView: View {
         if let existingIndex = combined.firstIndex(where: { $0.id == myId }) {
             // 当前用户已经在列表中，更新为最新的 credits
             combined[existingIndex] = FriendUser(
-                id: myId, username: me.username ?? "Me", credits: me.credits,
+                id: myId, username: me.username ?? "Me", credits: me.credits ?? 0,
                 email: combined[existingIndex].email, phone: combined[existingIndex].phone
             )
         } else {
             let myEntry = FriendUser(
-                id: myId, username: me.username ?? "Me", credits: me.credits, email: nil, phone: nil
+                id: myId, username: me.username ?? "Me", credits: me.credits ?? 0, email: nil, phone: nil
             )
             combined.append(myEntry)
         }

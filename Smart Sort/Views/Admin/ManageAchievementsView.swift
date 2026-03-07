@@ -12,7 +12,7 @@ struct ManageAchievementsView: View {
     let communityId: String
     @StateObject private var service = AchievementService.shared
     @State private var showingCreateSheet = false
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     var body: some View {
         VStack(spacing: 0) {
@@ -21,20 +21,11 @@ struct ManageAchievementsView: View {
                 ProgressView()
                 Spacer()
             } else if service.communityAchievements.isEmpty {
-                Spacer()
-                VStack(spacing: 16) {
-                    TrashIcon(systemName: "trophy")
-                        .font(.system(size: 50))
-                        .foregroundColor(.neuSecondaryText)
-                    Text("No achievements created yet")
-                        .font(.headline)
-                        .foregroundColor(.neuText)
-                    Text("Create achievements to reward\nyour community members")
-                        .font(.subheadline)
-                        .foregroundColor(.neuSecondaryText)
-                        .multilineTextAlignment(.center)
+                CompatibleContentUnavailableView {
+                    Label("No achievements created yet", systemImage: "trophy")
+                } description: {
+                    Text("Create achievements to reward your community members")
                 }
-                Spacer()
             } else {
                 ScrollView {
                     LazyVStack(spacing: 12) {
@@ -93,11 +84,11 @@ struct ManageAchievementsView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(achievement.name)
                     .font(.headline)
-                    .foregroundColor(.neuText)
+                    .foregroundColor(theme.palette.textPrimary)
                 if let desc = achievement.description {
                     Text(desc)
                         .font(.caption)
-                        .foregroundColor(.neuSecondaryText)
+                        .foregroundColor(theme.palette.textSecondary)
                 }
                 Text(achievement.rarity.displayName)
                     .font(.caption2.bold())
@@ -112,14 +103,14 @@ struct ManageAchievementsView: View {
 
             TrashIcon(systemName: "chevron.right")
                 .font(.caption)
-                .foregroundColor(.neuSecondaryText)
+                .foregroundColor(theme.palette.textSecondary)
         }
         .padding(14)
         .background(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color.neuBackground)
-                .shadow(color: .neuDarkShadow, radius: 5, x: 3, y: 3)
-                .shadow(color: .neuLightShadow, radius: 5, x: -3, y: -3)
+                .fill(theme.palette.background)
+                .shadow(color: theme.shadows.dark, radius: 5, x: 3, y: 3)
+                .shadow(color: theme.shadows.light, radius: 5, x: -3, y: -3)
         )
     }
 }

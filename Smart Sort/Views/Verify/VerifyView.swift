@@ -11,7 +11,7 @@ struct VerifyView: View {
     @EnvironmentObject var viewModel: TrashViewModel
     @EnvironmentObject var authVM: AuthViewModel
     @StateObject private var cameraManager = CameraManager()
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     // UI State
     @State private var cardOffset: CGSize = .zero
@@ -24,6 +24,8 @@ struct VerifyView: View {
     // Form Data
     @State private var feedbackItemName = ""
     @State private var isSubmittingFeedback = false
+    @State private var swipeSuccessTrigger = false
+    @State private var swipeWarningTrigger = false
 
     var showFeedbackForm: Bool {
         if case .collectingFeedback = viewModel.appState, showingFeedbackForm { return true }
@@ -35,42 +37,39 @@ struct VerifyView: View {
     }
 
     private var isEcoCameraCaptureMode: Bool {
-        theme.visualStyle == .ecoPaper && isCameraActive && isPreviewState && !showFeedbackForm
+        isCameraActive && isPreviewState && !showFeedbackForm
     }
 
     var body: some View {
         ZStack {
-            ThemeBackground()
+            ThemeBackgroundView()
 
             VStack(spacing: 0) {
-                TrashPageHeader(title: "Smart Sort") {
-                    AccountButton()
-                }
-
-                // 🎨 AI 状态指示器
                 aiStatusIndicator
 
-                // --- Camera/Image Area ---
                 cameraArea
 
-                // --- Dynamic Interaction Area ---
                 interactionArea
 
                 Spacer(minLength: 10)
 
-                // --- Main Action Button ---
                 mainActionButton
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .clipped()
 
-            // 🎨 分析中的全屏 overlay
             if viewModel.appState == .analyzing {
                 analyzingOverlay
             }
         }
+        .navigationTitle("Verify")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                AccountButton()
+            }
+        }
         .onAppear {
-            // 如果相机之前是激活状态，重新启动相机会话
             if isCameraActive && cameraManager.capturedImage == nil {
                 cameraManager.start()
             }
@@ -87,30 +86,31 @@ struct VerifyView: View {
         .onReceive(cameraManager.$isTorchOn) { isOn in
             isTorchOn = isOn
         }
+        .compatibleSensoryFeedback(.success, trigger: swipeSuccessTrigger)
+        .compatibleSensoryFeedback(.warning, trigger: swipeWarningTrigger)
     }
 
-    // MARK: - 🎨 AI Status Indicator
     private var aiStatusIndicator: some View {
         HStack {
             Spacer()
             HStack(spacing: 6) {
                 Circle()
                     .fill(
-                        RealClassifierService.shared.isReady ? Color.neuAccentGreen : Color.orange
+                        RealClassifierService.shared.isReady ? theme.accents.green : Color.orange
                     )
                     .frame(width: 8, height: 8)
                     .scaleEffect(pulseAnimation ? 1.2 : 1.0)
                     .shadow(
                         color: RealClassifierService.shared.isReady
-                            ? Color.neuAccentGreen.opacity(0.6) : Color.orange.opacity(0.6),
+                            ? theme.accents.green.opacity(0.6) : Color.orange.opacity(0.6),
                         radius: 4, x: 0, y: 0
-                    )  // Glowing effect
+                    )
                     .animation(
-                        .easeInOut(duration: 1).repeatForever(autoreverses: true),
+                        theme.animations.pulse,
                         value: pulseAnimation)
                 Text(RealClassifierService.shared.isReady ? "Ready" : "Loading")
                     .font(.caption2)
-                    .foregroundColor(.neuSecondaryText)
+                    .foregroundColor(theme.palette.textSecondary)
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
@@ -121,18 +121,13 @@ struct VerifyView: View {
         .padding(.bottom, 8)
     }
 
-    // MARK: - 🎨 Camera Area
     private var cameraArea: some View {
         GeometryReader { geo in
-            if theme.visualStyle == .ecoPaper {
-                ecoCameraArea(size: geo.size)
-            } else {
-                legacyCameraArea(size: geo.size)
-            }
+            ecoCameraArea(size: geo.size)
         }
-        .frame(maxHeight: 340)
-        .padding(.horizontal, 16)
-        .padding(.top, 8)
+        .frame(maxHeight: min(340, UIScreen.main.bounds.height * 0.4))
+        .padding(.horizontal, theme.spacing.md)
+        .padding(.top, theme.spacing.sm)
     }
 
     @ViewBuilder
@@ -183,15 +178,10 @@ struct VerifyView: View {
             RoundedRectangle(cornerRadius: outerRadius, style: .continuous)
                 .fill(theme.palette.card)
                 .overlay(
-                    PaperTextureView(baseColor: theme.palette.card)
-                        .clipShape(RoundedRectangle(cornerRadius: outerRadius, style: .continuous))
-                        .opacity(0.48)
-                )
-                .overlay(
                     RoundedRectangle(cornerRadius: outerRadius, style: .continuous)
-                        .stroke(theme.palette.divider.opacity(0.92), lineWidth: 1.2)
+                        .stroke(theme.palette.divider, lineWidth: 1)
                 )
-                .shadow(color: theme.shadows.dark.opacity(0.55), radius: 12, x: 0, y: 6)
+                .shadow(color: theme.shadows.dark.opacity(0.3), radius: 6, x: 0, y: 3)
 
             RoundedRectangle(cornerRadius: innerRadius, style: .continuous)
                 .fill(Color.black.opacity(0.22))
@@ -268,7 +258,7 @@ struct VerifyView: View {
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
-        .frame(height: isEcoCameraCaptureMode ? 84 : 220)
+        .frame(height: isEcoCameraCaptureMode ? 84 : 170)
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: viewModel.appState)
     }
 
@@ -284,27 +274,9 @@ struct VerifyView: View {
                             .offset(y: 3)
 
                         Circle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [
-                                        theme.accents.green.opacity(0.95),
-                                        theme.accents.green.opacity(0.82),
-                                    ],
-                                    startPoint: .top,
-                                    endPoint: .bottom
-                                )
-                            )
+                            .fill(theme.accents.green)
                             .frame(width: 88, height: 88)
-                            .overlay(
-                                PaperTextureView(baseColor: theme.accents.green)
-                                    .clipShape(Circle())
-                                    .opacity(0.16)
-                            )
-                            .overlay(
-                                Circle()
-                                    .stroke(theme.palette.textPrimary.opacity(0.26), lineWidth: 1.2)
-                            )
-                            .shadow(color: Color.black.opacity(0.25), radius: 6, x: 0, y: 4)
+                            .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 3)
 
                         StampedIcon(
                             systemName: "camera.fill",
@@ -424,9 +396,8 @@ struct VerifyView: View {
 
     // MARK: - Handlers
     private func handleSwipe(direction: SwipeDirection, result: TrashAnalysisResult) {
-        let generator = UINotificationFeedbackGenerator()
         if direction == .right {
-            generator.notificationOccurred(.success)
+            swipeSuccessTrigger.toggle()
             viewModel.handleCorrectFeedback()
             withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                 cardOffset.width = 500
@@ -436,7 +407,7 @@ struct VerifyView: View {
                 finishFlowAndReset(closeCamera: true)
             }
         } else {
-            generator.notificationOccurred(.warning)
+            swipeWarningTrigger.toggle()
             withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                 cardOffset.width = -500
             }
@@ -451,9 +422,6 @@ struct VerifyView: View {
     }
 
     private func handleMainButtonTap() {
-        let impact = UIImpactFeedbackGenerator(style: .medium)
-        impact.impactOccurred()
-
         if showFeedbackForm {
             submitFeedback()
         } else if !isCameraActive {

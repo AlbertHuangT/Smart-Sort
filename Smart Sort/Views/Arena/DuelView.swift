@@ -11,7 +11,7 @@ struct DuelView: View {
     @StateObject private var viewModel = DuelViewModel()
     @EnvironmentObject var authViewModel: AuthViewModel
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     let challengeId: UUID?
     let opponentId: UUID?
@@ -21,18 +21,9 @@ struct DuelView: View {
 
     var body: some View {
         ZStack {
-            ThemeBackground()
+            ThemeBackgroundView()
 
             VStack(spacing: 0) {
-                ArenaHeader(
-                    title: "1v1 Duel",
-                    showBackButton: true,
-                    onBack: {
-                        Task { await viewModel.cleanup() }
-                        dismiss()
-                    }
-                )
-
                 switch viewModel.phase {
                 case .loading:
                     Spacer()
@@ -70,6 +61,13 @@ struct DuelView: View {
         }
         .onDisappear {
             Task { await viewModel.cleanup() }
+        }
+        .navigationTitle("1v1 Duel")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                AccountButton()
+            }
         }
     }
 
@@ -213,7 +211,7 @@ struct DuelView: View {
 struct DuelLobbyContent: View {
     @ObservedObject var viewModel: DuelViewModel
     let challengeId: UUID?
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     var body: some View {
         VStack(spacing: 32) {
@@ -271,13 +269,7 @@ struct DuelLobbyContent: View {
                 .frame(width: 120, height: 120)
                 .trashCard(cornerRadius: 60)
 
-            if theme.visualStyle == .ecoPaper {
-                StampedIcon(systemName: icon, size: 50, weight: .semibold, color: iconColor)
-            } else {
-                TrashIcon(systemName: icon)
-                    .font(.system(size: 50))
-                    .foregroundColor(iconColor)
-            }
+            StampedIcon(systemName: icon, size: 50, weight: .semibold, color: iconColor)
         }
     }
 }
@@ -289,7 +281,7 @@ struct DuelResultsContent: View {
     let onDismiss: () -> Void
 
     @State private var showStats = false
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     var iWon: Bool {
         viewModel.result?.winnerId == viewModel.myUserId
@@ -391,31 +383,18 @@ struct DuelResultsContent: View {
                 .frame(width: 120, height: 120)
                 .trashCard(cornerRadius: 60)
 
-            if theme.visualStyle == .ecoPaper {
-                if isTie {
-                    StampedIcon(
-                        systemName: "equal.circle.fill", size: 60, weight: .semibold,
-                        color: theme.semanticWarning)
-                } else if iWon {
-                    StampedIcon(
-                        systemName: "crown.fill", size: 60, weight: .semibold,
-                        color: theme.semanticHighlight)
-                } else {
-                    StampedIcon(
-                        systemName: "flag.checkered", size: 60, weight: .semibold,
-                        color: theme.palette.textSecondary)
-                }
+            if isTie {
+                StampedIcon(
+                    systemName: "equal.circle.fill", size: 60, weight: .semibold,
+                    color: theme.semanticWarning)
+            } else if iWon {
+                StampedIcon(
+                    systemName: "crown.fill", size: 60, weight: .semibold,
+                    color: theme.semanticHighlight)
             } else {
-                if isTie {
-                    TrashIcon(systemName: "equal.circle.fill").font(.system(size: 60))
-                        .foregroundColor(theme.semanticWarning)
-                } else if iWon {
-                    TrashIcon(systemName: "crown.fill").font(.system(size: 60)).foregroundColor(
-                        theme.semanticHighlight)
-                } else {
-                    TrashIcon(systemName: "flag.checkered").font(.system(size: 60)).foregroundColor(
-                        theme.palette.textSecondary)
-                }
+                StampedIcon(
+                    systemName: "flag.checkered", size: 60, weight: .semibold,
+                    color: theme.palette.textSecondary)
             }
         }
     }

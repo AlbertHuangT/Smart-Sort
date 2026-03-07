@@ -15,7 +15,7 @@ struct GrantAchievementToMemberView: View {
     @State private var grantingUserId: UUID?
     @State private var showSuccessAlert = false
     @State private var grantedUsername = ""
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     var filteredMembers: [CommunityMemberForGrant] {
         if searchText.isEmpty {
@@ -45,16 +45,7 @@ struct GrantAchievementToMemberView: View {
                     .padding()
                 Spacer()
             } else if filteredMembers.isEmpty {
-                Spacer()
-                VStack(spacing: 12) {
-                    TrashIcon(systemName: "person.slash")
-                        .font(.system(size: 40))
-                        .foregroundColor(.neuSecondaryText)
-                    Text("No members found")
-                        .font(.subheadline)
-                        .foregroundColor(.neuSecondaryText)
-                }
-                Spacer()
+                CompatibleContentUnavailableView.search(text: searchText)
             } else {
                 ScrollView {
                     LazyVStack(spacing: 8) {
@@ -68,7 +59,7 @@ struct GrantAchievementToMemberView: View {
                 }
             }
         }
-        .background(Color.neuBackground)
+        .background(theme.palette.background)
         .navigationTitle("Grant Achievement")
         .navigationBarTitleDisplayMode(.inline)
         .task {
@@ -112,11 +103,11 @@ struct GrantAchievementToMemberView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(achievement.name)
                     .font(.headline)
-                    .foregroundColor(.neuText)
+                    .foregroundColor(theme.palette.textPrimary)
                 if let desc = achievement.description {
                     Text(desc)
                         .font(.caption)
-                        .foregroundColor(.neuSecondaryText)
+                        .foregroundColor(theme.palette.textSecondary)
                 }
                 Text(achievement.rarity.displayName)
                     .font(.caption2.bold())
@@ -132,9 +123,9 @@ struct GrantAchievementToMemberView: View {
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color.neuBackground)
-                .shadow(color: .neuDarkShadow, radius: 6, x: 4, y: 4)
-                .shadow(color: .neuLightShadow, radius: 6, x: -3, y: -3)
+                .fill(theme.palette.background)
+                .shadow(color: theme.shadows.dark, radius: 6, x: 4, y: 4)
+                .shadow(color: theme.shadows.light, radius: 6, x: -3, y: -3)
         )
         .padding(.horizontal, 16)
         .padding(.top, 12)
@@ -147,19 +138,19 @@ struct GrantAchievementToMemberView: View {
             // 头像
             ZStack {
                 Circle()
-                    .fill(Color.neuBackground)
+                    .fill(theme.palette.background)
                     .frame(width: 44, height: 44)
-                    .shadow(color: .neuDarkShadow, radius: 3, x: 2, y: 2)
-                    .shadow(color: .neuLightShadow, radius: 3, x: -2, y: -2)
+                    .shadow(color: theme.shadows.dark, radius: 3, x: 2, y: 2)
+                    .shadow(color: theme.shadows.light, radius: 3, x: -2, y: -2)
 
                 Text(String(member.username.prefix(1)).uppercased())
                     .font(.headline)
-                    .foregroundColor(.neuAccentBlue)
+                    .foregroundColor(theme.accents.blue)
             }
 
             Text(member.username)
                 .font(.subheadline)
-                .foregroundColor(.neuText)
+                .foregroundColor(theme.palette.textPrimary)
 
             Spacer()
 
@@ -170,7 +161,7 @@ struct GrantAchievementToMemberView: View {
                     Text("Granted")
                         .font(.caption.bold())
                 }
-                .foregroundColor(.neuAccentGreen)
+                .foregroundColor(theme.accents.green)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
                 .neumorphicConcave(cornerRadius: 8)
@@ -216,9 +207,9 @@ struct GrantAchievementToMemberView: View {
         .padding(12)
         .background(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.neuBackground)
-                .shadow(color: .neuDarkShadow, radius: 4, x: 3, y: 3)
-                .shadow(color: .neuLightShadow, radius: 4, x: -2, y: -2)
+                .fill(theme.palette.background)
+                .shadow(color: theme.shadows.dark, radius: 4, x: 3, y: 3)
+                .shadow(color: theme.shadows.light, radius: 4, x: -2, y: -2)
         )
     }
 }

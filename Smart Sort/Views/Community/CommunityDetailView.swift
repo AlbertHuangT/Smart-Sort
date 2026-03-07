@@ -16,7 +16,7 @@ struct CommunityDetailView: View {
     @StateObject private var viewModel = CommunityDetailViewModel()
     @ObservedObject private var userSettings = UserSettings.shared
     @Environment(\.dismiss) var dismiss
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
     @State private var showEventDetail: CommunityEvent? = nil
     @State private var showAdminDashboard = false
     @State private var showApprovalAlert = false
@@ -30,27 +30,24 @@ struct CommunityDetailView: View {
     }
 
     var body: some View {
-        NavigationView {
-            ZStack {
-                ThemeBackground()
-
-                ScrollView {
-                    VStack(spacing: 0) {
-                        headerSection
-                        descriptionSection
-                        if isAdmin {
-                            adminSection
-                        }
-                        statsSection
-                        eventsSection
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 0) {
+                    headerSection
+                    descriptionSection
+                    if isAdmin {
+                        adminSection
                     }
+                    statsSection
+                    eventsSection
                 }
             }
+            .background(ThemeBackgroundView())
             .navigationTitle(community.name)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    TrashIconButton(icon: "xmark", action: { dismiss() })
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Close") { dismiss() }
                 }
             }
             .task {
@@ -77,13 +74,10 @@ struct CommunityDetailView: View {
                 )
                 .presentationDetents([.fraction(0.3), .medium])
                 .presentationDragIndicator(.visible)
-                .presentationBackground(theme.appearance.sheetBackground)
             }
         }
         .presentationDetents([.large])
         .presentationDragIndicator(.visible)
-        .presentationCornerRadius(24)
-        .presentationBackground(theme.appearance.sheetBackground)
     }
 
     // MARK: - Header Section
@@ -343,7 +337,7 @@ private struct StatItem: View {
     let label: String
     let icon: String
     let color: Color
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     var body: some View {
         VStack(spacing: 6) {
@@ -369,7 +363,7 @@ private struct StatItem: View {
 private struct CommunityEventCard: View {
     let event: CommunityEvent
     let onTap: () -> Void
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     private var dateFormatter: DateFormatter {
         let formatter = DateFormatter()
@@ -400,11 +394,11 @@ private struct CommunityEventCard: View {
                             Text(event.category.rawValue)
                                 .font(theme.typography.caption)
                                 .fontWeight(.bold)
-                                .foregroundColor(isPast ? .secondary : event.category.color)
+                                .foregroundColor(isPast ? .secondary : theme.palette.textPrimary)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 2)
                                 .background(
-                                    (isPast ? Color.gray : event.category.color).opacity(0.1)
+                                    (isPast ? Color.gray : event.category.color).opacity(0.15)
                                 )
                                 .cornerRadius(6)
 
@@ -538,7 +532,7 @@ struct EventDetailSheetForCommunity: View {
     @ObservedObject var viewModel: CommunityDetailViewModel
     let userLocation: UserLocation?
     @Environment(\.dismiss) var dismiss
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     private var dateFormatter: DateFormatter {
         let formatter = DateFormatter()
@@ -558,7 +552,7 @@ struct EventDetailSheetForCommunity: View {
     var body: some View {
         NavigationView {
             ZStack {
-                ThemeBackground()
+                ThemeBackgroundView()
 
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
@@ -652,9 +646,6 @@ struct EventDetailSheetForCommunity: View {
                             cornerRadius: 14,
                             action: {
                                 Task {
-                                    let generator = UINotificationFeedbackGenerator()
-                                    generator.notificationOccurred(
-                                        currentEvent.isRegistered ? .warning : .success)
                                     await viewModel.toggleRegistration(for: event)
                                 }
                             }
@@ -677,7 +668,7 @@ struct EventDetailSheetForCommunity: View {
                         .padding(.horizontal)
                         .padding(.bottom, 8)
                     }
-                    .background(theme.appearance.sheetBackground)
+                        .background(theme.appBackground)
                 }
             }
         }
@@ -688,7 +679,7 @@ private struct InfoRowForCommunity: View {
     let icon: String
     let title: String
     let value: String
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     var body: some View {
         HStack(spacing: 14) {

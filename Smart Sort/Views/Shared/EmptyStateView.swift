@@ -9,7 +9,7 @@ struct EmptyStateView: View {
     let icon: String
     let title: String
     let subtitle: String
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     var body: some View {
         VStack(spacing: theme.spacing.lg) {

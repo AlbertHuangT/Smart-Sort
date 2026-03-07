@@ -42,18 +42,7 @@ class ProfileViewModel: ObservableObject {
         }
         errorMessage = nil
         do {
-            struct UserProfile: Decodable {
-                let credits: Int?
-                let username: String?
-                let selectedAchievementId: UUID?
-                
-                enum CodingKeys: String, CodingKey {
-                    case credits, username
-                    case selectedAchievementId = "selected_achievement_id"
-                }
-            }
-
-            let profile: UserProfile = try await client
+            let profile: UserProfileDTO = try await client
                 .from("profiles")
                 .select("credits, username, selected_achievement_id")
                 .eq("id", value: userId)

@@ -335,7 +335,7 @@ struct EventsView: View {
     @StateObject private var viewModel = EventsViewModel()
     @ObservedObject private var userSettings = UserSettings.shared
     @EnvironmentObject var authVM: AuthViewModel
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
     @State private var showEventDetail: CommunityEvent? = nil
     @State private var showSortMenu = false
     // showAccountSheet managed by ContentView via environment
@@ -344,73 +344,48 @@ struct EventsView: View {
     @State private var isMapView = false
 
     var body: some View {
-        ZStack {
-            ThemeBackground()
+        VStack(spacing: 0) {
+            controlBar
 
-            VStack(spacing: 0) {
-                // Header is now handled by parent view
+            categoryFilter
 
-                // 顶部控制栏
-                controlBar
-
-                // 分类筛选器
-                categoryFilter
-
-                if !viewModel.hasLocation {
-                    noLocationView
-                } else if viewModel.isLoading {
-                    loadingView
-                } else if viewModel.events.isEmpty {
-                    emptyState
+            if !viewModel.hasLocation {
+                noLocationView
+            } else if viewModel.isLoading {
+                loadingView
+            } else if viewModel.events.isEmpty {
+                emptyState
+            } else {
+                if isMapView {
+                    EventsMapView(
+                        events: viewModel.events,
+                        userSettings: userSettings,
+                        onEventSelected: { event in
+                            showEventDetail = event
+                        }
+                    )
+                    .transition(.opacity)
                 } else {
-                    if isMapView {
-                        // 地图视图
-                        EventsMapView(
-                            events: viewModel.events,
-                            userSettings: userSettings,
-                            onEventSelected: { event in
-                                showEventDetail = event
-                            }
-                        )
-                        .transition(.opacity)
-                    } else {
-                        // 活动列表
-                        ScrollView {
-                            LazyVStack(spacing: 16) {
-                                ForEach(viewModel.events) { event in
-                                    EnhancedEventCard(
-                                        event: event,
-                                        userLocation: userSettings.selectedLocation,
-                                        preciseLocation: userSettings.preciseLocation
-                                    ) {
-                                        showEventDetail = event
-                                    }
+                    ScrollView {
+                        LazyVStack(spacing: 16) {
+                            ForEach(viewModel.events) { event in
+                                EnhancedEventCard(
+                                    event: event,
+                                    userLocation: userSettings.selectedLocation,
+                                    preciseLocation: userSettings.preciseLocation
+                                ) {
+                                    showEventDetail = event
                                 }
                             }
-                            .padding(.horizontal, 16)
-                            .padding(.top, 12)
-                            .padding(.bottom, 20)
                         }
-                        .refreshable {
-                            await viewModel.loadEvents()
-                        }
-                        .transition(.opacity)
-                    }
-                }
-            }
-
-            // 🚀 浮动加号按钮 (FAB)
-            if !authVM.isAnonymous && viewModel.hasLocation && !isMapView {
-                VStack {
-                    Spacer()
-                    HStack {
-                        Spacer()
-                        FloatingActionButton(icon: "plus") {
-                            showCreateEventSheet = true
-                        }
-                        .padding(.trailing, 20)
+                        .padding(.horizontal, 16)
+                        .padding(.top, 12)
                         .padding(.bottom, 20)
                     }
+                    .refreshable {
+                        await viewModel.loadEvents()
+                    }
+                    .transition(.opacity)
                 }
             }
         }
@@ -431,13 +406,29 @@ struct EventsView: View {
             SortOptionSheet(selection: $viewModel.sortOption, isPresented: $showSortMenu)
                 .presentationDetents([.fraction(0.42), .medium])
                 .presentationDragIndicator(.visible)
-                .presentationBackground(theme.appearance.sheetBackground)
+        }
+        .toolbar {
+            ToolbarItemGroup(placement: .topBarTrailing) {
+                if viewModel.hasLocation {
+                    Button {
+                        isMapView.toggle()
+                    } label: {
+                        Image(systemName: isMapView ? "list.bullet" : "map")
+                    }
+                }
+
+                if !authVM.isAnonymous && viewModel.hasLocation {
+                    Button {
+                        showCreateEventSheet = true
+                    } label: {
+                        Image(systemName: "plus")
+                    }
+                }
+            }
         }
         .task {
-            // 🚀 请求精确GPS位置（如果有权限）
             viewModel.requestPreciseLocation()
 
-            // 🚀 优化：只在首次加载或数据为空时请求
             if viewModel.events.isEmpty {
                 await viewModel.loadEvents()
             }
@@ -471,10 +462,10 @@ struct EventsView: View {
             Spacer()
             ProgressView()
                 .scaleEffect(1.2)
-                .tint(.neuAccentBlue)
+                .tint(theme.accents.blue)
             Text("Loading events...")
                 .font(.subheadline)
-                .foregroundColor(.neuSecondaryText)
+                .foregroundColor(theme.palette.textSecondary)
             Spacer()
         }
     }
@@ -676,7 +667,7 @@ struct EventDetailSheet: View {
     let userLocation: UserLocation?
     @ObservedObject private var userSettings = UserSettings.shared  // 🚀 新增：获取精确位置
     @Environment(\.dismiss) var dismiss
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     private var dateFormatter: DateFormatter {
         let formatter = DateFormatter()
@@ -702,7 +693,7 @@ struct EventDetailSheet: View {
     var body: some View {
         NavigationView {
             ZStack {
-                ThemeBackground()
+                ThemeBackgroundView()
 
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
@@ -788,9 +779,6 @@ struct EventDetailSheet: View {
                         cornerRadius: 14,
                         action: {
                             Task {
-                                let generator = UINotificationFeedbackGenerator()
-                                generator.notificationOccurred(
-                                    currentEvent.isRegistered ? .warning : .success)
                                 await viewModel.toggleRegistration(for: event)
                             }
                         }
@@ -824,7 +812,7 @@ struct InfoRow: View {
     let icon: String
     let title: String
     let value: String
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     var body: some View {
         HStack(spacing: 14) {
@@ -852,12 +840,12 @@ struct InfoRow: View {
 private struct SortOptionSheet: View {
     @Binding var selection: EventSortOption
     @Binding var isPresented: Bool
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     var body: some View {
         NavigationStack {
             ZStack {
-                ThemeBackground()
+                ThemeBackgroundView()
                     .ignoresSafeArea()
 
                 ScrollView {
@@ -913,7 +901,7 @@ struct CreateEventFormSheet: View {
     @Binding var isPresented: Bool
     @ObservedObject var userSettings: UserSettings
     var onCreated: () -> Void
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     @State private var title = ""
     @State private var description = ""

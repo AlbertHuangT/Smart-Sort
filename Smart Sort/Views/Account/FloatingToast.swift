@@ -7,7 +7,7 @@ struct FloatingToast: View {
         if let text = message {
             Text(text)
                 .font(.caption)
-                .trashOnAccentForeground()
+                .foregroundStyle(.white)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
                 .background(

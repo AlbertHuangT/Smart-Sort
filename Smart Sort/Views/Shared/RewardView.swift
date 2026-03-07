@@ -10,13 +10,11 @@ import SwiftUI
 
 struct RewardView: View {
     var body: some View {
-        NavigationView {
-            VStack {
-                TrashIcon(systemName: "gift.fill")
-                    .font(.system(size: 60))
-                    .foregroundColor(.orange)
-                Text("Rewards Coming Soon").font(.headline)
-            }.navigationTitle("Rewards")
+        CompatibleContentUnavailableView {
+            Label("Rewards", systemImage: "gift")
+        } description: {
+            Text("Rewards are coming soon. Stay tuned!")
         }
+        .navigationTitle("Rewards")
     }
 }

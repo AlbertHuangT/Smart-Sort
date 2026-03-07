@@ -1,11 +1,9 @@
 import SwiftUI
 
-// MARK: - Core Primitives
-
 struct TrashCard<Content: View>: View {
     let cornerRadius: CGFloat?
     let content: Content
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     init(cornerRadius: CGFloat? = nil, @ViewBuilder content: () -> Content) {
         self.cornerRadius = cornerRadius
@@ -13,7 +11,16 @@ struct TrashCard<Content: View>: View {
     }
 
     var body: some View {
-        theme.cardSurface(cornerRadius: cornerRadius ?? theme.corners.large, content: content)
+        content
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: cornerRadius ?? 16, style: .continuous)
+                    .fill(theme.cardBackground)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: cornerRadius ?? 16, style: .continuous)
+                            .stroke(theme.palette.divider.opacity(0.7), lineWidth: 1)
+                    )
+            )
     }
 }
 
@@ -23,7 +30,7 @@ struct TrashButton<Content: View>: View {
     let cornerRadius: CGFloat?
     let content: Content
 
-    @Environment(\.trashTheme) private var theme
+    @State private var hapticTrigger = false
 
     init(
         baseColor: Color? = nil,
@@ -39,14 +46,15 @@ struct TrashButton<Content: View>: View {
 
     var body: some View {
         Button(action: {
-            let impact = UIImpactFeedbackGenerator(style: .medium)
-            impact.impactOccurred()
+            hapticTrigger.toggle()
             action()
         }) {
             content
+                .frame(maxWidth: .infinity)
         }
-        .buttonStyle(
-            ThemeButtonStyle(baseColor: baseColor, cornerRadius: cornerRadius, theme: theme))
+        .buttonStyle(.borderedProminent)
+        .tint(baseColor)
+        .compatibleSensoryFeedback(.impactSolid(intensity: 0.6), trigger: hapticTrigger)
     }
 }
 
@@ -54,6 +62,8 @@ struct TrashTapArea<Content: View>: View {
     let action: () -> Void
     var haptics: Bool = false
     let content: Content
+
+    @State private var hapticTrigger = false
 
     init(haptics: Bool = false, action: @escaping () -> Void, @ViewBuilder content: () -> Content) {
         self.action = action
@@ -63,45 +73,19 @@ struct TrashTapArea<Content: View>: View {
 
     var body: some View {
         Button(action: {
-            if haptics {
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            }
+            if haptics { hapticTrigger.toggle() }
             action()
         }) {
             content
         }
         .buttonStyle(.plain)
+        .compatibleSensoryFeedback(.impactSoft(intensity: 0.4), trigger: hapticTrigger)
     }
 }
 
-struct ThemeButtonStyle: ButtonStyle {
-    let baseColor: Color?
-    let cornerRadius: CGFloat?
-    let theme: TrashTheme
-
-    func makeBody(configuration: Configuration) -> some View {
-        theme.buttonSurface(
-            isPressed: configuration.isPressed,
-            cornerRadius: cornerRadius ?? theme.corners.large,
-            baseColor: baseColor,
-            content: configuration.label
-                .font(theme.typography.button)
-                .trashOnAccentForeground()
-        )
-    }
-}
-
-struct ThemeBackground: View {
-    @Environment(\.trashTheme) private var theme
-
-    var body: some View {
-        GeometryReader { proxy in
-            theme.backgroundView()
-                .frame(width: proxy.size.width, height: proxy.size.height)
-                .clipped()
-        }
-    }
-}
+/// Consolidated: ThemeBackground is an alias for ThemeBackgroundView (defined in ThemeBackgroundView.swift).
+/// Both names are supported for backward compatibility.
+typealias ThemeBackground = ThemeBackgroundView
 
 // MARK: - View Extensions
 

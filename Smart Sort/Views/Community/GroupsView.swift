@@ -29,38 +29,33 @@ struct GroupsView: View {
     @State private var showLocationPicker = false
     @State private var showCreateEventSheet = false
     @State private var showCreateCommunitySheet = false
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     var body: some View {
-        ZStack {
-            ThemeBackground()
+        VStack(spacing: 0) {
+            if authVM.isAnonymous {
+                anonymousRestrictionView
+            } else {
+                controlBar
 
-            VStack(spacing: 0) {
-                if authVM.isAnonymous {
-                    anonymousRestrictionView
-                } else {
-                    controlBar
-
-                    switch selectedSection {
-                    case .nearby:
-                        nearbyCommunitiesContent
-                    case .joined:
-                        joinedCommunitiesContent
-                    }
+                switch selectedSection {
+                case .nearby:
+                    nearbyCommunitiesContent
+                case .joined:
+                    joinedCommunitiesContent
                 }
             }
-
+        }
+        .background(ThemeBackgroundView())
+        .toolbar {
             if !authVM.isAnonymous {
-                VStack {
-                    Spacer()
-                    HStack {
-                        Spacer()
-                        FloatingActionButton(icon: "plus") {
-                            showCreateCommunitySheet = true
-                        }
-                        .padding(.trailing, 20)
-                        .padding(.bottom, 20)
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showCreateCommunitySheet = true
+                    } label: {
+                        Image(systemName: "plus")
                     }
+                    .accessibilityLabel("Create Community")
                 }
             }
         }
@@ -85,7 +80,7 @@ struct GroupsView: View {
         HStack {
             // Location Button
             TrashButton(
-                baseColor: theme.visualStyle == .ecoPaper ? theme.accents.blue.opacity(0.15) : nil,
+                baseColor: theme.accents.blue.opacity(0.15),
                 cornerRadius: 16,
                 action: { showLocationPicker = true }
             ) {
@@ -275,13 +270,7 @@ struct GroupsView: View {
                 .frame(width: size, height: size)
                 .trashCard(cornerRadius: size / 2)
 
-            if theme.visualStyle == .ecoPaper {
-                StampedIcon(systemName: icon, size: size * 0.45, weight: .bold, color: iconColor)
-            } else {
-                TrashIcon(systemName: icon)
-                    .font(.system(size: size * 0.4))
-                    .foregroundColor(iconColor)
-            }
+            StampedIcon(systemName: icon, size: size * 0.45, weight: .bold, color: iconColor)
         }
     }
 }

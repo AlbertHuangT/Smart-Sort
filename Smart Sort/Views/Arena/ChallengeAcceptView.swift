@@ -19,11 +19,11 @@ struct ChallengeAcceptView: View {
 
     private let client = SupabaseManager.shared.client
     private let arenaService = ArenaService.shared
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     var body: some View {
         ZStack {
-            ThemeBackground()
+            ThemeBackgroundView()
                 .ignoresSafeArea()
 
             if isLoading {
@@ -66,10 +66,10 @@ struct ChallengeAcceptView: View {
 
             ZStack {
                 Circle()
-                    .fill(Color.neuBackground)
+                    .fill(theme.palette.background)
                     .frame(width: 120, height: 120)
-                    .shadow(color: .neuDarkShadow, radius: 10, x: 6, y: 6)
-                    .shadow(color: .neuLightShadow, radius: 10, x: -4, y: -4)
+                    .shadow(color: theme.shadows.dark, radius: 10, x: 6, y: 6)
+                    .shadow(color: theme.shadows.light, radius: 10, x: -4, y: -4)
 
                 TrashIcon(systemName: "bolt.circle.fill")
                     .font(.system(size: 60))
@@ -83,15 +83,15 @@ struct ChallengeAcceptView: View {
             VStack(spacing: 8) {
                 Text("Challenge Received!")
                     .font(.system(size: 28, weight: .bold, design: .rounded))
-                    .foregroundColor(.neuText)
+                    .foregroundColor(theme.palette.textPrimary)
 
                 Text("\(challenge.challengerName ?? "Someone") wants to duel!")
                     .font(.subheadline)
-                    .foregroundColor(.neuSecondaryText)
+                    .foregroundColor(theme.palette.textSecondary)
 
                 Text("10 questions, answer faster and more accurately to win!")
                     .font(.caption)
-                    .foregroundColor(.neuSecondaryText)
+                    .foregroundColor(theme.palette.textSecondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 32)
             }
@@ -99,9 +99,7 @@ struct ChallengeAcceptView: View {
             HStack(spacing: 16) {
                 TrashButton(
                     baseColor: theme.semanticSuccess, cornerRadius: 999,
-                    action: {
-                        showDuel = true
-                    }
+                    action: { showDuel = true }
                 ) {
                     HStack(spacing: 8) {
                         TrashIcon(systemName: "checkmark")
@@ -129,8 +127,8 @@ struct ChallengeAcceptView: View {
                     .padding(.vertical, 16)
                     .background(theme.palette.background)
                     .clipShape(Capsule())
-                    .shadow(color: .neuDarkShadow, radius: 8, x: 4, y: 4)
-                    .shadow(color: .neuLightShadow, radius: 8, x: -3, y: -3)
+                    .shadow(color: theme.shadows.dark, radius: 8, x: 4, y: 4)
+                    .shadow(color: theme.shadows.light, radius: 8, x: -3, y: -3)
                 }
             }
 
@@ -148,7 +146,7 @@ struct ChallengeAcceptView: View {
 
             Text(message)
                 .font(.subheadline)
-                .foregroundColor(.neuSecondaryText)
+                .foregroundColor(theme.palette.textSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
 

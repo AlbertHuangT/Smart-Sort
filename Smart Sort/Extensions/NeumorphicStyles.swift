@@ -1,110 +1,70 @@
 import SwiftUI
 
 // MARK: - Legacy Theme Color Aliases
-// These bypass @Environment(\.trashTheme) and read from the singleton directly.
-// Prefer using `theme.palette.*` / `theme.accents.*` / `theme.shadows.*` via
-// `@Environment(\.trashTheme) private var theme` in new code.
+// These read from the shared theme constants directly.
 extension Color {
     private static var theme: TrashTheme {
-        ThemeManager.shared.currentTheme
+        TrashTheme()
     }
 
+    @available(*, deprecated, renamed: "theme.palette.background", message: "Use @Environment(\\.trashTheme) and theme.palette.background")
     static var neuBackground: Color { theme.palette.background }
+    @available(*, deprecated, renamed: "theme.shadows.light", message: "Use @Environment(\\.trashTheme) and theme.shadows.light")
     static var neuLightShadow: Color { theme.shadows.light }
+    @available(*, deprecated, renamed: "theme.shadows.dark", message: "Use @Environment(\\.trashTheme) and theme.shadows.dark")
     static var neuDarkShadow: Color { theme.shadows.dark }
+    @available(*, deprecated, renamed: "theme.palette.textPrimary", message: "Use @Environment(\\.trashTheme) and theme.palette.textPrimary")
     static var neuText: Color { theme.palette.textPrimary }
+    @available(*, deprecated, renamed: "theme.palette.textSecondary", message: "Use @Environment(\\.trashTheme) and theme.palette.textSecondary")
     static var neuSecondaryText: Color { theme.palette.textSecondary }
+    @available(*, deprecated, renamed: "theme.accents.blue", message: "Use @Environment(\\.trashTheme) and theme.accents.blue")
     static var neuAccentBlue: Color { theme.accents.blue }
+    @available(*, deprecated, renamed: "theme.accents.green", message: "Use @Environment(\\.trashTheme) and theme.accents.green")
     static var neuAccentGreen: Color { theme.accents.green }
+    @available(*, deprecated, renamed: "theme.accents.orange", message: "Use @Environment(\\.trashTheme) and theme.accents.orange")
     static var neuAccentOrange: Color { theme.accents.orange }
+    @available(*, deprecated, renamed: "theme.accents.purple", message: "Use @Environment(\\.trashTheme) and theme.accents.purple")
     static var neuAccentPurple: Color { theme.accents.purple }
+    @available(*, deprecated, renamed: "theme.palette.divider", message: "Use @Environment(\\.trashTheme) and theme.palette.divider")
     static var neuDivider: Color { theme.palette.divider }
 }
 
-// MARK: - Smart Theme Modifiers
-// These modifiers now delegate to the theme's rendering engine
+// MARK: - Card Surface Modifier
 
 struct NeumorphicShadow: ViewModifier {
     var isPressed: Bool = false
     var cornerRadius: CGFloat?
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     func body(content: Content) -> some View {
         let radius = cornerRadius ?? theme.corners.large
-        
-        if theme.visualStyle == .neumorphic {
-            // Original Neumorphic Logic
-            content
-                .background(
-                    Group {
-                        if isPressed {
-                            RoundedRectangle(cornerRadius: radius)
-                                .fill(theme.palette.background)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: radius)
-                                        .stroke(theme.palette.background, lineWidth: 4)
-                                        .shadow(color: theme.shadows.dark, radius: 10, x: 5, y: 5)
-                                        .clipShape(RoundedRectangle(cornerRadius: radius))
-                                        .shadow(color: theme.shadows.light, radius: 10, x: -4, y: -4)
-                                        .clipShape(RoundedRectangle(cornerRadius: radius))
-                                )
-                        } else {
-                            RoundedRectangle(cornerRadius: radius)
-                                .fill(theme.palette.background)
-                                .shadow(color: theme.shadows.dark, radius: 10, x: 10, y: 10)
-                                .shadow(color: theme.shadows.light, radius: 10, x: -6, y: -6)
-                        }
-                    }
-                )
-        } else {
-            // Delegate to Theme for other styles
-            theme.cardSurface(cornerRadius: radius, content: content)
-        }
+        theme.cardSurface(cornerRadius: radius, content: content)
     }
 }
 
-// MARK: - Neumorphic Concave Modifier (Pressed/Inset Look)
+// MARK: - Concave Modifier
+
 struct NeumorphicConcave: ViewModifier {
     var cornerRadius: CGFloat?
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     func body(content: Content) -> some View {
         let radius = cornerRadius ?? theme.corners.medium
-        
-        if theme.visualStyle == .neumorphic {
-            content
-                .background(
-                    RoundedRectangle(cornerRadius: radius)
-                        .fill(theme.palette.background)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: radius)
-                                .stroke(theme.palette.background, lineWidth: 2)
-                                .shadow(color: theme.shadows.dark, radius: 3, x: 3, y: 3)
-                                .clipShape(RoundedRectangle(cornerRadius: radius))
-                                .shadow(color: theme.shadows.light, radius: 3, x: -3, y: -3)
-                                .clipShape(RoundedRectangle(cornerRadius: radius))
-                        )
-                )
-        } else {
-            // For non-neumorphic themes, concave often means a subtle dark overlay or just the card surface
-            theme.cardSurface(cornerRadius: radius, content: content)
-                .brightness(-0.05)
-        }
+        theme.cardSurface(cornerRadius: radius, content: content)
+            .brightness(-0.05)
     }
 }
 
-// MARK: - Neumorphic Button Style
+// MARK: - Button Style
+
 struct NeumorphicButtonStyle: ButtonStyle {
     var cornerRadius: CGFloat?
     var color: Color?
 
     func makeBody(configuration: Configuration) -> some View {
-        // We can't use @Environment in ButtonStyle easily without some tricks, 
-        // so we use the singleton as a fallback or pass it in.
-        // For simplicity here, we use the singleton for global styles.
-        let theme = ThemeManager.shared.currentTheme
+        let theme = TrashTheme()
         let radius = cornerRadius ?? theme.corners.large
-        
+
         theme.buttonSurface(
             isPressed: configuration.isPressed,
             cornerRadius: radius,
@@ -125,7 +85,7 @@ extension View {
     }
 
     func neumorphicCard(padding: CGFloat? = nil) -> some View {
-        let paddingValue = padding ?? ThemeManager.shared.currentTheme.spacing.lg
+        let paddingValue = padding ?? TrashTheme().spacing.lg
         return self
             .padding(paddingValue)
             .neumorphic()

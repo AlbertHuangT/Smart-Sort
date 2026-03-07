@@ -14,22 +14,16 @@ struct DailyChallengeView: View {
     @State private var pulseAnimation = false
     // showAccountSheet managed by ContentView via environment
     @State private var showLeaderboard = false
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     let categories = ["Recyclable", "Compostable", "Landfill", "Hazardous"]
 
     var body: some View {
         ZStack {
-            ThemeBackground()
+            ThemeBackgroundView()
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                ArenaHeader(
-                    title: "Daily Challenge",
-                    showBackButton: true,
-                    onBack: { dismiss() }
-                )
-
                 if viewModel.alreadyPlayed && !viewModel.sessionCompleted {
                     alreadyPlayedView
                 } else if viewModel.sessionCompleted {
@@ -53,6 +47,13 @@ struct DailyChallengeView: View {
         .sheet(isPresented: $showLeaderboard) {
             DailyLeaderboardView()
         }
+        .navigationTitle("Daily Challenge")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                AccountButton()
+            }
+        }
         .task {
             pulseAnimation = true
             await viewModel.fetchChallenge()
@@ -70,10 +71,10 @@ struct DailyChallengeView: View {
 
             ZStack {
                 Circle()
-                    .fill(Color.neuBackground)
+                    .fill(theme.palette.background)
                     .frame(width: 140, height: 140)
-                    .shadow(color: .neuDarkShadow, radius: 12, x: 8, y: 8)
-                    .shadow(color: .neuLightShadow, radius: 12, x: -6, y: -6)
+                    .shadow(color: theme.shadows.dark, radius: 12, x: 8, y: 8)
+                    .shadow(color: theme.shadows.light, radius: 12, x: -6, y: -6)
 
                 TrashIcon(systemName: "checkmark.seal.fill")
                     .font(.system(size: 70))
@@ -89,18 +90,18 @@ struct DailyChallengeView: View {
             VStack(spacing: 12) {
                 Text("Already Completed!")
                     .font(.system(size: 28, weight: .bold, design: .rounded))
-                    .foregroundColor(.neuText)
+                    .foregroundColor(theme.palette.textPrimary)
 
                 Text(
                     "You've already completed today's challenge.\nCome back tomorrow for a new one!"
                 )
                 .multilineTextAlignment(.center)
-                .foregroundColor(.neuSecondaryText)
+                .foregroundColor(theme.palette.textSecondary)
                 .padding(.horizontal, 40)
 
                 Text("Resets at midnight UTC")
                     .font(.caption)
-                    .foregroundColor(.neuSecondaryText.opacity(0.7))
+                    .foregroundColor(theme.palette.textSecondary.opacity(0.7))
             }
 
             TrashButton(
@@ -199,18 +200,18 @@ struct DailyChallengeView: View {
         HStack(spacing: 12) {
             TrashIcon(systemName: "exclamationmark.triangle.fill")
                 .foregroundColor(theme.semanticWarning)
-            Text(viewModel.errorMessage)
+            Text(viewModel.errorMessage ?? "")
                 .font(.subheadline)
-                .foregroundColor(.neuText)
+                .foregroundColor(theme.palette.textPrimary)
             Spacer()
             TrashIconButton(icon: "xmark", action: { viewModel.showError = false })
         }
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color.neuBackground)
-                .shadow(color: .neuDarkShadow, radius: 6, x: 4, y: 4)
-                .shadow(color: .neuLightShadow, radius: 6, x: -3, y: -3)
+                .fill(theme.palette.background)
+                .shadow(color: theme.shadows.dark, radius: 6, x: 4, y: 4)
+                .shadow(color: theme.shadows.light, radius: 6, x: -3, y: -3)
         )
         .padding(.horizontal)
         .transition(.move(edge: .top).combined(with: .opacity))
@@ -230,24 +231,23 @@ struct DailyChallengeView: View {
             stats: [
                 (
                     icon: "flame.fill", title: "Score", value: "+\(viewModel.sessionScore)",
-                    color: .neuAccentOrange
+                    color: theme.accents.orange
                 ),
                 (
                     icon: "checkmark.circle.fill", title: "Correct",
                     value: "\(viewModel.correctCount)/\(viewModel.questions.count)",
-                    color: .neuAccentGreen
+                    color: theme.accents.green
                 ),
                 (
                     icon: "timer", title: "Time", value: viewModel.formattedTime,
-                    color: .neuAccentBlue
+                    color: theme.accents.blue
                 ),
                 (
                     icon: "bolt.fill", title: "Best Combo", value: "\(viewModel.maxCombo)x",
-                    color: .neuAccentPurple
+                    color: theme.accents.purple
                 ),
             ],
             onPlayAgain: {
-                // Can't play again — show leaderboard instead
                 showLeaderboard = true
             },
             onViewLeaderboard: {

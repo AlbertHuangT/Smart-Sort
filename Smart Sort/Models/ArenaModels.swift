@@ -5,6 +5,22 @@
 
 import Foundation
 
+// MARK: - Quiz Question
+
+struct QuizQuestion: Identifiable, Codable {
+    let id: UUID
+    let imageUrl: String
+    let correctCategory: String
+    let itemName: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case imageUrl = "image_url"
+        case correctCategory = "correct_category"
+        case itemName = "item_name"
+    }
+}
+
 // MARK: - Game Modes
 
 enum ArenaGameMode: String, Hashable, CaseIterable, Identifiable {
@@ -54,10 +70,6 @@ enum ArenaGameMode: String, Hashable, CaseIterable, Identifiable {
         case .dailyChallenge: return ["green", "mint"]
         case .duel: return ["red", "orange"]
         }
-    }
-
-    var isAvailable: Bool {
-        return true
     }
 }
 

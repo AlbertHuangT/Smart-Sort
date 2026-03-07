@@ -13,7 +13,7 @@ struct ReportView: View {
     let userId: UUID?
 
     @Environment(\.dismiss) var dismiss
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     let bins = ["Recycle (Blue Bin)", "Compost (Green Bin)", "Landfill (Black Bin)", "Hazardous"]
 

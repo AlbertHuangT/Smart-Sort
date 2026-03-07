@@ -10,7 +10,7 @@ import SwiftUI
 struct CreateCommunitySheet: View {
     @Binding var isPresented: Bool
     @ObservedObject private var userSettings = UserSettings.shared
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     @State private var name = ""
     @State private var description = ""

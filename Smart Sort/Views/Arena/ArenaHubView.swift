@@ -12,7 +12,6 @@ import SwiftUI
 struct ArenaHubView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @ObservedObject var arenaRouter = ArenaRouter.shared
-    @Environment(\.trashTheme) private var theme
     // showAccountSheet managed by ContentView via environment
     @State private var navigationPath = NavigationPath()
     @State private var showChallengeList = false
@@ -29,76 +28,71 @@ struct ArenaHubView: View {
     var body: some View {
         NavigationStack(path: $navigationPath) {
             ZStack {
-                ThemeBackground()
+                ThemeBackgroundView()
 
-                VStack(spacing: 0) {
-                    TrashPageHeader(title: "Arena") {
-                        HStack(spacing: theme.spacing.sm) {
-                            if !authViewModel.isAnonymous {
-                                ZStack(alignment: .topTrailing) {
-                                    TrashIconButton(
-                                        icon: "tray.fill", action: { showChallengeList = true })
-
-                                    if pendingBadgeCount > 0 {
-                                        Text("\(pendingBadgeCount)")
-                                            .font(.system(size: 10, weight: .bold))
-                                            .trashOnAccentForeground()
-                                            .padding(4)
-                                            .background(theme.semanticDanger)
-                                            .clipShape(Circle())
-                                            .offset(x: 6, y: -6)
-                                    }
-                                }
-                            }
-                            AccountButton()
-                        }
-                    }
-
-                    if authViewModel.isAnonymous {
-                        EnhancedAnonymousRestrictionView()
-                    } else {
-                        ScrollView(.vertical, showsIndicators: false) {
-                            VStack(spacing: theme.spacing.xl) {
-                                // Mode cards grid
-                                LazyVGrid(
-                                    columns: [GridItem(.flexible()), GridItem(.flexible())],
-                                    spacing: theme.spacing.lg
-                                ) {
-                                    ForEach(ArenaGameMode.allCases) { mode in
-                                        GameModeCard(mode: mode) {
-                                            if mode == .duel {
-                                                showInviteSheet = true
-                                            } else if mode.isAvailable {
-                                                navigationPath.append(mode)
-                                            }
+                if authViewModel.isAnonymous {
+                    EnhancedAnonymousRestrictionView()
+                } else {
+                    ScrollView(.vertical, showsIndicators: false) {
+                        VStack(spacing: 28) {
+                            LazyVGrid(
+                                columns: [GridItem(.flexible()), GridItem(.flexible())],
+                                spacing: 20
+                            ) {
+                                ForEach(ArenaGameMode.allCases) { mode in
+                                    GameModeCard(mode: mode) {
+                                        if mode == .duel {
+                                            showInviteSheet = true
+                                        } else {
+                                            navigationPath.append(mode)
                                         }
                                     }
                                 }
-                                .padding(.horizontal, theme.spacing.lg)
-
-                                Spacer(minLength: theme.spacing.xxl)
                             }
-                            .padding(.top, theme.spacing.sm)
+                            .padding(.horizontal, 16)
+
+                            Spacer(minLength: 40)
                         }
+                        .padding(.top, 12)
                     }
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                .clipped()
+            }
+            .navigationTitle("Arena")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    if !authViewModel.isAnonymous {
+                        ZStack(alignment: .topTrailing) {
+                            Button {
+                                showChallengeList = true
+                            } label: {
+                                Image(systemName: "tray")
+                            }
+
+                            if pendingBadgeCount > 0 {
+                                Text("\(pendingBadgeCount)")
+                                    .font(.caption2.bold())
+                                    .foregroundStyle(.white)
+                                    .padding(4)
+                                    .background(Color.red)
+                                    .clipShape(Circle())
+                                    .offset(x: 8, y: -8)
+                            }
+                        }
+                    }
+                    AccountButton()
+                }
             }
             .navigationDestination(for: ArenaGameMode.self) { mode in
                 switch mode {
                 case .classic:
                     ArenaView()
-                        .navigationBarHidden(true)
                 case .speedSort:
                     SpeedSortView()
-                        .navigationBarHidden(true)
                 case .streak:
                     StreakModeView()
-                        .navigationBarHidden(true)
                 case .dailyChallenge:
                     DailyChallengeView()
-                        .navigationBarHidden(true)
                 case .duel:
                     EmptyView()
                 }
@@ -182,17 +176,15 @@ struct ArenaHubView: View {
 struct GameModeCard: View {
     let mode: ArenaGameMode
     let onTap: () -> Void
-
-    @State private var isPressed = false
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     private var gradient: LinearGradient {
         let colors: [Color] = {
             switch mode {
-            case .classic: return [theme.accents.blue, theme.accents.purple]
-            case .speedSort: return [theme.accents.orange, theme.accents.green]
-            case .streak: return [theme.accents.purple, theme.accents.blue]
-            case .dailyChallenge: return [theme.accents.green, theme.accents.blue]
+            case .classic: return [.blue, .purple]
+            case .speedSort: return [.orange, .green]
+            case .streak: return [.purple, .blue]
+            case .dailyChallenge: return [.green, .blue]
             case .duel: return [.red, .orange]
             }
         }()
@@ -200,85 +192,59 @@ struct GameModeCard: View {
     }
 
     var body: some View {
-        TrashTapArea(action: onTap) {
-            VStack(spacing: theme.spacing.md) {
-                let circleSize = theme.spacing.xl * 1.5
+        Button(action: onTap) {
+            VStack(spacing: 16) {
+                let circleSize: CGFloat = 42
                 ZStack {
                     Circle()
                         .frame(width: circleSize, height: circleSize)
-                        .trashCard(cornerRadius: circleSize)  // Use TrashCard for consistent shadow
+                        .foregroundStyle(theme.surfaceBackground)
 
-                    if mode.isAvailable {
-                        if theme.visualStyle == .ecoPaper {
-                            StampedIcon(
-                                systemName: mode.icon, size: 32, weight: .semibold,
-                                color: iconAccentColor)
-                        } else {
-                            TrashIcon(systemName: mode.icon)
-                                .font(theme.typography.headline)
-                                .foregroundStyle(iconAccentColor)
-                        }
-                    } else {
-                        if theme.visualStyle == .ecoPaper {
-                            StampedIcon(
-                                systemName: "lock.fill", size: 32, weight: .semibold,
-                                color: theme.palette.textSecondary)
-                        } else {
-                            TrashIcon(systemName: "lock.fill")
-                                .font(theme.typography.headline)
-                                .foregroundStyle(theme.palette.textSecondary)
-                        }
-                    }
+                    Image(systemName: mode.icon)
+                        .font(.system(size: 28, weight: .semibold))
+                        .foregroundStyle(iconAccentColor)
                 }
 
                 Text(mode.title)
-                    .font(theme.typography.subheadline)
-                    .fontWeight(.bold)
-                    .foregroundColor(theme.palette.textPrimary)
+                    .font(.headline)
                     .multilineTextAlignment(.center)
 
-                Text(mode.isAvailable ? mode.subtitle : "Coming Soon")
-                    .font(theme.typography.caption)
-                    .foregroundColor(theme.palette.textSecondary)
+                Text(mode.subtitle)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
-                    .frame(height: 30, alignment: .top)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, theme.spacing.xl)
-            .padding(.horizontal, theme.spacing.sm)
-            .trashCard(cornerRadius: theme.corners.medium)
-            .overlay(
-                RoundedRectangle(cornerRadius: theme.corners.medium)
-                    .stroke(
-                        mode.isAvailable
-                            ? gradient
-                            : LinearGradient(colors: [.clear], startPoint: .top, endPoint: .bottom),
-                        lineWidth: mode.isAvailable ? 1.5 : 0
-                    )
-                    .opacity(0.3)
+            .padding(.vertical, 28)
+            .padding(.horizontal, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(theme.surfaceBackground)
             )
-            .opacity(mode.isAvailable ? 1.0 : 0.6)
-            .scaleEffect(isPressed ? 0.96 : 1.0)
+            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(gradient, lineWidth: 1.5).opacity(0.35))
         }
-        .buttonStyle(.plain)
-        .disabled(!mode.isAvailable)
-        .onLongPressGesture(
-            minimumDuration: .infinity,
-            pressing: { pressing in
-                withAnimation(.easeOut(duration: 0.15)) {
-                    isPressed = pressing
-                }
-            }, perform: {})
+        .buttonStyle(GameModeCardButtonStyle())
+        .accessibilityLabel("\(mode.title): \(mode.subtitle)")
     }
 
     private var iconAccentColor: Color {
         switch mode {
-        case .classic: return theme.accents.blue
-        case .speedSort: return theme.accents.orange
-        case .streak: return theme.accents.purple
-        case .dailyChallenge: return theme.accents.green
-        case .duel: return Color.red
+        case .classic: return .blue
+        case .speedSort: return .orange
+        case .streak: return .purple
+        case .dailyChallenge: return .green
+        case .duel: return .red
         }
+    }
+}
+
+/// Provides press-down scale animation for GameModeCard
+private struct GameModeCardButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
+            .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
     }
 }

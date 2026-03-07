@@ -37,7 +37,7 @@ class DailyChallengeViewModel: ObservableObject {
     @Published var isSubmitting = false
 
     @Published var showError = false
-    @Published var errorMessage = ""
+    @Published var errorMessage: String?
 
     // Result
     @Published var pointsAwarded = 0
@@ -68,7 +68,7 @@ class DailyChallengeViewModel: ObservableObject {
 
     func fetchChallenge() async {
         isLoading = true
-        errorMessage = ""
+        errorMessage = nil
         showError = false
         resetSession()
 

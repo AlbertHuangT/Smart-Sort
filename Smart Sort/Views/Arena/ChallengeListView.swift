@@ -14,12 +14,12 @@ struct ChallengeListView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var selectedChallenge: ArenaChallenge?
     @State private var showDuel = false
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     var body: some View {
         NavigationStack {
             ZStack {
-                ThemeBackground()
+                ThemeBackgroundView()
 
                 if viewModel.isLoading {
                     EnhancedLoadingView()
@@ -117,16 +117,10 @@ struct ChallengeListView: View {
     }
 
     private var emptyState: some View {
-        VStack(spacing: 16) {
-            TrashIcon(systemName: "tray")
-                .font(.system(size: 50))
-                .foregroundColor(theme.palette.textSecondary)
-            Text("No challenges yet")
-                .font(theme.typography.headline)
-                .foregroundColor(theme.palette.textPrimary)
+        CompatibleContentUnavailableView {
+            Label("No challenges yet", systemImage: "tray")
+        } description: {
             Text("Challenge a friend to start a duel!")
-                .font(theme.typography.subheadline)
-                .foregroundColor(theme.palette.textSecondary)
         }
     }
 }
@@ -138,7 +132,7 @@ struct ChallengeRow: View {
     let currentUserId: UUID?
     let onAccept: (() -> Void)?
     let onDecline: (() -> Void)?
-    @Environment(\.trashTheme) private var theme
+    private let theme = TrashTheme()
 
     var isChallenger: Bool {
         challenge.challengerId == currentUserId

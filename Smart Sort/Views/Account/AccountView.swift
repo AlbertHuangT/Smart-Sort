@@ -9,12 +9,10 @@ import SwiftUI
 // MARK: - Main View
 struct AccountView: View {
     @EnvironmentObject var authVM: AuthViewModel
-    @EnvironmentObject var themeManager: ThemeManager
     @StateObject private var profileVM = ProfileViewModel()
     @ObservedObject private var userSettings = UserSettings.shared
     @ObservedObject private var achievementService = AchievementService.shared
-    @Environment(\.trashTheme) private var theme
-    @State private var showThemeSheet = false
+    private let theme = TrashTheme()
 
     // Sheets & Alerts
     @State private var showBindPhoneSheet = false
@@ -38,7 +36,7 @@ struct AccountView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                ThemeBackground()
+                ThemeBackgroundView()
 
                 VStack(spacing: 0) {
                     // Error banner
@@ -107,7 +105,8 @@ struct AccountView: View {
                     }
                 }
             }
-            .navigationBarHidden(true)
+            .navigationTitle("Account")
+            .navigationBarTitleDisplayMode(.inline)
             .overlay {
                 if let result = achievementService.lastGrantedAchievement, result.granted {
                     AchievementToastView(result: result) {
@@ -137,9 +136,6 @@ struct AccountView: View {
                 UpgradeGuestSheet(
                     authVM: authVM, email: $upgradeEmail, password: $upgradePassword,
                     confirmPassword: $upgradeConfirmPassword, isPresented: $showUpgradeSheet)
-            }
-            .sheet(isPresented: $showThemeSheet) {
-                ThemePickerSheet(isPresented: $showThemeSheet)
             }
             .sheet(isPresented: $showEditNameAlert) {
                 TrashTextInputSheet(
@@ -230,7 +226,7 @@ struct AccountView: View {
                     color: .orange
                 )
 
-                TrashButton(baseColor: theme.accents.blue.opacity(0.08), action: handleStatusTap) {
+                TrashTapArea(haptics: true, action: handleStatusTap) {
                     StatCard(
                         title: "Status",
                         value: statusValue,
@@ -279,9 +275,10 @@ struct AccountView: View {
                 .padding(.horizontal, 16)
 
             LazyVGrid(columns: columns, spacing: 16) {
-                actionTile(icon: "lock.shield.fill", title: "Settings", color: theme.accents.blue) {
-                    // Navigate to settings...
+                NavigationLink(destination: AccountSettingsView()) {
+                    actionTile(icon: "lock.shield.fill", title: "Settings", color: theme.accents.blue) {}
                 }
+                .buttonStyle(.plain)
 
                 NavigationLink(destination: BadgeAchievementsHubView()) {
                     actionTile(icon: "trophy.fill", title: "Badges", color: theme.accents.green) {}
@@ -298,10 +295,6 @@ struct AccountView: View {
                 }
                 .buttonStyle(.plain)
 
-                actionTile(icon: "paintbrush.pointed", title: "UI Style", color: .purple) {
-                    showThemeSheet = true
-                }
-
                 NavigationLink(destination: BugReportView()) {
                     actionTile(icon: "exclamationmark.bubble.fill", title: "Feedback", color: .red) {}
                 }
@@ -315,23 +308,26 @@ struct AccountView: View {
     private func actionTile(icon: String, title: String, color: Color, action: @escaping () -> Void)
         -> some View
     {
-        TrashButton(baseColor: color.opacity(0.08), action: action) {
+        Button(action: action) {
             VStack(spacing: 12) {
-                if theme.visualStyle == .ecoPaper {
-                    StampedIcon(systemName: icon, size: 30, weight: .bold, color: color)
-                } else {
-                    TrashIcon(systemName: icon)
-                        .font(.title2)
-                        .foregroundColor(color)
-                }
+                StampedIcon(systemName: icon, size: 30, weight: .bold, color: color)
                 Text(title)
                     .font(theme.typography.caption)
                     .foregroundColor(theme.palette.textPrimary)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 20)
-            .trashCard(cornerRadius: 16)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(theme.palette.card)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .stroke(theme.palette.divider, lineWidth: 1)
+                    )
+                    .shadow(color: theme.shadows.dark.opacity(0.5), radius: 6, x: 0, y: 3)
+            )
         }
+        .buttonStyle(.plain)
     }
 }
 
@@ -373,43 +369,3 @@ extension AccountView {
     }
 }
 
-// MARK: - Theme Style Sheet (Simplified for brevity)
-struct ThemePickerSheet: View {
-    @EnvironmentObject var themeManager: ThemeManager
-    @Binding var isPresented: Bool
-    @Environment(\.trashTheme) private var theme
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 16) {
-                    ForEach(ThemeOption.allCases) { option in
-                        TrashButton(
-                            baseColor: option.previewGradient.first?.opacity(0.12),
-                            action: {
-                                withAnimation { themeManager.apply(option) }
-                            }
-                        ) {
-                            HStack {
-                                TrashLabel(option.displayName, icon: option.icon)
-                                Spacer()
-                                if themeManager.currentOption == option {
-                                    TrashIcon(systemName: "checkmark.circle.fill").foregroundColor(
-                                        theme.accents.green)
-                                }
-                            }
-                            .padding()
-                            .trashCard(cornerRadius: 16)
-                        }
-                    }
-                }
-                .padding()
-            }
-            .background(ThemeBackground())
-            .navigationTitle("Themes")
-            .toolbar {
-                TrashTextButton(title: "Done", variant: .accent) { isPresented = false }
-            }
-        }
-    }
-}

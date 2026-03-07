@@ -8,6 +8,7 @@ import SwiftUI
 struct BadgePickerView: View {
     var showsNavigationTitle: Bool = true
     @StateObject private var service = AchievementService.shared
+    private let theme = TrashTheme()
 
     private var equippedBadge: UserAchievement? {
         service.myAchievements.first(where: { $0.isEquipped })
@@ -20,13 +21,11 @@ struct BadgePickerView: View {
                 ProgressView("Loading badges...")
                 Spacer()
             } else if service.myAchievements.isEmpty {
-                Spacer()
-                Text("No badges yet. Earn achievements to unlock badges!")
-                    .font(.subheadline)
-                    .foregroundColor(.neuSecondaryText)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 32)
-                Spacer()
+                CompatibleContentUnavailableView {
+                    Label("No Badges Yet", systemImage: "shield")
+                } description: {
+                    Text("Earn achievements to unlock badges!")
+                }
             } else {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
@@ -34,7 +33,7 @@ struct BadgePickerView: View {
                             VStack(alignment: .leading, spacing: 8) {
                                 Text("Currently Equipped")
                                     .font(.headline)
-                                    .foregroundColor(.neuText)
+                                    .foregroundColor(theme.palette.textPrimary)
 
                                 AchievementCard(achievement: equipped) {
                                     Task { await service.unequipAchievement() }
@@ -44,7 +43,7 @@ struct BadgePickerView: View {
 
                         Text("All Badges")
                             .font(.headline)
-                            .foregroundColor(.neuText)
+                            .foregroundColor(theme.palette.textPrimary)
 
                         LazyVStack(spacing: 12) {
                             ForEach(service.myAchievements) { achievement in
@@ -66,7 +65,7 @@ struct BadgePickerView: View {
                 }
             }
         }
-        .background(Color.neuBackground.ignoresSafeArea())
+        .background(theme.palette.background.ignoresSafeArea())
         .optionalNavigationTitle(showsNavigationTitle ? "Badges" : nil)
         .onAppear {
             Task {
