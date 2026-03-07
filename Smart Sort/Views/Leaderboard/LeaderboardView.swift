@@ -295,13 +295,13 @@ struct LeaderboardView: View {
         guard let me = currentUserVM.myProfile,
             let myId = SupabaseManager.shared.client.auth.currentUser?.id
         else {
-            // 即使没有 myProfile，也要按积分排序
+            // Sort by credits even if myProfile is unavailable
             return friends.sorted { $0.credits > $1.credits }
         }
 
         var combined = friends
         if let existingIndex = combined.firstIndex(where: { $0.id == myId }) {
-            // 当前用户已经在列表中，更新为最新的 credits
+            // Refresh the current user's credits if they are already in the list
             combined[existingIndex] = FriendUser(
                 id: myId,
                 username: me.username ?? "Me",

@@ -11,7 +11,7 @@ import Combine
 
 // MARK: - Models
 struct HistoryItem: Decodable, Identifiable {
-    let id: Int // feedback_logs 使用 int8
+    let id: Int // feedback_logs uses int8
     let createdAt: Date
     let predictedLabel: String
     let predictedCategory: String
@@ -29,7 +29,7 @@ struct HistoryItem: Decodable, Identifiable {
         case userComment = "user_comment"
     }
     
-    // 生成 Supabase Storage 的公开链接
+    // Build the public Supabase Storage URL
     var publicImageUrl: URL? {
         SupabaseManager.shared.baseURL
             .appending(path: "storage/v1/object/public/feedback_images/\(imagePath)")
@@ -41,7 +41,7 @@ struct HistoryItem: Decodable, Identifiable {
 class TrashHistoryViewModel: ObservableObject {
     @Published var historyItems: [HistoryItem] = []
     @Published var isLoading = false
-    // 🔥 添加错误状态
+    // Error surface for the UI
     @Published var errorMessage: String?
     
     private let client = SupabaseManager.shared.client
@@ -59,15 +59,15 @@ class TrashHistoryViewModel: ObservableObject {
                 .from("feedback_logs")
                 .select()
                 .eq("user_id", value: userId)
-                .order("created_at", ascending: false) // 最新优先
-                .limit(50) // 限制最近50条
+                .order("created_at", ascending: false) // Newest first
+                .limit(50) // Keep the latest 50 entries
                 .execute()
                 .value
             
             self.historyItems = items
         } catch {
             print("❌ Fetch history error: \(error)")
-            // 🔥 向用户显示错误
+            // Surface the error to the UI
             errorMessage = "Failed to load history"
         }
         
@@ -117,7 +117,7 @@ struct TrashHistoryView: View {
         }
     }
     
-    // 空状态视图
+    // Empty state
     var emptyState: some View {
         EmptyStateView(
             icon: "clock.arrow.circlepath",
@@ -134,7 +134,7 @@ struct HistoryRow: View {
     
     var body: some View {
         HStack(spacing: 12) {
-            // 1. 图片缩略图
+            // 1. Thumbnail
             AsyncImage(url: item.publicImageUrl) { phase in
                 switch phase {
                 case .empty:
@@ -157,7 +157,7 @@ struct HistoryRow: View {
                     .stroke(theme.palette.divider.opacity(0.8), lineWidth: 1)
             )
             
-            // 2. 文字信息
+            // 2. Text details
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
                     Text(item.predictedLabel.capitalized)
@@ -170,7 +170,7 @@ struct HistoryRow: View {
                         .foregroundColor(theme.palette.textSecondary)
                 }
                 
-                // 显示用户的修正行为
+                // Show how the user corrected the result
                 if item.userCorrection != item.predictedCategory {
                     HStack(spacing: 4) {
                         Text(item.predictedCategory)

@@ -67,7 +67,7 @@ struct EventsView: View {
         }
         .sheet(isPresented: $showCreateEventSheet) {
             CreateEventFormSheet(isPresented: $showCreateEventSheet, userSettings: userSettings) {
-                // 刷新活动列表
+                // Refresh the event list
                 Task { await viewModel.loadEvents() }
             }
         }
@@ -101,13 +101,13 @@ struct EventsView: View {
             Task { await viewModel.loadEvents() }
         }
         .onChange(of: userSettings.preciseLocation) { newLocation in
-            // 🚀 当精确GPS位置更新时，重新按距离排序
+            // Re-sort by distance when precise GPS location updates
             if newLocation != nil {
                 viewModel.sortEventsByPreciseDistance()
             }
         }
         .onChange(of: userSettings.locationPermissionStatus) { status in
-            // 🚀 当用户授予位置权限时，请求精确位置
+            // Request a precise location after permission is granted
             if status == .authorizedWhenInUse || status == .authorizedAlways {
                 viewModel.requestPreciseLocation()
             }
@@ -132,7 +132,7 @@ struct EventsView: View {
     private var controlBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: theme.spacing.sm + 4) {
-                // 位置显示
+                // Location display
                 if let location = userSettings.selectedLocation {
                     TrashPill(
                         title: location.city,
@@ -162,7 +162,7 @@ struct EventsView: View {
                     }
                 }
 
-                // 仅显示已加入社区 Toggle
+                // Joined communities only toggle
                 TrashPill(
                     title: viewModel.showOnlyJoinedCommunities ? "Joined" : "All",
                     icon: viewModel.showOnlyJoinedCommunities ? "person.3.fill" : "globe",
@@ -172,7 +172,7 @@ struct EventsView: View {
                     viewModel.showOnlyJoinedCommunities.toggle()
                 }
 
-                // 排序按钮
+                // Sort button
                 TrashPill(
                     title: viewModel.sortOption.rawValue,
                     icon: "arrow.up.arrow.down",
@@ -186,7 +186,7 @@ struct EventsView: View {
         }
         .padding(.vertical, theme.spacing.sm + 2)
         .background(Color.clear)
-        .animation(.none, value: viewModel.sortOption)  // 🚀 禁用整个控制栏的布局动画
+        .animation(.none, value: viewModel.sortOption)  // Disable layout animation for the control bar
     }
 
     // MARK: - Category Filter
@@ -220,7 +220,7 @@ struct EventsView: View {
                 .padding(.vertical, theme.spacing.sm + 2)
             }
             .background(Color.clear)
-            // 🚀 优化：选中时自动滚动到选中项
+            // Auto-scroll to the selected category
             .onChange(of: viewModel.selectedCategory) { newValue in
                 withAnimation(.easeInOut(duration: 0.2)) {
                     if let category = newValue {
@@ -289,7 +289,7 @@ struct EventDetailSheet: View {
     let event: CommunityEvent
     @ObservedObject var viewModel: EventsViewModel
     let userLocation: UserLocation?
-    @ObservedObject private var userSettings = UserSettings.shared  // 🚀 新增：获取精确位置
+    @ObservedObject private var userSettings = UserSettings.shared  // Access precise location updates
     @Environment(\.dismiss) var dismiss
     private let theme = TrashTheme()
 

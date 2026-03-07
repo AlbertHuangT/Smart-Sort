@@ -97,7 +97,7 @@ struct AchievementCard: View {
 
     var body: some View {
         HStack(spacing: theme.spacing.sm + 6) {
-            // 成就图标
+            // Achievement icon
             ZStack {
                 Circle()
                     .fill(
@@ -122,7 +122,7 @@ struct AchievementCard: View {
                         .fontWeight(.semibold)
                         .foregroundColor(theme.palette.textPrimary)
 
-                    // 稀有度标签
+                    // Rarity badge
                     Text(achievement.rarity.displayName)
                         .font(theme.typography.caption)
                         .foregroundColor(achievement.rarity.color)
@@ -164,7 +164,7 @@ struct AchievementCard: View {
 
             Spacer()
 
-            // 装备/取消装备按钮
+            // Equip / unequip button
             TrashTapArea(action: onToggleEquip) {
                 if achievement.isEquipped {
                     HStack(spacing: 3) {

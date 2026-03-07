@@ -22,7 +22,7 @@ class CommunityService {
 
     // MARK: - Community Methods
 
-    /// 获取指定城市的社区列表
+    /// Fetch communities for a given city
     func getCommunitiesByCity(_ city: String) async throws -> [CommunityResponse] {
         return try await client
             .rpc("get_communities_by_city", params: ["p_city": city])
@@ -30,7 +30,7 @@ class CommunityService {
             .value
     }
 
-    /// 获取用户已加入的社区
+    /// Fetch communities the current user has joined
     func getMyCommunities() async throws -> [MyCommunityResponse] {
         return try await client
             .rpc("get_my_communities")
@@ -38,7 +38,7 @@ class CommunityService {
             .value
     }
 
-    /// 加入社区（支持审批流程）
+    /// Join a community, supporting approval flows
     func joinCommunity(_ communityId: String, message: String? = nil) async throws -> JoinCommunityResult {
         let params = JoinCommunityParams(
             p_community_id: communityId,
@@ -50,7 +50,7 @@ class CommunityService {
             .value
     }
 
-    /// 离开社区
+    /// Leave a community
     func leaveCommunity(_ communityId: String) async throws -> Bool {
         let result: APIResult = try await client
             .rpc("leave_community", params: ["p_community_id": communityId])
@@ -61,7 +61,7 @@ class CommunityService {
 
     // MARK: - Location Methods
 
-    /// 更新用户位置
+    /// Update the user's location
     func updateUserLocation(city: String, state: String, latitude: Double, longitude: Double) async throws -> Bool {
         let params = LocationParams(
             p_city: city,
@@ -78,7 +78,7 @@ class CommunityService {
 
     // MARK: - Direct Table Access (for communities list)
 
-    /// 获取所有社区列表
+    /// Fetch all active communities
     func getAllCommunities() async throws -> [CommunityResponse] {
         return try await client
             .from("communities")
@@ -91,7 +91,7 @@ class CommunityService {
 
     // MARK: - Create Content Methods
 
-    /// 检查用户是否可以创建社区（最多3个）
+    /// Check whether the user can create another community (max 3)
     func canCreateCommunity() async throws -> (allowed: Bool, currentCount: Int, maxAllowed: Int, reason: String?) {
         let result: CanCreateResult = try await client
             .rpc("can_user_create_community")
@@ -100,7 +100,7 @@ class CommunityService {
         return (result.allowed, result.currentCount, result.maxAllowed, result.reason)
     }
 
-    /// 创建社区
+    /// Create a community
     func createCommunity(
         id: String,
         name: String,

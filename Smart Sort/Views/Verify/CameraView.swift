@@ -14,7 +14,7 @@ class CameraManager: NSObject, ObservableObject {
     @Published var session = AVCaptureSession()
     @Published var capturedImage: UIImage?
     @Published var permissionGranted = false
-    @Published var isSessionReady = false // 🚀 新增：session 配置完成标志
+    @Published var isSessionReady = false // Session setup completion flag
     @Published var isTorchOn = false
 
     private let photoOutput = AVCapturePhotoOutput()
@@ -29,7 +29,7 @@ class CameraManager: NSObject, ObservableObject {
     }
 
     deinit {
-        // 🔥 FIX: 使用 async 而不是 sync 避免在 deinit 中死锁
+        // Use async instead of sync to avoid deinit deadlocks
         let session = self.session
         sessionQueue.async {
             if session.isRunning {
@@ -63,10 +63,10 @@ class CameraManager: NSObject, ObservableObject {
 
             self.session.beginConfiguration()
 
-            // 🚀 优化：使用 photo preset 获得最佳质量
+            // Use the photo preset for best capture quality
             self.session.sessionPreset = .photo
 
-            // 🚀 优化：获取最佳可用设备
+            // Pick the best available camera device
             let videoDevice = self.bestAvailableDevice()
 
             guard let device = videoDevice,
@@ -79,13 +79,13 @@ class CameraManager: NSObject, ObservableObject {
             self.session.addInput(videoDeviceInput)
             self.videoDeviceInput = videoDeviceInput
 
-            // 🚀 优化：配置设备以获得更快的对焦
+            // Configure the device for faster autofocus
             self.configureDevice(device)
 
             if self.session.canAddOutput(self.photoOutput) {
                 self.session.addOutput(self.photoOutput)
 
-                // 设置照片方向
+                // Set the photo orientation
                 if let connection = self.photoOutput.connection(with: .video) {
                     if #available(iOS 17.0, *) {
                         if connection.isVideoRotationAngleSupported(90) {
@@ -104,43 +104,43 @@ class CameraManager: NSObject, ObservableObject {
                 self.isSessionReady = true
             }
 
-            print("✅ [Camera] Session 配置完成")
+            print("✅ [Camera] Session configured")
         }
     }
 
-    // 🚀 新增：获取最佳可用相机设备
+    // Resolve the best available camera device
     private func bestAvailableDevice() -> AVCaptureDevice? {
-        // 优先使用广角相机
+        // Prefer the wide-angle back camera
         if let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) {
             return device
         }
-        // 回退到任何可用的后置相机
+        // Fall back to any available back camera
         return AVCaptureDevice.default(for: .video)
     }
 
-    // 🚀 新增：优化设备配置
+    // Tune device settings for capture
     private func configureDevice(_ device: AVCaptureDevice) {
         do {
             try device.lockForConfiguration()
 
-            // 启用连续自动对焦
+            // Enable continuous autofocus
             if device.isFocusModeSupported(.continuousAutoFocus) {
                 device.focusMode = .continuousAutoFocus
             }
 
-            // 启用连续自动曝光
+            // Enable continuous auto-exposure
             if device.isExposureModeSupported(.continuousAutoExposure) {
                 device.exposureMode = .continuousAutoExposure
             }
 
-            // 启用低光增强
+            // Enable low-light boost when supported
             if device.isLowLightBoostSupported {
                 device.automaticallyEnablesLowLightBoostWhenAvailable = true
             }
 
             device.unlockForConfiguration()
         } catch {
-            print("⚠️ [Camera] 设备配置失败: \(error)")
+            print("⚠️ [Camera] Device configuration failed: \(error)")
         }
     }
 
@@ -228,7 +228,7 @@ extension CameraManager: AVCapturePhotoCaptureDelegate {
             return
         }
 
-        // 在当前线程获取图片数据
+        // Read the image data on the current thread
         guard let imageData = photo.fileDataRepresentation(),
               let image = UIImage(data: imageData) else { return }
 
@@ -270,7 +270,7 @@ struct CameraPreview: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: VideoPreviewView, context: Context) {
-        // 🚀 优化：确保 session 正确连接
+        // Keep the preview layer attached to the latest session
         if uiView.videoPreviewLayer.session !== cameraManager.session {
             uiView.videoPreviewLayer.session = cameraManager.session
         }

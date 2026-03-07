@@ -2,7 +2,7 @@
 //  AchievementToastView.swift
 //  Smart Sort
 //
-//  成就解锁浮动通知
+//  Floating achievement unlock toast
 //
 
 import SwiftUI
@@ -22,7 +22,7 @@ struct AchievementToastView: View {
         VStack {
             if isVisible {
                 HStack(spacing: theme.spacing.md) {
-                    // 成就图标
+                    // Achievement icon
                     ZStack {
                         Circle()
                             .fill(
@@ -102,7 +102,7 @@ struct AchievementToastView: View {
             withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
                 isVisible = true
             }
-            // 3秒后自动消失
+            // Auto-dismiss after 3 seconds
             DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
                 withAnimation(.spring(response: 0.3)) {
                     isVisible = false

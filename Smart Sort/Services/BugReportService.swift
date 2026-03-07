@@ -9,7 +9,7 @@ import Foundation
 import UIKit
 import Supabase
 
-/// bug_reports 表记录
+/// Record inserted into the `bug_reports` table
 struct BugReportRecord: Encodable {
     let user_id: UUID
     let title: String
@@ -19,7 +19,7 @@ struct BugReportRecord: Encodable {
     let app_version: String
 }
 
-/// 设备信息（存为 JSONB）
+/// Device information stored as JSONB
 struct DeviceInfo: Encodable {
     let model: String
     let system_name: String
@@ -34,7 +34,7 @@ class BugReportService {
 
     private init() {}
 
-    /// 提交 Bug Report，可选附带日志文件
+    /// Submit a bug report with an optional log attachment
     func submitReport(
         title: String,
         description: String,
@@ -50,7 +50,7 @@ class BugReportService {
 
         LogManager.shared.log("Submitting bug report: \(title)", level: .info, category: "BugReport")
 
-        // 1. 收集设备信息
+        // 1. Collect device information
         let device = UIDevice.current
         let deviceInfo = DeviceInfo(
             model: device.model,
@@ -60,7 +60,7 @@ class BugReportService {
 
         let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown"
 
-        // 2. 可选上传日志文件
+        // 2. Upload the log file if requested
         var logPath: String? = nil
 
         if attachLog, let logData = LogManager.shared.getLogData() {
@@ -86,7 +86,7 @@ class BugReportService {
             LogManager.shared.log("Log file uploaded: \(filePath)", level: .info, category: "BugReport")
         }
 
-        // 3. 写入 bug_reports 表
+        // 3. Insert the record into bug_reports
         let record = BugReportRecord(
             user_id: userId,
             title: title,

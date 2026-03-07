@@ -482,7 +482,7 @@ class CommunityDetailViewModel: ObservableObject {
         isLoading = false
     }
 
-    /// 报名活动
+    /// Register for an event
     func registerForEvent(_ event: CommunityEvent) async -> Bool {
         do {
             let success = try await eventService.registerForEvent(event.id)
@@ -499,7 +499,7 @@ class CommunityDetailViewModel: ObservableObject {
         }
     }
 
-    /// 取消报名
+    /// Cancel event registration
     func cancelRegistration(_ event: CommunityEvent) async -> Bool {
         do {
             let success = try await eventService.cancelEventRegistration(event.id)
@@ -517,7 +517,7 @@ class CommunityDetailViewModel: ObservableObject {
         }
     }
 
-    /// 切换报名状态
+    /// Toggle registration state
     func toggleRegistration(for event: CommunityEvent) async {
         if event.isRegistered {
             _ = await cancelRegistration(event)

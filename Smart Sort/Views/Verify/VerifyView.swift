@@ -317,7 +317,7 @@ struct VerifyView: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 20) {
-                // 🎨 动态加载动画
+                // Animated loading indicator
                 ZStack {
                     paperIconCircle
                         .frame(width: 100, height: 100)

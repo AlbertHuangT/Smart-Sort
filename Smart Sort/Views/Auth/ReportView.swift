@@ -21,7 +21,7 @@ struct ReportView: View {
     @State private var itemName = ""
     @State private var isSubmitting = false
     @State private var showSuccess = false
-    // 🔥 FIX: 添加错误状态
+    // Error presentation state
     @State private var showError = false
     @State private var errorMessage = ""
 
@@ -138,7 +138,7 @@ struct ReportView: View {
                 print("Feedback Error: \(error)")
                 await MainActor.run {
                     isSubmitting = false
-                    // 🔥 FIX: 显示错误信息给用户
+                    // Surface the submission error to the user
                     errorMessage = "Failed to submit: \(error.localizedDescription)"
                     showError = true
                 }

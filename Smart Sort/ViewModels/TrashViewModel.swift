@@ -39,8 +39,7 @@ class TrashViewModel: ObservableObject {
     private let gamificationService: GamificationServicing
     private let photoModerationService: PhotoModerating
     
-    // 🔥 修改：移除了默认参数 = nil，强制要求传入 classifier
-    // 这样你就永远不会意外用到假服务了
+    // Require an explicit classifier so tests and previews do not silently use a fake default
     init(classifier: TrashClassifierService) {
         self.classifier = classifier
         self.feedbackService = FeedbackService.shared
@@ -85,7 +84,7 @@ class TrashViewModel: ObservableObject {
     func analyzeImage(image: UIImage) {
         guard appState != .analyzing else { return }
         
-        // 🔥 Fix: Check for initialization error immediately
+        // Check for initialization errors before starting analysis
         if let initError = classifier.initializationError {
             classifierPreparationState = .failed(initError)
             self.appState = .error(initError)
@@ -166,7 +165,7 @@ class TrashViewModel: ObservableObject {
         originalResult: TrashAnalysisResult,
         correctedName: String
     ) async {
-        // 🔥 FIX: 防止重复提交
+        // Prevent duplicate submissions
         guard case .collectingFeedback = appState else { return }
         let trimmedCorrection = correctedName.trimmingCharacters(in: .whitespacesAndNewlines)
 
@@ -187,7 +186,7 @@ class TrashViewModel: ObservableObject {
 
         LogManager.shared.log("Submitting report...", level: .info, category: "Feedback")
 
-        // 🔥 FIX: 设置中间状态防止重复提交
+        // Move into a submitting state to block double taps
         self.appState = .submittingFeedback(originalResult)
 
         do {
@@ -200,16 +199,16 @@ class TrashViewModel: ObservableObject {
             )
             LogManager.shared.log("Report uploaded successfully", level: .info, category: "Feedback")
             grantPoints(amount: 20)
-            // 🔥 FIX: 成功后重置状态
+            // Reset after a successful submission
             self.reset()
         } catch {
-            // 🔥 FIX: 检查是否被取消
+            // Restore state cleanly if the task was cancelled
             if Task.isCancelled {
                 self.appState = .collectingFeedback(originalResult)
                 return
             }
             LogManager.shared.log("Upload failed: \(error)", level: .error, category: "Feedback")
-            // 🔥 设置错误状态让用户知道上传失败
+            // Surface the upload failure to the UI
             self.appState = .error("Failed to submit feedback: \(error.localizedDescription)")
         }
     }

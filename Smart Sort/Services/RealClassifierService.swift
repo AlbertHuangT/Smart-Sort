@@ -11,7 +11,7 @@ import UIKit
 import SwiftUI
 import Accelerate
 
-// 1. 定义知识库的数据结构 (Revised for robustness)
+// 1. Knowledge base data model (revised for robustness)
 struct TrashItem: Decodable {
     let label: String
     let category: String
@@ -23,7 +23,7 @@ struct TrashItem: Decodable {
     // For now, we rely on the standard Decodable but catch errors at the batch level.
 }
 
-// 🚀 优化：预计算并缓存归一化后的向量
+// Precompute and cache normalized embeddings
 private struct NormalizedTrashItem {
     let label: String
     let category: String
@@ -35,22 +35,22 @@ class RealClassifierService: TrashClassifierService {
     static let confidenceThreshold: Float = 0.10
 
 
-    // 视觉模型 (The Eye)
+    // Vision model
     private var model: VNCoreMLModel?
 
-    // 线程安全锁
+    // Thread-safe access queue
     private let accessQueue = DispatchQueue(label: "com.trash.knowledgeBase", attributes: .concurrent)
 
-    // 🚀 优化：使用预归一化的向量缓存
+    // Cache the normalized knowledge base
     private var _normalizedKnowledgeBase: [NormalizedTrashItem] = []
 
-    // 线程安全的状态标志
+    // Thread-safe readiness flags
     private var _isModelReady = false
     private var _isKnowledgeBaseReady = false
     private var _initializationError: String? = nil
 
 
-    // 线程安全的访问入口
+    // Thread-safe accessors
     private var normalizedKnowledgeBase: [NormalizedTrashItem] {
         get { accessQueue.sync { _normalizedKnowledgeBase } }
         set { accessQueue.async(flags: .barrier) { self._normalizedKnowledgeBase = newValue } }
@@ -77,13 +77,13 @@ class RealClassifierService: TrashClassifierService {
     }
 
     private init() {
-        // 🚀 优化：并行加载模型和知识库
+        // Load the model and knowledge base in parallel
         let group = DispatchGroup()
 
         group.enter()
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             self?.setupModel()
-            self?.warmupModel() // 🚀 预热模型
+            self?.warmupModel() // Warm up the model once loaded
             group.leave()
         }
 
@@ -93,9 +93,9 @@ class RealClassifierService: TrashClassifierService {
             group.leave()
         }
 
-        // 完成后打印状态
+        // Log final readiness
         group.notify(queue: .main) {
-            LogManager.shared.log("AI 系统完全就绪", level: .info, category: "System")
+            LogManager.shared.log("AI system is fully ready", level: .info, category: "System")
         }
     }
 
@@ -116,14 +116,14 @@ class RealClassifierService: TrashClassifierService {
     private func setupModel() {
         do {
             let config = MLModelConfiguration()
-            config.computeUnits = .all // 使用 NPU 加速
+            config.computeUnits = .all // Use all compute units, including the Neural Engine
 
             let coreModel = try MobileCLIPImage(configuration: config)
             self.model = try VNCoreMLModel(for: coreModel.model)
             self.isModelReady = true
-            LogManager.shared.log("MobileCLIP S2 视觉系统就绪", level: .info, category: "System")
+            LogManager.shared.log("MobileCLIP S2 vision stack ready", level: .info, category: "System")
         } catch {
-            LogManager.shared.log("模型加载失败: \(error)", level: .error, category: "System")
+            LogManager.shared.log("Model load failed: \(error)", level: .error, category: "System")
             // 🔥 Fix: Set error state
             accessQueue.async(flags: .barrier) {
                 self._initializationError = "Failed to load AI Model: \(error.localizedDescription)"
@@ -131,11 +131,11 @@ class RealClassifierService: TrashClassifierService {
         }
     }
 
-    // 🚀 新增：模型预热 - 用一张小图运行一次，让 NPU 预加载
+    // Warm up the model with a tiny placeholder image
     private func warmupModel() {
         guard let model = self.model else { return }
 
-        // 创建一个 224x224 的空白图片进行预热（使用线程安全的 UIGraphicsImageRenderer）
+        // Create a blank 224x224 image for the warm-up pass
         let size = CGSize(width: 224, height: 224)
         let renderer = UIGraphicsImageRenderer(size: size)
         let warmupImage = renderer.image { ctx in
@@ -151,12 +151,12 @@ class RealClassifierService: TrashClassifierService {
         let handler = VNImageRequestHandler(ciImage: ciImage, orientation: .up)
 
         try? handler.perform([request])
-        LogManager.shared.log("模型预热完成", level: .info, category: "System")
+        LogManager.shared.log("Model warm-up finished", level: .info, category: "System")
     }
 
     private func loadKnowledgeBase() {
         guard let url = Bundle.main.url(forResource: "trash_knowledge", withExtension: "json") else {
-            LogManager.shared.log("严重错误: 找不到 trash_knowledge.json 文件", level: .error, category: "System")
+            LogManager.shared.log("Critical error: trash_knowledge.json is missing", level: .error, category: "System")
             accessQueue.async(flags: .barrier) {
                 self._initializationError = "Missing trash_knowledge.json in app bundle."
             }
@@ -167,7 +167,7 @@ class RealClassifierService: TrashClassifierService {
             let data = try Data(contentsOf: url)
             let items = try JSONDecoder().decode([TrashItem].self, from: data)
 
-            // 🚀 优化：预计算归一化向量
+            // Precompute normalized embeddings
             var normalized: [NormalizedTrashItem] = []
             normalized.reserveCapacity(items.count)
 
@@ -192,9 +192,9 @@ class RealClassifierService: TrashClassifierService {
 
             self.normalizedKnowledgeBase = normalized
             self.isKnowledgeBaseReady = true
-            LogManager.shared.log("成功加载知识库: \(normalized.count) 个预归一化向量", level: .info, category: "System")
+            LogManager.shared.log("Knowledge base loaded with \(normalized.count) normalized embeddings", level: .info, category: "System")
         } catch {
-            LogManager.shared.log("JSON 解析失败: \(error)", level: .error, category: "System")
+            LogManager.shared.log("JSON decoding failed: \(error)", level: .error, category: "System")
             // 🔥 Fix: Set error state
             accessQueue.async(flags: .barrier) {
                 self._initializationError = "Failed to load Knowledge Base: \(error.localizedDescription)"
@@ -217,7 +217,7 @@ class RealClassifierService: TrashClassifierService {
         }
 
         if !isReady {
-            LogManager.shared.log("系统尚未准备就绪", level: .warning, category: "Classifier")
+            LogManager.shared.log("System is not ready yet", level: .warning, category: "Classifier")
             return TrashAnalysisResult(
                 itemName: "AI Warming Up...",
                 category: "Please Wait",
@@ -300,7 +300,7 @@ class RealClassifierService: TrashClassifierService {
                     do {
                         try unsafeHandler.perform([unsafeRequest])
                     } catch {
-                        LogManager.shared.log("Vision 请求失败: \(error)", level: .error, category: "Classifier")
+                        LogManager.shared.log("Vision request failed: \(error)", level: .error, category: "Classifier")
                         continuation.resume(returning: TrashAnalysisResult(
                             itemName: "Analysis Failed", category: "Error",
                             confidence: 0.0,
@@ -313,13 +313,13 @@ class RealClassifierService: TrashClassifierService {
         }
     }
 
-    // MARK: - 🚀 优化后的向量匹配
+    // MARK: - Optimized vector matching
 
     private func findBestMatchOptimized(imageVector: [Float]) -> (label: String, category: String, score: Float)? {
         let currentKnowledge = self.normalizedKnowledgeBase
         guard !currentKnowledge.isEmpty else { return nil }
 
-        // 计算输入向量的模长
+        // Compute the input vector norm
         var sumOfSquares: Float = 0
         vDSP_dotpr(imageVector, 1, imageVector, 1, &sumOfSquares, vDSP_Length(imageVector.count))
         let imageNorm = sqrt(sumOfSquares)
@@ -329,17 +329,17 @@ class RealClassifierService: TrashClassifierService {
             return nil
         }
 
-        // 🚀 优化：使用 vDSP 批量归一化
+        // Normalize the input with vDSP
         var normalizedImage = [Float](repeating: 0, count: imageVector.count)
         var normValue = imageNorm
         vDSP_vsdiv(imageVector, 1, &normValue, &normalizedImage, 1, vDSP_Length(imageVector.count))
 
-        // 🚀 优化：使用并行计算找最佳匹配
+        // Track the best match while scanning the knowledge base
         var bestScore: Float = -1
         var bestIndex = -1
 
         #if DEBUG
-        // 在首次遍历中收集 top-5，避免双重计算
+        // Collect top-5 scores in the first pass to avoid duplicate work
         var topScores: [(index: Int, score: Float)] = []
         #endif
 
@@ -355,7 +355,7 @@ class RealClassifierService: TrashClassifierService {
             }
 
             #if DEBUG
-            // 维护一个最多 5 个元素的有序数组
+            // Maintain a sorted top-5 list
             if topScores.count < 5 {
                 topScores.append((index, score))
                 topScores.sort { $0.score > $1.score }
@@ -367,9 +367,9 @@ class RealClassifierService: TrashClassifierService {
         }
 
         #if DEBUG
-        print("\n-------- 🧠 AI 思考过程 (Top 5) --------")
+        print("\n-------- AI match scores (Top 5) --------")
         for (rank, match) in topScores.enumerated() {
-            print("👉 #\(rank + 1) [\(currentKnowledge[match.index].label)] 得分: \(match.score)")
+            print("#\(rank + 1) [\(currentKnowledge[match.index].label)] score: \(match.score)")
         }
         print("---------------------------------------\n")
         #endif

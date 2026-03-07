@@ -20,7 +20,7 @@ class AchievementService: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
 
-    // 成就解锁通知
+    // Achievement unlock notification
     @Published var lastGrantedAchievement: AchievementGrantResult?
 
     private let client = SupabaseManager.shared.client
@@ -138,7 +138,7 @@ class AchievementService: ObservableObject {
 
     func unequipAchievement() async -> Bool {
         do {
-            // 传 NULL 给 set_primary_achievement 来取消装备
+            // Pass NULL to set_primary_achievement to unequip
             try await client
                 .rpc("set_primary_achievement", params: AchievementEquipParams(achievement_id: nil))
                 .execute()
@@ -154,7 +154,7 @@ class AchievementService: ObservableObject {
 
     // MARK: - System Auto-Grant
 
-    /// 检查并自动授予系统成就
+    /// Check and auto-grant system achievements
     func checkAndGrant(triggerKey: String) async {
         do {
 
@@ -167,7 +167,7 @@ class AchievementService: ObservableObject {
             if result.granted {
                 print("🏆 Achievement unlocked: \(result.name ?? "Unknown")")
                 self.lastGrantedAchievement = result
-                // 刷新成就列表
+                // Refresh the achievement list
                 await fetchMyAchievements()
             }
         } catch {
@@ -175,7 +175,7 @@ class AchievementService: ObservableObject {
         }
     }
 
-    /// 批量检查多个触发条件（并发执行 RPC）
+    /// Check multiple triggers in parallel
     func checkMultipleTriggers(_ triggers: [String]) async {
         // Fire all RPC calls concurrently, collect granted results
         let grantedResults: [AchievementGrantResult] = await withTaskGroup(of: AchievementGrantResult?.self) { group in
@@ -246,9 +246,8 @@ class AchievementService: ObservableObject {
         }
     }
 
-    /// 清除通知
+    /// Clear the notification
     func dismissGrantNotification() {
         lastGrantedAchievement = nil
     }
 }
-

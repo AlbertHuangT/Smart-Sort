@@ -28,10 +28,10 @@ struct GrantAchievementToMemberView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // 成就信息头
+            // Achievement header
             achievementHeader
 
-            // 搜索栏
+            // Search bar
             TrashSearchField(placeholder: "Search members...", text: $searchText)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 12)
@@ -46,7 +46,7 @@ struct GrantAchievementToMemberView: View {
                 .padding(.horizontal, 16)
             .padding(.top, 12)
 
-            // 成员列表
+            // Member list
             if service.isLoading {
                 Spacer()
                 ProgressView()
@@ -151,7 +151,7 @@ struct GrantAchievementToMemberView: View {
 
     private func memberRow(_ member: CommunityMemberForGrant) -> some View {
         HStack(spacing: 14) {
-            // 头像
+            // Avatar
             ZStack {
                 Circle()
                     .fill(theme.surfaceBackground)
@@ -202,7 +202,7 @@ struct GrantAchievementToMemberView: View {
                         if success {
                             grantedUsername = member.username
                             showSuccessAlert = true
-                            // 刷新列表
+                            // Refresh the list
                             await service.fetchCommunityMembersForGrant(
                                 communityId: communityId,
                                 achievementId: achievement.id

@@ -18,7 +18,7 @@ class ProfileViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var isAppAdmin = false
     
-    // 成就展示
+    // Equipped achievement display
     @Published var equippedAchievementIcon: String?
     @Published var equippedAchievementName: String?
     @Published var equippedAchievementRarity: AchievementRarity?
@@ -57,7 +57,7 @@ class ProfileViewModel: ObservableObject {
             calculateLevel()
             await fetchAdminStatus()
             
-            // 获取装备的成就信息
+            // Load the equipped achievement metadata
             if let achievementId = profile.selectedAchievementId {
                 await fetchEquippedAchievement(achievementId)
             } else {

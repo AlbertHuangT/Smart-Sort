@@ -16,10 +16,10 @@ import Supabase
 class UserSettings: ObservableObject {
     static let shared = UserSettings()
 
-    // 用户选择的位置
+    // User-selected location
     @Published var selectedLocation: UserLocation?
 
-    // 🚀 新增：精确定位相关
+    // Precise location state
     @Published var preciseLocation: CLLocation?
     @Published var locationPermissionStatus: CLAuthorizationStatus = .notDetermined
     @Published var isRequestingLocation = false
@@ -64,7 +64,7 @@ class UserSettings: ObservableObject {
             .store(in: &cancellables)
     }
 
-    // 🚀 新增：设置定位管理器
+    // Configure the location manager callbacks
     private func setupLocationManager() {
         locationManager.onAuthorizationChange = { [weak self] status in
             Task { @MainActor in
@@ -85,24 +85,24 @@ class UserSettings: ObservableObject {
         locationPermissionStatus = locationManager.authorizationStatus
     }
 
-    // 🚀 新增：请求定位权限
+    // Request location permission
     func requestLocationPermission() {
         locationManager.requestPermission()
     }
 
-    // 🚀 新增：获取当前位置
+    // Request the current precise location
     func requestCurrentLocation() {
         isRequestingLocation = true
         locationManager.requestLocation()
     }
 
-    // 🚀 新增：检查是否有定位权限
+    // Whether precise location permission is available
     var hasLocationPermission: Bool {
         locationPermissionStatus == .authorizedWhenInUse || locationPermissionStatus == .authorizedAlways
     }
 
     private func loadSavedData() {
-        // 加载位置
+        // Load the persisted location
         if let data = UserDefaults.standard.data(forKey: scopedLocationKey()),
            let location = try? JSONDecoder().decode(UserLocation.self, from: data) {
             selectedLocation = location
@@ -151,7 +151,7 @@ class UserSettings: ObservableObject {
                 UserDefaults.standard.set(data, forKey: scopedLocationKey())
             }
 
-            // 加载该城市的社区
+            // Load communities for the selected city
             await loadCommunitiesForCity(location.city)
         } else {
             UserDefaults.standard.removeObject(forKey: scopedLocationKey())
@@ -159,7 +159,7 @@ class UserSettings: ObservableObject {
         }
     }
 
-    // 同步版本 (用于 UI 绑定)
+    // Synchronous wrapper for UI bindings
     func selectLocationSync(_ location: UserLocation?) {
         Task {
             await selectLocation(location)
@@ -168,32 +168,32 @@ class UserSettings: ObservableObject {
 
     // MARK: - Community Methods
 
-    /// 加载指定城市的社区
+    /// Load communities for a specific city
     func loadCommunitiesForCity(_ city: String) async {
         await communityStore.loadCommunitiesForCity(city)
     }
 
-    /// 加载用户已加入的社区
+    /// Load the user's joined communities
     func loadMyCommunities() async {
         await communityStore.loadMyCommunities()
     }
 
-    /// 加入社区（支持审批流程）- Optimistic UI
+    /// Join a community, supporting approval flows, with optimistic UI
     func joinCommunity(_ community: Community) async -> (success: Bool, requiresApproval: Bool) {
         await communityStore.joinCommunity(community)
     }
 
-    /// 离开社区 - Optimistic UI
+    /// Leave a community with optimistic UI updates
     func leaveCommunity(_ community: Community) async -> Bool {
         await communityStore.leaveCommunity(community)
     }
 
-    /// 检查是否是社区成员
+    /// Check whether the user is a member of the community
     func isMember(of community: Community) -> Bool {
         communityStore.isMember(of: community)
     }
 
-    /// 检查是否是社区管理员
+    /// Check whether the user is an admin of the community
     func isAdmin(of community: Community) -> Bool {
         communityStore.isAdmin(of: community)
     }
@@ -202,17 +202,17 @@ class UserSettings: ObservableObject {
         communityStore.isPending(of: community)
     }
 
-    /// 获取已加入的社区 (本地缓存)
+    /// Return joined communities from local cache
     func getJoinedCommunities() -> [Community] {
         communityStore.getJoinedCommunities()
     }
 
-    /// 获取当前城市的社区
+    /// Return communities near the current city selection
     func getCommunitiesNearLocation(_ location: UserLocation? = nil) -> [Community] {
         communityStore.getCommunitiesNearLocation(location)
     }
 
-    // MARK: - Search (本地)
+    // MARK: - Local search
 
     func searchCommunities(query: String, inCity: String? = nil) -> [Community] {
         communityStore.searchCommunities(query: query, inCity: inCity)

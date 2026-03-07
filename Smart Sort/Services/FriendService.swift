@@ -12,7 +12,7 @@ import Combine
 
 // MARK: - Models
 
-// FriendUser 依然保留，确保它是 Sendable 的
+// FriendUser remains separate so it stays Sendable
 struct FriendUser: Decodable, Identifiable, Sendable {
     let id: UUID
     let username: String
@@ -26,12 +26,12 @@ class FriendService: ObservableObject {
     @Published var friends: [FriendUser] = []
     @Published var permissionStatus: CNAuthorizationStatus = .notDetermined
     @Published var isLoading = false
-    // 🔥 添加错误消息
+    // Error surface for the UI
     @Published var errorMessage: String?
 
-    // 🚀 优化：添加缓存和节流
+    // Add caching and request throttling
     private var lastFetchTime: Date?
-    private let cacheValidDuration: TimeInterval = 60 // 缓存有效期60秒
+    private let cacheValidDuration: TimeInterval = 60 // Cache remains valid for 60 seconds
     private var fetchTask: Task<Void, Never>?
 
     private let contactStore = CNContactStore()
@@ -42,15 +42,15 @@ class FriendService: ObservableObject {
     }
 
     func checkPermission() {
-        // 🔥 每次调用都重新检查权限状态（用户可能从设置中更改了权限）
+        // Re-check each time in case the user changed permissions in Settings
         permissionStatus = CNContactStore.authorizationStatus(for: .contacts)
     }
 
     func requestAccessAndFetch() async {
-        // 🔥 先更新权限状态
+        // Refresh permission state first
         checkPermission()
 
-        // 🔥 如果已经授权，直接获取联系人
+        // If already authorized, fetch contacts immediately
         if permissionStatus == .authorized {
             await fetchContactsAndSync()
             return
@@ -58,7 +58,7 @@ class FriendService: ObservableObject {
 
         do {
             let granted = try await contactStore.requestAccess(for: .contacts)
-            // 🔥 更新权限状态
+            // Refresh permission state
             checkPermission()
 
             if granted {
@@ -67,28 +67,28 @@ class FriendService: ObservableObject {
         } catch {
             print("❌ Contact access denied: \(error)")
             errorMessage = "Contact access denied"
-            // 🔥 更新权限状态
+            // Refresh permission state
             checkPermission()
         }
     }
 
     func fetchContactsAndSync(forceRefresh: Bool = false) async {
-        // 🔥 先检查权限
+        // Check permission first
         checkPermission()
         guard permissionStatus == .authorized else {
             errorMessage = "Contact permission not granted"
             return
         }
 
-        // 🚀 优化：检查缓存是否有效
+        // Reuse cached results when still valid
         if !forceRefresh,
            !friends.isEmpty,
            let lastTime = lastFetchTime,
            Date().timeIntervalSince(lastTime) < cacheValidDuration {
-            return // 使用缓存数据
+            return // Use cached data
         }
 
-        // 🚀 优化：取消之前的请求
+        // Cancel the previous in-flight request
         fetchTask?.cancel()
 
         let task = Task { @MainActor in
@@ -97,7 +97,7 @@ class FriendService: ObservableObject {
             self.isLoading = true
             self.errorMessage = nil
 
-            // 1. 读取本地通讯录 (使用 Task.detached 在后台线程执行)
+            // 1. Read local contacts on a background thread
             let (emails, phones) = await Task.detached { () -> ([String], [String]) in
                 let store = CNContactStore()
                 let keys = [CNContactPhoneNumbersKey, CNContactEmailAddressesKey] as [CNKeyDescriptor]
@@ -107,19 +107,19 @@ class FriendService: ObservableObject {
                 var phones: [String] = []
 
                 try? store.enumerateContacts(with: request) { contact, _ in
-                    // 提取邮箱
+                    // Extract emails
                     for email in contact.emailAddresses {
                         emails.append(email.value as String)
                     }
-                    // 提取手机号 (清洗非数字字符)
+                    // Extract phone numbers and strip non-digits
                     for phone in contact.phoneNumbers {
                         let raw = phone.value.stringValue
-                        // 仅保留数字
+                        // Keep digits only
                         let clean = raw.components(separatedBy: CharacterSet.decimalDigits.inverted).joined()
 
                         if !clean.isEmpty {
                             phones.append(clean)
-                            // 如果包含加号 (如 +1)，也保留原始格式作为备选
+                            // Preserve the original +country-code format as a fallback
                             if raw.contains("+") {
                                 phones.append(raw)
                             }
@@ -134,7 +134,7 @@ class FriendService: ObservableObject {
                 return
             }
 
-            // 2. 调用 Supabase RPC 获取匹配的好友
+            // 2. Call the Supabase RPC to find matching friends
             do {
                 let params: [String: [String]] = [
                     "p_emails": emails,
@@ -152,7 +152,7 @@ class FriendService: ObservableObject {
                 }
 
                 self.friends = matchedFriends
-                self.lastFetchTime = Date() // 🚀 更新缓存时间
+                self.lastFetchTime = Date() // Refresh cache timestamp
                 self.isLoading = false
             } catch {
                 guard !Task.isCancelled else {
