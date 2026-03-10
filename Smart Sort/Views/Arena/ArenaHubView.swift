@@ -79,9 +79,9 @@ struct ArenaHubView: View {
                             if pendingBadgeCount > 0 {
                                 Text("\(pendingBadgeCount)")
                                     .font(.caption2.bold())
-                                    .foregroundStyle(.white)
+                                    .foregroundStyle(theme.onAccentForeground)
                                     .padding(4)
-                                    .background(Color.red, in: Capsule())
+                                    .background(theme.semanticDanger, in: Capsule())
                                     .clipShape(Circle())
                                     .offset(x: 8, y: -8)
                             }

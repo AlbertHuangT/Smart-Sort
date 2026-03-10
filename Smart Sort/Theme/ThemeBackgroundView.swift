@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ThemeBackgroundView: View {
-    private let theme = TrashTheme()
+    @Environment(\.trashTheme) private var theme
 
     var body: some View {
         ZStack {
@@ -41,12 +41,12 @@ struct ThemeBackgroundView: View {
 }
 
 private struct TrashScreenBackgroundModifier: ViewModifier {
+    @Environment(\.trashTheme) private var theme
+
     func body(content: Content) -> some View {
-        ZStack {
-            content
-        }
+        content
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .clipped()
+        .background(theme.appBackground.ignoresSafeArea())
     }
 }
 

@@ -13,6 +13,8 @@ struct Smart_SortApp: App {
     @StateObject private var authVM = AuthViewModel()
     @StateObject private var trashVM = TrashViewModel(classifier: RealClassifierService.shared)
     @StateObject private var appRouter = AppRouter.shared
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+    private let theme = TrashTheme()
 
     init() {
         TrashTheme().configureAppearance()
@@ -23,7 +25,12 @@ struct Smart_SortApp: App {
             ZStack {
                 // --- 1. Core Page Layer ---
                 Group {
-                    if authVM.session != nil {
+                    if !hasCompletedOnboarding {
+                        SWOnboardingView {
+                            hasCompletedOnboarding = true
+                        }
+                        .transition(.opacity)
+                    } else if authVM.session != nil {
                         ContentView()
                             .environmentObject(trashVM)
                             .transition(.opacity)
@@ -41,6 +48,8 @@ struct Smart_SortApp: App {
                         .zIndex(100)  // Always on top
                 }
             }
+            .swAlert()
+            .environment(\.trashTheme, theme)
             .environmentObject(authVM)
             .environmentObject(appRouter)
             // Observe URL
@@ -70,7 +79,7 @@ struct Smart_SortApp: App {
 // --- 3. Extracted Stylish Overlay Component ---
 struct DeepLinkOverlay: View {
     let status: AuthDeepLinkStatus
-    private let theme = TrashTheme()
+    @Environment(\.trashTheme) private var theme
 
     var body: some View {
         VStack {
@@ -109,8 +118,14 @@ struct DeepLinkOverlay: View {
             }
             .padding(.vertical, 12)
             .padding(.horizontal, 20)
-            .background(.ultraThinMaterial)  // Frosted glass background
-            .cornerRadius(30)
+            .background(
+                Capsule()
+                    .fill(theme.surfaceBackground)
+                    .overlay(
+                        Capsule()
+                            .stroke(theme.palette.divider.opacity(0.85), lineWidth: 1)
+                    )
+            )
             .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: 5)
         }
         .frame(maxHeight: .infinity, alignment: .top)  // Fixed at the top of the screen

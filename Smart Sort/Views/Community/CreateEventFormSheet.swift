@@ -12,7 +12,7 @@ struct CreateEventFormSheet: View {
     @Binding var isPresented: Bool
     @ObservedObject var userSettings: UserSettings
     var onCreated: () -> Void
-    private let theme = TrashTheme()
+    @Environment(\.trashTheme) private var theme
 
     @State private var title = ""
     @State private var description = ""
@@ -44,7 +44,7 @@ struct CreateEventFormSheet: View {
     }
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: theme.layout.sectionSpacing) {
                     VStack(alignment: .leading, spacing: theme.layout.elementSpacing) {

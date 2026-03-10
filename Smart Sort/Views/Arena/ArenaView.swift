@@ -479,7 +479,11 @@ struct EnhancedSessionSummaryView: View {
             ],
             onPlayAgain: {
                 Task { await viewModel.startNewSession() }
-            }
+            },
+            ringData: [
+                .init(label: "Accuracy", value: Double(accuracy), color: theme.accents.blue),
+                .init(label: "Score", value: min(Double(viewModel.sessionScore), 100), color: theme.accents.orange)
+            ]
         )
     }
 }
@@ -511,91 +515,5 @@ struct EnhancedStatRow: View {
                 .fontWeight(.bold)
                 .foregroundColor(theme.palette.textPrimary)
         }
-    }
-}
-
-// Backward compatibility wrappers
-struct AnonymousRestrictionView: View {
-    var body: some View {
-        EnhancedAnonymousRestrictionView()
-    }
-}
-
-private struct ArenaEmptyStateView: View {
-    var onRefresh: () -> Void
-    var body: some View {
-        EnhancedEmptyStateView(onRefresh: onRefresh)
-    }
-}
-
-struct QuizCard: View {
-    let question: QuizQuestion
-    let image: UIImage?
-    let categories: [String]
-    let showCorrect: Bool
-    let showWrong: Bool
-    let isSubmitting: Bool
-    let pointsText: String
-    let onAnswer: (String) -> Void
-
-    var body: some View {
-        EnhancedQuizCard(
-            question: question,
-            image: image,
-            imageFailed: false,
-            correctAnswer: nil,
-            categories: categories,
-            showCorrect: showCorrect,
-            showWrong: showWrong,
-            isSubmitting: isSubmitting,
-            pointsText: pointsText,
-            onRetryImage: nil,
-            onAnswer: onAnswer
-        )
-    }
-}
-
-struct CorrectFeedbackOverlay: View {
-    let pointsText: String
-    var body: some View {
-        EnhancedCorrectFeedback(pointsText: pointsText)
-    }
-}
-
-struct WrongFeedbackOverlay: View {
-    let correctAnswer: String
-    var body: some View {
-        EnhancedWrongFeedback(correctAnswer: correctAnswer)
-    }
-}
-
-struct ComboOverlay: View {
-    let comboCount: Int
-    var body: some View {
-        EnhancedComboOverlay(comboCount: comboCount)
-    }
-}
-
-struct ComboBreakOverlay: View {
-    var body: some View {
-        EnhancedComboBreakOverlay()
-    }
-}
-
-struct SessionSummaryView: View {
-    @ObservedObject var viewModel: ArenaViewModel
-    var body: some View {
-        EnhancedSessionSummaryView(viewModel: viewModel)
-    }
-}
-
-struct StatRow: View {
-    let icon: String
-    let title: String
-    let value: String
-    let color: Color
-
-    var body: some View {
-        EnhancedStatRow(icon: icon, title: title, value: value, color: color)
     }
 }

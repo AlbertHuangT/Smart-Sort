@@ -214,6 +214,8 @@ struct GenericSessionSummaryView: View {
     let stats: [(icon: String, title: String, value: String, color: Color)]
     let onPlayAgain: () -> Void
     var onViewLeaderboard: (() -> Void)? = nil
+    /// Optional ring chart data. When provided, shows a ring progress chart above stats.
+    var ringData: [SWRingChart<EmptyView>.DataPoint]? = nil
 
     @State private var showStats = false
     private let theme = TrashTheme()
@@ -251,6 +253,12 @@ struct GenericSessionSummaryView: View {
                     .font(theme.typography.title.weight(.heavy))
                     .foregroundColor(theme.palette.textPrimary)
                     .multilineTextAlignment(.center)
+
+                if let ringData, !ringData.isEmpty {
+                    SWRingChart(data: ringData)
+                        .opacity(showStats ? 1 : 0)
+                        .offset(y: showStats ? 0 : 20)
+                }
 
                 VStack(spacing: theme.layout.elementSpacing) {
                     ForEach(Array(stats.enumerated()), id: \.offset) { _, stat in

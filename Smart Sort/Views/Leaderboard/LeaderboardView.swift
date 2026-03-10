@@ -110,9 +110,14 @@ struct LeaderboardView: View {
             if friendService.permissionStatus != .authorized {
                 permissionRequestView
             } else if friendService.isLoading {
-                Spacer()
-                ProgressView("Finding your friends...")
-                Spacer()
+                ScrollView {
+                    LazyVStack(spacing: theme.layout.elementSpacing) {
+                        ForEach(0..<8, id: \.self) { _ in
+                            ShimmerSkeletonRow()
+                        }
+                    }
+                    .padding(.top, theme.layout.elementSpacing)
+                }
             } else {
                 ScrollView {
                     if friendService.friends.isEmpty {
@@ -157,9 +162,14 @@ struct LeaderboardView: View {
             }
 
             if isCommunityLoading {
-                Spacer()
-                ProgressView("Loading leaderboard...")
-                Spacer()
+                ScrollView {
+                    LazyVStack(spacing: theme.layout.elementSpacing) {
+                        ForEach(0..<8, id: \.self) { _ in
+                            ShimmerSkeletonRow()
+                        }
+                    }
+                    .padding(.top, theme.layout.elementSpacing)
+                }
             } else if myCommunities.isEmpty {
                 noCommunityView
             } else if communityUsers.isEmpty {

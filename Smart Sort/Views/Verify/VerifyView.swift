@@ -97,7 +97,7 @@ struct VerifyView: View {
                 .padding(.horizontal, theme.layout.screenInset)
                 .padding(.top, theme.layout.elementSpacing)
                 .padding(.bottom, theme.layout.elementSpacing)
-                .background(.ultraThinMaterial)
+                .background(theme.appBackground)
         }
         .navigationTitle("Verify")
         .navigationBarTitleDisplayMode(.inline)
@@ -201,8 +201,9 @@ struct VerifyView: View {
                         .resizable()
                         .scaledToFill()
                 } else if isCameraActive {
-                    CameraPreview(cameraManager: cameraManager)
-                        .overlay(ScanLineOverlay())
+                    SWScanningOverlay(gridOpacity: 0.18, bandOpacity: 0.35, speed: 1.8) {
+                        CameraPreview(cameraManager: cameraManager)
+                    }
                 } else {
                     VStack(spacing: 12) {
                         StampedIcon(

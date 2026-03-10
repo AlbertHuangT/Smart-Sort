@@ -21,7 +21,7 @@ struct TrashTabItem<Value: Hashable>: Identifiable {
 struct TrashSegmentedControl<Value: Hashable>: View {
     let options: [TrashSegmentOption<Value>]
     @Binding var selection: Value
-    private let theme = TrashTheme()
+    @Environment(\.trashTheme) private var theme
 
     var body: some View {
         Picker("", selection: $selection) {

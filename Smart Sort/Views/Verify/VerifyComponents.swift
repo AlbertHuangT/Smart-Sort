@@ -187,36 +187,106 @@ enum SwipeDirection {
     case left, right
 }
 
-// MARK: - Scan Line Overlay
-struct ScanLineOverlay: View {
-    @State private var scanPos: CGFloat = 0
-    private let theme = TrashTheme()
+// MARK: - Scanning Overlay (ShipSwift SWScanningOverlay)
+
+struct SWScanningOverlay<Content: View>: View {
+    var gridOpacity: Double = 0.2
+    var bandOpacity: Double = 0.3
+    var bandHeightRatio: CGFloat = 0.2
+    var gridSpacing: CGFloat = 16
+    var speed: Double = 2.0
+    @ViewBuilder let content: () -> Content
+    @State private var startDate = Date.now
+
+    init(
+        gridOpacity: Double = 0.2,
+        bandOpacity: Double = 0.3,
+        bandHeightRatio: CGFloat = 0.2,
+        gridSpacing: CGFloat = 16,
+        speed: Double = 2.0,
+        @ViewBuilder content: @escaping () -> Content
+    ) {
+        self.gridOpacity = gridOpacity
+        self.bandOpacity = bandOpacity
+        self.bandHeightRatio = bandHeightRatio
+        self.gridSpacing = gridSpacing
+        self.speed = speed
+        self.content = content
+    }
 
     var body: some View {
-        GeometryReader { geo in
-            ZStack(alignment: .top) {
-                // Border
-                RoundedRectangle(cornerRadius: theme.layout.prominentCardCornerRadius)
-                    .stroke(theme.accents.blue.opacity(0.14), lineWidth: 1)
-
-                // Moving line
-                Rectangle()
-                    .fill(
-                        LinearGradient(
-                            colors: [.clear, theme.accents.blue.opacity(0.36), .clear],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .frame(height: 28)
-                    .offset(y: scanPos)
-                    .onAppear {
-                        withAnimation(.linear(duration: 2.0).repeatForever(autoreverses: true)) {
-                            scanPos = geo.size.height - 28
+        content()
+            .overlay {
+                TimelineView(.animation) { timeline in
+                    let t = timeline.date.timeIntervalSince(startDate)
+                    GeometryReader { geo in
+                        let size = geo.size
+                        ZStack {
+                            Canvas { ctx, _ in
+                                let phase = CGFloat(t * 0.8)
+                                let dx = sin(phase) * 3
+                                let dy = cos(phase * 0.9) * 3
+                                var path = Path()
+                                let step = max(10, gridSpacing)
+                                var x: CGFloat = -step
+                                while x <= size.width + step {
+                                    let xx = x + dx + sin((x / 80) + phase) * 1.5
+                                    path.move(to: CGPoint(x: xx, y: 0))
+                                    path.addLine(to: CGPoint(x: xx, y: size.height))
+                                    x += step
+                                }
+                                var y: CGFloat = -step
+                                while y <= size.height + step {
+                                    let yy = y + dy + cos((y / 80) + phase) * 1.5
+                                    path.move(to: CGPoint(x: 0, y: yy))
+                                    path.addLine(to: CGPoint(x: size.width, y: yy))
+                                    y += step
+                                }
+                                ctx.stroke(path, with: .color(.white.opacity(gridOpacity)), lineWidth: 1)
+                            }
+                            .blendMode(.screen)
+                            scanBand(size: size, time: t)
+                            noiseOverlay(time: t).opacity(0.06).blendMode(.overlay)
                         }
+                        .compositingGroup()
                     }
+                }
             }
+    }
+
+    private func scanBand(size: CGSize, time t: Double) -> some View {
+        let p = CGFloat((t * (0.22 * speed)).truncatingRemainder(dividingBy: 1.0))
+        let bandH = size.height * bandHeightRatio
+        let y = -bandH + (size.height + bandH * 2) * p
+        return ZStack {
+            Rectangle()
+                .fill(LinearGradient(stops: [
+                    .init(color: .clear, location: 0.0),
+                    .init(color: .white.opacity(bandOpacity * 0.4), location: 0.25),
+                    .init(color: .white.opacity(bandOpacity), location: 0.5),
+                    .init(color: .white.opacity(bandOpacity * 0.4), location: 0.75),
+                    .init(color: .clear, location: 1.0),
+                ], startPoint: .top, endPoint: .bottom))
+                .frame(height: bandH)
+                .position(x: size.width / 2, y: y)
+                .blendMode(.screen)
+            Rectangle()
+                .fill(Color.white.opacity(bandOpacity * 0.65))
+                .frame(height: 2)
+                .position(x: size.width / 2, y: y)
+                .blur(radius: 0.6)
+                .blendMode(.screen)
         }
+    }
+
+    private func noiseOverlay(time t: Double) -> some View {
+        LinearGradient(
+            colors: [.white.opacity(0.0), .white.opacity(1.0), .white.opacity(0.0)],
+            startPoint: .topLeading, endPoint: .bottomTrailing
+        )
+        .scaleEffect(1.6)
+        .offset(x: sin(t * 0.9) * 20, y: cos(t * 1.1) * 20)
+        .blur(radius: 12)
     }
 }
 

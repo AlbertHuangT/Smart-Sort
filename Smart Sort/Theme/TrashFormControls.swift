@@ -8,7 +8,7 @@ struct TrashIconButton: View {
    var activeColor: Color? = nil
    let action: () -> Void
 
-   private let theme = TrashTheme()
+   @Environment(\.trashTheme) private var theme
 
    var body: some View {
        Button(action: action) {
@@ -61,7 +61,7 @@ struct TrashPill: View {
    var isSelected: Bool = false
    let action: (() -> Void)?
 
-   private let theme = TrashTheme()
+   @Environment(\.trashTheme) private var theme
 
    init(
        title: String,
@@ -145,7 +145,7 @@ struct TrashSearchField: View {
    @Binding var text: String
    var showClearButton: Bool = true
 
-   private let theme = TrashTheme()
+   @Environment(\.trashTheme) private var theme
 
    var body: some View {
        HStack(spacing: 10) {
@@ -176,7 +176,7 @@ struct TrashSearchField: View {
 // MARK: - Input Surface Modifier
 
 struct TrashInputSurface: ViewModifier {
-   private let theme = TrashTheme()
+   @Environment(\.trashTheme) private var theme
    let cornerRadius: CGFloat?
 
    func body(content: Content) -> some View {
@@ -210,7 +210,7 @@ struct TrashInputSurface: ViewModifier {
 
 struct TrashSectionTitle: View {
    let title: String
-   private let theme = TrashTheme()
+   @Environment(\.trashTheme) private var theme
 
    var body: some View {
        Text(title)
@@ -235,7 +235,7 @@ struct TrashTextButton: View {
    var color: Color? = nil
    var variant: Variant = .standard
    let action: () -> Void
-   private let theme = TrashTheme()
+   @Environment(\.trashTheme) private var theme
 
    var body: some View {
        Button(action: action) {
@@ -299,7 +299,7 @@ struct TrashIconInputField: View {
    var keyboardType: UIKeyboardType = .default
    var textInputAutocapitalization: TextInputAutocapitalization = .never
    @FocusState private var isFocused: Bool
-   private let theme = TrashTheme()
+   @Environment(\.trashTheme) private var theme
 
    var body: some View {
        HStack(spacing: 14) {
@@ -334,7 +334,7 @@ struct TrashIconInputField: View {
 struct TrashFormTextEditor: View {
    @Binding var text: String
    var minHeight: CGFloat = 80
-   private let theme = TrashTheme()
+   @Environment(\.trashTheme) private var theme
 
    var body: some View {
        TextEditor(text: $text)
@@ -350,7 +350,7 @@ struct TrashFormTextEditor: View {
 struct TrashFormToggle: View {
    let title: String
    @Binding var isOn: Bool
-   private let theme = TrashTheme()
+   @Environment(\.trashTheme) private var theme
 
    var body: some View {
        Toggle(isOn: $isOn) {
@@ -367,7 +367,7 @@ struct TrashFormStepper: View {
    @Binding var value: Int
    let range: ClosedRange<Int>
    var step: Int = 1
-   private let theme = TrashTheme()
+   @Environment(\.trashTheme) private var theme
 
    var body: some View {
        Stepper(value: $value, in: range, step: step) {
@@ -383,7 +383,7 @@ struct TrashFormDatePicker: View {
    let title: String
    @Binding var selection: Date
    var range: PartialRangeFrom<Date> = Date()...
-   private let theme = TrashTheme()
+   @Environment(\.trashTheme) private var theme
 
    var body: some View {
        DatePicker(title, selection: $selection, in: range)
@@ -408,7 +408,7 @@ struct TrashFormPicker<Value: Hashable>: View {
    @Binding var selection: Value
    let options: [TrashPickerOption<Value>]
    var style: PickerStyleKind = .menu
-   private let theme = TrashTheme()
+   @Environment(\.trashTheme) private var theme
 
    enum PickerStyleKind {
        case menu
@@ -458,7 +458,7 @@ struct TrashOptionalFormPicker<Value: Hashable>: View {
    let title: String
    @Binding var selection: Value?
    let options: [TrashOptionalPickerOption<Value>]
-   private let theme = TrashTheme()
+   @Environment(\.trashTheme) private var theme
 
    var body: some View {
        Picker(title, selection: $selection) {
@@ -483,7 +483,7 @@ struct TrashNoticeSheet: View {
    var buttonColor: Color? = nil
    let onClose: (() -> Void)?
    @Environment(\.dismiss) private var dismiss
-   private let theme = TrashTheme()
+   @Environment(\.trashTheme) private var theme
 
    init(
        title: String,
@@ -541,7 +541,7 @@ struct TrashConfirmSheet: View {
    var cancelTitle: String = "Cancel"
    let onCancel: (() -> Void)?
    @Environment(\.dismiss) private var dismiss
-   private let theme = TrashTheme()
+   @Environment(\.trashTheme) private var theme
 
    init(
        title: String,
@@ -601,7 +601,7 @@ struct TrashTextInputSheet: View {
    var confirmTitle: String = "Save"
    let onConfirm: (String) -> Void
    @Environment(\.dismiss) private var dismiss
-   private let theme = TrashTheme()
+   @Environment(\.trashTheme) private var theme
 
    var body: some View {
        ZStack {
@@ -648,7 +648,7 @@ struct TrashTextInputSheet: View {
 }
 
 private struct TrashSheetSurfaceModifier: ViewModifier {
-   private let theme = TrashTheme()
+   @Environment(\.trashTheme) private var theme
 
    func body(content: Content) -> some View {
        content

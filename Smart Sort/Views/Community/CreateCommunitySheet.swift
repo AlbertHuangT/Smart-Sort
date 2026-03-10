@@ -9,8 +9,9 @@ import SwiftUI
 
 struct CreateCommunitySheet: View {
     @Binding var isPresented: Bool
+    var onCreated: () -> Void = {}
     @ObservedObject private var userSettings = UserSettings.shared
-    private let theme = TrashTheme()
+    @Environment(\.trashTheme) private var theme
 
     @State private var name = ""
     @State private var description = ""
@@ -42,7 +43,7 @@ struct CreateCommunitySheet: View {
     }
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: theme.layout.sectionSpacing) {
                     locationCard
@@ -85,6 +86,7 @@ struct CreateCommunitySheet: View {
                     onClose: {
                         showSuccessAlert = false
                         isPresented = false
+                        onCreated()
                     }
                 )
                 .presentationDetents([.medium, .large])

@@ -6,7 +6,7 @@ struct StampedIcon: View {
     var weight: Font.Weight = .regular
     var color: Color? = nil
 
-    private let theme = TrashTheme()
+    @Environment(\.trashTheme) private var theme
 
     var body: some View {
         let resolvedName = ThemeIconResolver.resolve(systemName: systemName)

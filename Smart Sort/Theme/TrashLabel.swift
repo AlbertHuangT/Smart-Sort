@@ -7,8 +7,6 @@ struct TrashLabel<Title: View>: View {
     let iconColor: Color?
     @ViewBuilder let title: () -> Title
 
-    private let theme = TrashTheme()
-
     init(
         icon: String, spacing: CGFloat = 6, iconSize: CGFloat? = nil, iconColor: Color? = nil,
         @ViewBuilder title: @escaping () -> Title

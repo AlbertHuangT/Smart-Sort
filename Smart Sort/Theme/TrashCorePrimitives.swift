@@ -29,7 +29,7 @@ private struct TrashPrimaryButtonStyle: ButtonStyle {
 struct TrashCard<Content: View>: View {
     let cornerRadius: CGFloat?
     let content: Content
-    private let theme = TrashTheme()
+    @Environment(\.trashTheme) private var theme
 
     init(cornerRadius: CGFloat? = nil, @ViewBuilder content: () -> Content) {
         self.cornerRadius = cornerRadius
@@ -56,7 +56,7 @@ struct TrashButton<Content: View>: View {
     let baseColor: Color?
     let cornerRadius: CGFloat?
     let content: Content
-    private let theme = TrashTheme()
+    @Environment(\.trashTheme) private var theme
 
     @State private var hapticTrigger = false
 
@@ -98,7 +98,7 @@ struct TrashTapArea<Content: View>: View {
     let action: () -> Void
     var haptics: Bool = false
     let content: Content
-    private let theme = TrashTheme()
+    @Environment(\.trashTheme) private var theme
 
     @State private var hapticTrigger = false
 
@@ -124,10 +124,6 @@ struct TrashTapArea<Content: View>: View {
         .compatibleSensoryFeedback(.impactSoft(intensity: 0.4), trigger: hapticTrigger)
     }
 }
-
-/// Consolidated: ThemeBackground is an alias for ThemeBackgroundView (defined in ThemeBackgroundView.swift).
-/// Both names are supported for backward compatibility.
-typealias ThemeBackground = ThemeBackgroundView
 
 // MARK: - View Extensions
 

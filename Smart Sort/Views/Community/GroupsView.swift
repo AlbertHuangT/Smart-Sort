@@ -28,10 +28,8 @@ struct GroupsView: View {
     @EnvironmentObject private var appRouter: AppRouter
     @State private var selectedSection: CommunityTabSection = .nearby
     @State private var showLocationPicker = false
-    @State private var showCreateEventSheet = false
-    @State private var showCreateCommunitySheet = false
     @State private var showSecondaryControls = false
-    private let theme = TrashTheme()
+    @Environment(\.trashTheme) private var theme
 
     var body: some View {
         VStack(spacing: 0) {
@@ -56,21 +54,10 @@ struct GroupsView: View {
         .sheet(isPresented: $showLocationPicker) {
             LocationPickerSheet(isPresented: $showLocationPicker)
         }
-        .sheet(isPresented: $showCreateEventSheet) {
-            CreateEventSheet(isPresented: $showCreateEventSheet)
-        }
-        .sheet(isPresented: $showCreateCommunitySheet) {
-            CreateCommunitySheet(isPresented: $showCreateCommunitySheet)
-        }
         .task {
             if userSettings.joinedCommunities.isEmpty {
                 await userSettings.loadMyCommunities()
             }
-        }
-        .onChange(of: appRouter.activeSheet) { sheet in
-            guard sheet == .createCommunity, !authVM.isAnonymous else { return }
-            showCreateCommunitySheet = true
-            appRouter.dismissSheet()
         }
     }
 
@@ -170,11 +157,13 @@ struct GroupsView: View {
     }
 
     private var loadingView: some View {
-        VStack(spacing: 12) {
-            Spacer()
-            ProgressView().tint(theme.accents.blue)
-            Text("Loading...").foregroundColor(theme.palette.textSecondary)
-            Spacer()
+        ScrollView {
+            LazyVStack(spacing: theme.layout.elementSpacing) {
+                ForEach(0..<6, id: \.self) { _ in
+                    ShimmerSkeletonRow(showAvatar: false)
+                }
+            }
+            .padding(.top, theme.layout.elementSpacing)
         }
     }
 
@@ -193,7 +182,9 @@ struct GroupsView: View {
             LazyVStack(spacing: 12) {
                 ForEach(userSettings.communitiesInCity) { community in
                     CommunityCardView(
-                        community: community, onCreateEvent: { showCreateEventSheet = true })
+                        community: community,
+                        onCreateEvent: { appRouter.presentCreateEvent() }
+                    )
                 }
             }
             .padding(.horizontal, theme.layout.screenInset)
@@ -237,7 +228,9 @@ struct GroupsView: View {
             LazyVStack(spacing: 12) {
                 ForEach(userSettings.joinedCommunities) { community in
                     CommunityCardView(
-                        community: community, onCreateEvent: { showCreateEventSheet = true })
+                        community: community,
+                        onCreateEvent: { appRouter.presentCreateEvent() }
+                    )
                 }
             }
             .padding(.horizontal, theme.layout.screenInset)

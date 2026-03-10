@@ -16,7 +16,7 @@ struct CommunityDetailView: View {
     @StateObject private var viewModel = CommunityDetailViewModel()
     @ObservedObject private var userSettings = UserSettings.shared
     @Environment(\.dismiss) var dismiss
-    private let theme = TrashTheme()
+    @Environment(\.trashTheme) private var theme
     @State private var showEventDetail: CommunityEvent? = nil
     @State private var showAdminDashboard = false
     @State private var showApprovalAlert = false
@@ -69,9 +69,16 @@ struct CommunityDetailView: View {
                 if isAdmin {
                     GrantCreditsView(event: event)
                 } else {
-                    EventDetailSheetForCommunity(
-                        event: event, viewModel: viewModel,
-                        userLocation: userSettings.selectedLocation)
+                    CommunityEventDetailSheet(
+                        event: event,
+                        userLocation: userSettings.selectedLocation,
+                        resolveCurrentEvent: { selectedEvent in
+                            viewModel.allEvents.first(where: { $0.id == selectedEvent.id }) ?? selectedEvent
+                        },
+                        onToggleRegistration: { selectedEvent in
+                            await viewModel.toggleRegistration(for: selectedEvent)
+                        }
+                    )
                 }
             }
             .sheet(isPresented: $showAdminDashboard) {
@@ -539,198 +546,6 @@ class CommunityDetailViewModel: ObservableObject {
         } else {
             _ = await registerForEvent(event)
         }
-    }
-}
-
-// MARK: - Event Detail Sheet (for Community Detail)
-
-struct EventDetailSheetForCommunity: View {
-    let event: CommunityEvent
-    @ObservedObject var viewModel: CommunityDetailViewModel
-    let userLocation: UserLocation?
-    @Environment(\.dismiss) var dismiss
-    private let theme = TrashTheme()
-
-    private var dateFormatter: DateFormatter {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .full
-        formatter.timeStyle = .short
-        return formatter
-    }
-
-    private var currentEvent: CommunityEvent {
-        viewModel.allEvents.first(where: { $0.id == event.id }) ?? event
-    }
-
-    private var isPast: Bool {
-        currentEvent.date < Date()
-    }
-
-    var body: some View {
-        NavigationView {
-            ZStack {
-                ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: theme.layout.sectionSpacing) {
-                        ZStack {
-                            LinearGradient(
-                                colors: [currentEvent.category.color.opacity(0.8), currentEvent.category.color],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                            .frame(height: 156)
-
-                            VStack(spacing: theme.layout.elementSpacing) {
-                                TrashIcon(systemName: currentEvent.imageSystemName)
-                                    .font(.system(size: 40))
-                                    .trashOnAccentForeground()
-                                Text(currentEvent.category.rawValue.capitalized)
-                                    .font(theme.typography.subheadline)
-                                    .foregroundColor(theme.onAccentForeground.opacity(0.9))
-
-                                if isPast {
-                                    TrashPill(
-                                        title: "Past Event", color: theme.palette.textPrimary.opacity(0.45),
-                                        isSelected: true)
-                                }
-                            }
-                        }
-                        .clipShape(RoundedRectangle(cornerRadius: theme.corners.large, style: .continuous))
-                        .padding(.horizontal, theme.layout.screenInset)
-
-                        VStack(alignment: .leading, spacing: theme.spacing.sm) {
-                            Text(currentEvent.title)
-                                .font(theme.typography.title)
-                                .foregroundColor(theme.palette.textPrimary)
-                                .fixedSize(horizontal: false, vertical: true)
-
-                            HStack {
-                                TrashIcon(systemName: "building.2.fill")
-                                    .foregroundColor(theme.palette.textSecondary)
-                                Text(currentEvent.organizer)
-                                    .foregroundColor(theme.palette.textSecondary)
-                            }
-                            .font(theme.typography.subheadline)
-                        }
-                        .padding(.horizontal, theme.layout.screenInset)
-
-                        VStack(spacing: theme.layout.elementSpacing) {
-                            InfoRowForCommunity(
-                                icon: "calendar", title: "Date & Time",
-                                value: dateFormatter.string(from: currentEvent.date))
-                            InfoRowForCommunity(
-                                icon: "mappin.circle.fill", title: "Location", value: currentEvent.location
-                            )
-                            InfoRowForCommunity(
-                                icon: "person.2.fill", title: "Participants",
-                                value: "\(currentEvent.participantCount) / \(currentEvent.maxParticipants)")
-                        }
-                        .padding(.horizontal, theme.layout.screenInset)
-
-                        VStack(alignment: .leading, spacing: theme.layout.elementSpacing) {
-                            Text("About")
-                                .font(theme.typography.subheadline)
-                                .fontWeight(.bold)
-                                .foregroundColor(theme.palette.textPrimary)
-                            Text(
-                                currentEvent.description.isEmpty
-                                    ? "No description available." : currentEvent.description
-                            )
-                            .font(theme.typography.body)
-                            .foregroundColor(theme.palette.textSecondary)
-                        }
-                        .padding(theme.components.cardPadding)
-                        .surfaceCard(cornerRadius: theme.corners.large)
-                        .padding(.horizontal, theme.layout.screenInset)
-
-                        Spacer(minLength: 100)
-                    }
-                    .padding(.top, theme.layout.screenInset)
-                    .padding(.bottom, theme.spacing.xxl)
-                }
-            }
-            .trashScreenBackground()
-            .navigationTitle("Event Details")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    TrashTextButton(title: "Close", variant: .accent) { dismiss() }
-                }
-            }
-            .safeAreaInset(edge: .bottom) {
-                if !isPast {
-                    VStack {
-                        TrashButton(
-                            baseColor: currentEvent.isRegistered
-                                ? theme.accents.green
-                                : (currentEvent.participantCount >= currentEvent.maxParticipants
-                                    ? theme.palette.textSecondary : currentEvent.category.color),
-                            cornerRadius: theme.corners.medium,
-                            action: {
-                                Task {
-                                    await viewModel.toggleRegistration(for: currentEvent)
-                                }
-                            }
-                        ) {
-                            HStack(spacing: theme.spacing.sm) {
-                                TrashIcon(
-                                    systemName: currentEvent.isRegistered
-                                        ? "checkmark.circle.fill" : "plus.circle.fill")
-                                Text(currentEvent.isRegistered ? "Registered" : "Register Now")
-                            }
-                            .font(theme.typography.button)
-                            .fontWeight(.semibold)
-                            .trashOnAccentForeground()
-                            .frame(maxWidth: .infinity)
-                        }
-                        .disabled(
-                            currentEvent.participantCount >= currentEvent.maxParticipants
-                                && !currentEvent.isRegistered
-                        )
-                        .padding(.horizontal, theme.layout.screenInset)
-                        .padding(.top, theme.layout.elementSpacing)
-                        .padding(.bottom, theme.layout.elementSpacing)
-                    }
-                    .background(.ultraThinMaterial)
-                }
-            }
-        }
-    }
-}
-
-private struct InfoRowForCommunity: View {
-    let icon: String
-    let title: String
-    let value: String
-    private let theme = TrashTheme()
-
-    var body: some View {
-        HStack(spacing: theme.layout.rowContentSpacing) {
-            TrashIcon(systemName: icon)
-                .font(.subheadline.weight(.semibold))
-                .foregroundColor(theme.accents.blue)
-                .frame(width: 24)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(theme.typography.caption)
-                    .foregroundColor(theme.palette.textSecondary)
-                Text(value)
-                    .font(theme.typography.subheadline)
-                    .foregroundColor(theme.palette.textPrimary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            Spacer()
-        }
-        .padding(theme.components.cardPadding)
-        .background(
-            RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)
-                .fill(theme.surfaceBackground)
-                .overlay(
-                    RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)
-                        .stroke(theme.palette.divider.opacity(0.8), lineWidth: 1)
-                )
-        )
     }
 }
 

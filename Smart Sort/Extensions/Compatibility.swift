@@ -8,61 +8,6 @@
 
 import SwiftUI
 
-// MARK: - ContentUnavailableView Replacement
-
-/// Drop-in replacement for `ContentUnavailableView` that falls back
-/// to a simple VStack on iOS 16.
-struct CompatibleContentUnavailableView<Label: View, Description: View, Actions: View>: View {
-    let label: Label
-    let description: Description
-    let actions: Actions
-
-    init(
-        @ViewBuilder label: () -> Label,
-        @ViewBuilder description: () -> Description = { EmptyView() },
-        @ViewBuilder actions: () -> Actions = { EmptyView() }
-    ) {
-        self.label = label()
-        self.description = description()
-        self.actions = actions()
-    }
-
-    var body: some View {
-        if #available(iOS 17.0, *) {
-            ContentUnavailableView {
-                label
-            } description: {
-                description
-            } actions: {
-                actions
-            }
-        } else {
-            VStack(spacing: 12) {
-                label
-                    .font(.title2)
-                    .foregroundColor(.secondary)
-                description
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                actions
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding()
-        }
-    }
-}
-
-extension CompatibleContentUnavailableView where Label == SwiftUI.Label<Text, Image>, Description == Text?, Actions == EmptyView {
-    /// Equivalent to `ContentUnavailableView.search(text:)`
-    static func search(text: String) -> some View {
-        CompatibleContentUnavailableView<SwiftUI.Label<Text, Image>, Text, EmptyView>(
-            label: { Label("No Results for \"\(text)\"", systemImage: "magnifyingglass") },
-            description: { Text("Check the spelling or try a new search.") }
-        )
-    }
-}
-
 // MARK: - sensoryFeedback Replacement
 
 extension View {

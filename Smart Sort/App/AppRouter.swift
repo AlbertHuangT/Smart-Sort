@@ -68,3 +68,7 @@ final class AppRouter: ObservableObject {
         pendingChallengeId = nil
     }
 }
+
+extension Notification.Name {
+    static let communityEventsDidChange = Notification.Name("communityEventsDidChange")
+}

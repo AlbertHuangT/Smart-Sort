@@ -5,13 +5,9 @@ import SwiftUI
 struct EventsView: View {
     @StateObject private var viewModel = EventsViewModel()
     @ObservedObject private var userSettings = UserSettings.shared
-    @EnvironmentObject var authVM: AuthViewModel
-    @EnvironmentObject private var appRouter: AppRouter
-    private let theme = TrashTheme()
+    @Environment(\.trashTheme) private var theme
     @State private var showEventDetail: CommunityEvent? = nil
     @State private var showSortMenu = false
-    // showAccountSheet managed by ContentView via environment
-    @State private var showCreateEventSheet = false
     @State private var showLocationPicker = false  // Added for location picker
     @State private var isMapView = false
     @State private var showSecondaryControls = false
@@ -65,14 +61,16 @@ struct EventsView: View {
             }
         }
         .sheet(item: $showEventDetail) { event in
-            EventDetailSheet(
-                event: event, viewModel: viewModel, userLocation: userSettings.selectedLocation)
-        }
-        .sheet(isPresented: $showCreateEventSheet) {
-            CreateEventFormSheet(isPresented: $showCreateEventSheet, userSettings: userSettings) {
-                // Refresh the event list
-                Task { await viewModel.loadEvents() }
-            }
+            CommunityEventDetailSheet(
+                event: event,
+                userLocation: userSettings.selectedLocation,
+                resolveCurrentEvent: { selectedEvent in
+                    viewModel.events.first(where: { $0.id == selectedEvent.id }) ?? selectedEvent
+                },
+                onToggleRegistration: { selectedEvent in
+                    await viewModel.toggleRegistration(for: selectedEvent)
+                }
+            )
         }
         .sheet(isPresented: $showLocationPicker) {
             LocationPickerSheet(isPresented: $showLocationPicker)
@@ -88,11 +86,6 @@ struct EventsView: View {
             if viewModel.events.isEmpty {
                 await viewModel.loadEvents()
             }
-        }
-        .onChange(of: appRouter.activeSheet) { sheet in
-            guard sheet == .createEvent, !authVM.isAnonymous, viewModel.hasLocation else { return }
-            showCreateEventSheet = true
-            appRouter.dismissSheet()
         }
         .onChange(of: viewModel.selectedCategory) { _ in
             Task { await viewModel.loadEvents() }
@@ -115,19 +108,20 @@ struct EventsView: View {
                 viewModel.requestPreciseLocation()
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .communityEventsDidChange)) { _ in
+            Task { await viewModel.loadEvents() }
+        }
     }
 
     // MARK: - Loading View
     private var loadingView: some View {
-        VStack(spacing: theme.spacing.md) {
-            Spacer()
-            ProgressView()
-                .scaleEffect(1.2)
-                .tint(theme.accents.blue)
-            Text("Loading events...")
-                .font(theme.typography.subheadline)
-                .foregroundColor(theme.palette.textSecondary)
-            Spacer()
+        ScrollView {
+            LazyVStack(spacing: theme.layout.elementSpacing) {
+                ForEach(0..<6, id: \.self) { _ in
+                    ShimmerSkeletonRow(showAvatar: false)
+                }
+            }
+            .padding(.top, theme.layout.elementSpacing)
         }
     }
 
@@ -313,196 +307,6 @@ struct EventsView: View {
             }
             Spacer()
         }
-    }
-}
-
-// MARK: - Event Detail Sheet
-
-struct EventDetailSheet: View {
-    let event: CommunityEvent
-    @ObservedObject var viewModel: EventsViewModel
-    let userLocation: UserLocation?
-    @ObservedObject private var userSettings = UserSettings.shared  // Access precise location updates
-    @Environment(\.dismiss) var dismiss
-    private let theme = TrashTheme()
-
-    private var dateFormatter: DateFormatter {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .full
-        formatter.timeStyle = .short
-        return formatter
-    }
-
-    private var currentEvent: CommunityEvent {
-        viewModel.events.first(where: { $0.id == event.id }) ?? event
-    }
-
-    private var distanceText: String {
-        let dist = currentEvent.distance(from: userLocation, preciseLocation: userSettings.preciseLocation)
-        if dist <= 0 { return "Location unknown" }
-        if dist < 1 {
-            return String(format: "%.0f meters away", dist * 1000)
-        } else {
-            return String(format: "%.1f km away", dist)
-        }
-    }
-
-    var body: some View {
-        NavigationView {
-            ZStack {
-
-                ScrollView {
-                    VStack(alignment: .leading, spacing: theme.spacing.lg) {
-                        // Header — neumorphic concave
-                        ZStack {
-                            Color.clear
-                                .frame(height: 180)
-                                .background(
-                                    RoundedRectangle(cornerRadius: theme.corners.large, style: .continuous)
-                                        .fill(theme.surfaceBackground)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: theme.corners.large, style: .continuous)
-                                                .stroke(theme.palette.divider.opacity(0.85), lineWidth: 1)
-                                        )
-                                )
-
-                            VStack(spacing: theme.spacing.sm + 4) {
-                                TrashIcon(systemName: currentEvent.imageSystemName)
-                                    .font(.system(size: 50))
-                                    .foregroundColor(currentEvent.category.color)
-                                Text(currentEvent.category.rawValue)
-                                    .font(theme.typography.headline)
-                                    .foregroundColor(theme.palette.textSecondary)
-                            }
-                        }
-                        .clipShape(RoundedRectangle(cornerRadius: theme.corners.large, style: .continuous))
-                        .padding(.horizontal, theme.components.contentInset)
-
-                        // Title & Organizer
-                        VStack(alignment: .leading, spacing: theme.spacing.xs + 2) {
-                            Text(currentEvent.title)
-                                .font(theme.typography.title)
-                                .foregroundColor(theme.palette.textPrimary)
-
-                            HStack {
-                                TrashIcon(systemName: "building.2.fill")
-                                    .foregroundColor(theme.palette.textSecondary)
-                                Text(currentEvent.organizer)
-                                    .foregroundColor(theme.palette.textSecondary)
-                            }
-                            .font(theme.typography.subheadline)
-                        }
-                        .padding(.horizontal, theme.components.contentInset)
-
-                        // Info Cards
-                        VStack(spacing: theme.spacing.sm + 4) {
-                            InfoRow(
-                                icon: "calendar", title: "Date & Time",
-                                value: dateFormatter.string(from: currentEvent.date))
-                            InfoRow(
-                                icon: "mappin.circle.fill", title: "Location", value: currentEvent.location
-                            )
-                            InfoRow(icon: "location.fill", title: "Distance", value: distanceText)
-                            InfoRow(
-                                icon: "person.2.fill", title: "Participants",
-                                value: "\(currentEvent.participantCount) / \(currentEvent.maxParticipants)")
-                        }
-                        .padding(.horizontal, theme.components.contentInset)
-
-                        // Description
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("About")
-                                .font(theme.typography.headline)
-                                .foregroundColor(theme.palette.textPrimary)
-                            Text(currentEvent.description)
-                                .font(theme.typography.body)
-                                .foregroundColor(theme.palette.textSecondary)
-                        }
-                        .padding(.horizontal, theme.components.contentInset)
-
-                        Spacer(minLength: 100)
-                    }
-                    .padding(.top)
-                }
-            }
-            .navigationTitle("Event Details")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    TrashTextButton(title: "Close", variant: .accent) { dismiss() }
-                }
-            }
-            .safeAreaInset(edge: .bottom) {
-                VStack {
-                    TrashButton(
-                        baseColor: currentEvent.isRegistered
-                            ? theme.accents.green
-                            : (currentEvent.participantCount >= currentEvent.maxParticipants
-                                ? theme.palette.textSecondary : currentEvent.category.color),
-                        cornerRadius: theme.corners.medium,
-                        action: {
-                            Task {
-                                await viewModel.toggleRegistration(for: currentEvent)
-                            }
-                        }
-                    ) {
-                        HStack {
-                            TrashIcon(
-                                systemName: currentEvent.isRegistered
-                                    ? "checkmark.circle.fill" : "plus.circle.fill")
-                            Text(currentEvent.isRegistered ? "Registered" : "Register Now")
-                        }
-                        .font(theme.typography.headline)
-                        .trashOnAccentForeground()
-                        .frame(maxWidth: .infinity)
-                    }
-                    .disabled(
-                        currentEvent.participantCount >= currentEvent.maxParticipants
-                            && !currentEvent.isRegistered
-                    )
-                    .padding(.horizontal, theme.components.contentInset)
-                    .padding(.bottom, theme.spacing.sm)
-                }
-                .background(theme.appBackground)
-            }
-        }
-        .presentationBackground(theme.appBackground)
-    }
-}
-
-struct InfoRow: View {
-    let icon: String
-    let title: String
-    let value: String
-    private let theme = TrashTheme()
-
-    var body: some View {
-        HStack(spacing: 14) {
-            TrashIcon(systemName: icon)
-                .font(.title3)
-                .foregroundColor(theme.accents.blue)
-                .frame(width: 30)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(theme.typography.caption)
-                    .foregroundColor(theme.palette.textSecondary)
-                Text(value)
-                    .font(theme.typography.subheadline)
-                    .foregroundColor(theme.palette.textPrimary)
-            }
-
-            Spacer()
-        }
-        .padding(theme.components.cardPadding)
-        .background(
-            RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)
-                .fill(theme.surfaceBackground)
-                .overlay(
-                    RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)
-                        .stroke(theme.palette.divider.opacity(0.85), lineWidth: 1)
-                )
-        )
     }
 }
 

@@ -20,10 +20,10 @@ struct AccountView: View {
     @State private var inputEmail = ""
     @State private var inputOTP = ""
     @State private var showChangePasswordSheet = false
-    @State private var verificationStatusMessage: String?
     @State private var didTriggerUCSDCheck = false
     @State private var showUpgradeSheet = false
     @State private var upgradeEmail = ""
+    @State private var scanDates: [Date] = []
     @State private var upgradePassword = ""
     @State private var upgradeConfirmPassword = ""
 
@@ -41,6 +41,7 @@ struct AccountView: View {
                         guestUpgradeCard
                     } else {
                         statusOverviewSection
+                        activitySection
                         accountDestinationsSection
                     }
 
@@ -61,11 +62,11 @@ struct AccountView: View {
                     }
                 }
             }
-            .overlay(alignment: .top) {
-                FloatingToast(message: $verificationStatusMessage)
-            }
             .task {
                 await profileVM.fetchProfile()
+                if !authVM.isAnonymous {
+                    scanDates = await profileVM.fetchScanActivity()
+                }
             }
             .sheet(isPresented: $showBindPhoneSheet) {
                 BindPhoneSheet(
@@ -220,6 +221,32 @@ struct AccountView: View {
         }
     }
 
+    private var activitySection: some View {
+        VStack(alignment: .leading, spacing: theme.layout.elementSpacing) {
+            sectionTitle("Scan Activity")
+
+            VStack(spacing: 0) {
+                SWActivityHeatmap.StreakCard(
+                    streaks: scanDates,
+                    currentStreakTitle: "Scan Streak",
+                    colors: [theme.accents.green, .teal]
+                )
+                .clipShape(RoundedRectangle(cornerRadius: theme.corners.large, style: .continuous))
+
+                SWActivityHeatmap.HeatmapGrid(
+                    timestamps: scanDates,
+                    days: 60,
+                    baseColor: theme.accents.green
+                )
+                .padding(.vertical, theme.spacing.md)
+
+                SWActivityHeatmap.HeatmapLegend(baseColor: theme.accents.green)
+                    .padding(.bottom, theme.spacing.sm)
+            }
+            .background(sectionBackground)
+        }
+    }
+
     private var accountDestinationsSection: some View {
         VStack(alignment: .leading, spacing: theme.layout.elementSpacing) {
             sectionTitle("Progress")
@@ -319,7 +346,7 @@ struct AccountView: View {
     private func errorBanner(_ error: String) -> some View {
         HStack(spacing: theme.spacing.sm + 2) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundColor(.orange)
+                .foregroundColor(theme.semanticWarning)
             Text(error)
                 .font(.caption)
                 .foregroundColor(theme.palette.textPrimary)

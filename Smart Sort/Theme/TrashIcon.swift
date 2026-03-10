@@ -44,7 +44,6 @@ enum ThemeIconResolver {
 
 struct TrashIcon: View {
     let systemName: String
-    private let theme = TrashTheme()
 
     var body: some View {
         let resolvedName = ThemeIconResolver.resolve(systemName: systemName)

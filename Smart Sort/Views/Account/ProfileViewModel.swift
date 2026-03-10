@@ -114,6 +114,36 @@ class ProfileViewModel: ObservableObject {
         }
     }
 
+    func fetchScanActivity(days: Int = 90) async -> [Date] {
+        guard client.auth.currentUser != nil else { return [] }
+        struct ScanActivityRow: Decodable {
+            let scanDate: String
+            let scanCount: Int
+            enum CodingKeys: String, CodingKey {
+                case scanDate = "scan_date"
+                case scanCount = "scan_count"
+            }
+        }
+        do {
+            let rows: [ScanActivityRow] = try await client
+                .rpc("get_user_scan_activity", params: ["p_days": days])
+                .execute()
+                .value
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd"
+            formatter.timeZone = TimeZone(identifier: "UTC")
+            var dates: [Date] = []
+            for row in rows {
+                guard let date = formatter.date(from: row.scanDate) else { continue }
+                for _ in 0..<row.scanCount { dates.append(date) }
+            }
+            return dates
+        } catch {
+            print("❌ fetchScanActivity failed: \(error)")
+            return []
+        }
+    }
+
     func updateUsername(_ newName: String) async {
         guard client.auth.currentUser?.id != nil else { return }
         guard !newName.trimmingCharacters(in: .whitespaces).isEmpty else { return }

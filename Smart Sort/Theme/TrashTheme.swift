@@ -419,10 +419,21 @@ struct TrashTheme {
     }
 }
 
+private struct TrashThemeEnvironmentKey: EnvironmentKey {
+    static let defaultValue = TrashTheme()
+}
+
+extension EnvironmentValues {
+    var trashTheme: TrashTheme {
+        get { self[TrashThemeEnvironmentKey.self] }
+        set { self[TrashThemeEnvironmentKey.self] = newValue }
+    }
+}
+
 // MARK: - Accent Foreground Modifier
 
 private struct TrashOnAccentForegroundModifier: ViewModifier {
-    private let theme = TrashTheme()
+    @Environment(\.trashTheme) private var theme
 
     func body(content: Content) -> some View {
         content.foregroundColor(theme.onAccentForeground)

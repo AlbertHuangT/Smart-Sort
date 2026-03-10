@@ -493,6 +493,8 @@ $$;
 ALTER FUNCTION public.grant_event_credits(UUID, UUID[], INTEGER, TEXT) OWNER TO postgres;
 GRANT EXECUTE ON FUNCTION public.grant_event_credits(UUID, UUID[], INTEGER, TEXT) TO authenticated;
 
+DROP FUNCTION IF EXISTS public.get_communities_by_city(TEXT);
+
 CREATE OR REPLACE FUNCTION public.get_communities_by_city(p_city TEXT)
 RETURNS TABLE (
     id TEXT,
