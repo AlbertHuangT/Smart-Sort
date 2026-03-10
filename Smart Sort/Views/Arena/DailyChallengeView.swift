@@ -11,10 +11,10 @@ struct DailyChallengeView: View {
     @StateObject private var viewModel = DailyChallengeViewModel()
     @EnvironmentObject var authViewModel: AuthViewModel
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.trashTheme) private var theme
     @State private var pulseAnimation = false
     // showAccountSheet managed by ContentView via environment
     @State private var showLeaderboard = false
-    private let theme = TrashTheme()
 
     let categories = ["Recyclable", "Compostable", "Landfill", "Hazardous"]
 
@@ -175,7 +175,7 @@ struct DailyChallengeView: View {
             } else if let question = viewModel.currentQuestion {
                 SharedQuizCard(
                     question: question,
-                    image: viewModel.imageCache[question.id],
+                    image: viewModel.arenaImage(for: question),
                     imageFailed: viewModel.isArenaImageFailed(for: question),
                     correctAnswer: viewModel.lastCorrectCategory,
                     categories: categories,

@@ -2,6 +2,13 @@ import CoreLocation
 import SwiftUI
 // MARK: - Main View (EventsView)
 
+private struct EventsRefreshInputs: Equatable {
+    let selectedLocation: UserLocation?
+    let selectedCategory: CommunityEvent.EventCategory?
+    let sortOption: EventSortOption
+    let showOnlyJoinedCommunities: Bool
+}
+
 struct EventsView: View {
     @StateObject private var viewModel = EventsViewModel()
     @ObservedObject private var userSettings = UserSettings.shared
@@ -11,6 +18,15 @@ struct EventsView: View {
     @State private var showLocationPicker = false  // Added for location picker
     @State private var isMapView = false
     @State private var showSecondaryControls = false
+
+    private var refreshInputs: EventsRefreshInputs {
+        EventsRefreshInputs(
+            selectedLocation: userSettings.selectedLocation,
+            selectedCategory: viewModel.selectedCategory,
+            sortOption: viewModel.sortOption,
+            showOnlyJoinedCommunities: viewModel.showOnlyJoinedCommunities
+        )
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -82,19 +98,10 @@ struct EventsView: View {
         }
         .task {
             viewModel.requestPreciseLocation()
-
-            if viewModel.events.isEmpty {
-                await viewModel.loadEvents()
-            }
+            viewModel.scheduleRefresh(immediate: viewModel.events.isEmpty)
         }
-        .onChange(of: viewModel.selectedCategory) { _ in
-            Task { await viewModel.loadEvents() }
-        }
-        .onChange(of: viewModel.sortOption) { _ in
-            Task { await viewModel.loadEvents() }
-        }
-        .onChange(of: viewModel.showOnlyJoinedCommunities) { _ in
-            Task { await viewModel.loadEvents() }
+        .onChange(of: refreshInputs) { _ in
+            viewModel.scheduleRefresh()
         }
         .onChange(of: userSettings.preciseLocation) { newLocation in
             // Re-sort by distance when precise GPS location updates
@@ -109,7 +116,7 @@ struct EventsView: View {
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .communityEventsDidChange)) { _ in
-            Task { await viewModel.loadEvents() }
+            viewModel.scheduleRefresh()
         }
     }
 

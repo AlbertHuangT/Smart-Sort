@@ -15,6 +15,7 @@ struct CommunityDetailView: View {
 
     @StateObject private var viewModel = CommunityDetailViewModel()
     @ObservedObject private var userSettings = UserSettings.shared
+    @ObservedObject private var communityStore = CommunityMembershipStore.shared
     @Environment(\.dismiss) var dismiss
     @Environment(\.trashTheme) private var theme
     @State private var showEventDetail: CommunityEvent? = nil
@@ -22,21 +23,21 @@ struct CommunityDetailView: View {
     @State private var showApprovalAlert = false
 
     var isMember: Bool {
-        userSettings.isMember(of: community)
+        communityStore.isMember(of: community)
     }
 
     var isPending: Bool {
-        userSettings.isPending(of: community)
+        communityStore.isPending(of: community)
     }
 
     var currentCommunity: Community {
-        userSettings.joinedCommunities.first(where: { $0.id == community.id })
-            ?? userSettings.communitiesInCity.first(where: { $0.id == community.id })
+        communityStore.joinedCommunities.first(where: { $0.id == community.id })
+            ?? communityStore.communitiesInCity.first(where: { $0.id == community.id })
             ?? community
     }
 
     var isAdmin: Bool {
-        userSettings.isAdmin(of: currentCommunity)
+        communityStore.isAdmin(of: currentCommunity)
     }
 
     var body: some View {
@@ -150,9 +151,9 @@ struct CommunityDetailView: View {
                     if isPending {
                         showApprovalAlert = true
                     } else if isMember {
-                        _ = await userSettings.leaveCommunity(community)
+                        _ = await communityStore.leaveCommunity(community)
                     } else {
-                        let result = await userSettings.joinCommunity(community)
+                        let result = await communityStore.joinCommunity(community)
                         if result.requiresApproval {
                             showApprovalAlert = true
                         }
@@ -161,7 +162,7 @@ struct CommunityDetailView: View {
             }
         ) {
             HStack(spacing: theme.spacing.sm) {
-                if userSettings.isLoadingCommunities {
+                if communityStore.isLoadingCommunities {
                     ProgressView()
                         .scaleEffect(0.8)
                         .tint(isPending ? theme.semanticWarning : (isMember ? theme.accents.green : theme.onAccentForeground))
@@ -373,179 +374,6 @@ private struct StatItem: View {
             RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)
                 .fill(theme.palette.card.opacity(0.32))
         )
-    }
-}
-
-// MARK: - CommunityEventCard
-
-private struct CommunityEventCard: View {
-    let event: CommunityEvent
-    let onTap: () -> Void
-    private let theme = TrashTheme()
-
-    private var dateFormatter: DateFormatter {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMM d, yyyy 'at' h:mm a"
-        return formatter
-    }
-
-    private var isPast: Bool {
-        event.date < Date()
-    }
-
-    var body: some View {
-        TrashTapArea(action: onTap) {
-            VStack(alignment: .leading, spacing: theme.layout.elementSpacing) {
-                HStack(spacing: theme.layout.rowContentSpacing) {
-                    ZStack {
-                        Circle()
-                            .fill(event.category.color.opacity(isPast ? 0.1 : 0.15))
-                            .frame(
-                                width: theme.components.minimumHitTarget,
-                                height: theme.components.minimumHitTarget
-                            )
-                        TrashIcon(systemName: event.imageSystemName)
-                            .font(.system(size: 18))
-                            .foregroundColor(
-                                isPast ? theme.palette.textSecondary : event.category.color
-                            )
-                    }
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack {
-                            TrashPill(
-                                title: event.category.rawValue.capitalized,
-                                color: isPast ? theme.palette.textSecondary : event.category.color,
-                                isSelected: false
-                            )
-
-                            if isPast {
-                                TrashPill(
-                                    title: "Past",
-                                    color: theme.semanticWarning,
-                                    isSelected: false
-                                )
-                            }
-
-                            Spacer()
-
-                            if event.isRegistered {
-                                TrashIcon(systemName: "checkmark.circle.fill")
-                                    .foregroundColor(theme.semanticSuccess)
-                            }
-                        }
-
-                        Text(event.title)
-                            .font(theme.typography.subheadline)
-                            .fontWeight(.bold)
-                            .foregroundColor(
-                                isPast ? theme.palette.textSecondary : theme.palette.textPrimary
-                            )
-                            .lineLimit(2)
-                    }
-                }
-
-                HStack(spacing: theme.layout.rowContentSpacing) {
-                    TrashLabel(dateFormatter.string(from: event.date), icon: "calendar")
-                    Spacer()
-                    TrashLabel(
-                        "\(event.participantCount)/\(event.maxParticipants)",
-                        icon: "person.2.fill"
-                    )
-                }
-                .font(theme.typography.caption)
-                .foregroundColor(theme.palette.textSecondary)
-            }
-            .padding(theme.components.cardPadding)
-            .background(
-                RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)
-                    .fill(theme.surfaceBackground)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: theme.corners.medium, style: .continuous)
-                            .stroke(theme.palette.divider.opacity(0.8), lineWidth: 1)
-                    )
-            )
-        }
-        .opacity(isPast ? 0.7 : 1)
-    }
-}
-
-// MARK: - ViewModel
-
-@MainActor
-class CommunityDetailViewModel: ObservableObject {
-    @Published var allEvents: [CommunityEvent] = []
-    @Published var isLoading = false
-
-    private var eventService: EventService {
-        EventService.shared
-    }
-
-    var upcomingEvents: [CommunityEvent] {
-        allEvents
-            .filter { $0.date >= Date() }
-            .sorted { $0.date < $1.date }
-    }
-
-    var pastEvents: [CommunityEvent] {
-        allEvents
-            .filter { $0.date < Date() }
-            .sorted { $0.date > $1.date }  // Most recent first
-    }
-
-    func loadEvents(communityId: String) async {
-        isLoading = true
-        do {
-            let response = try await eventService.getCommunityEvents(communityId: communityId)
-            allEvents = response.map { CommunityEvent(from: $0) }
-        } catch {
-            print("❌ Get community events error: \(error)")
-        }
-        isLoading = false
-    }
-
-    /// Register for an event
-    func registerForEvent(_ event: CommunityEvent) async -> Bool {
-        do {
-            let success = try await eventService.registerForEvent(event.id)
-            if success {
-                if let index = allEvents.firstIndex(where: { $0.id == event.id }) {
-                    allEvents[index].isRegistered = true
-                    allEvents[index].participantCount += 1
-                }
-            }
-            return success
-        } catch {
-            print("❌ Register for event error: \(error)")
-            return false
-        }
-    }
-
-    /// Cancel event registration
-    func cancelRegistration(_ event: CommunityEvent) async -> Bool {
-        do {
-            let success = try await eventService.cancelEventRegistration(event.id)
-            if success {
-                if let index = allEvents.firstIndex(where: { $0.id == event.id }) {
-                    allEvents[index].isRegistered = false
-                    allEvents[index].participantCount = max(
-                        0, allEvents[index].participantCount - 1)
-                }
-            }
-            return success
-        } catch {
-            print("❌ Cancel registration error: \(error)")
-            return false
-        }
-    }
-
-    /// Toggle registration state
-    func toggleRegistration(for event: CommunityEvent) async {
-        if event.isRegistered {
-            _ = await cancelRegistration(event)
-        } else {
-            _ = await registerForEvent(event)
-        }
     }
 }
 

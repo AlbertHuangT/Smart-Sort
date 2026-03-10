@@ -13,7 +13,7 @@ import SwiftUI
 struct ArenaView: View {
     @StateObject private var viewModel = ArenaViewModel()
     @EnvironmentObject var authViewModel: AuthViewModel
-    private let theme = TrashTheme()
+    @Environment(\.trashTheme) private var theme
     @State private var pulseAnimation = false
     // showAccountSheet managed by ContentView via environment
 
@@ -140,7 +140,7 @@ struct ArenaView: View {
             } else if let question = viewModel.currentQuestion {
                 SharedQuizCard(
                     question: question,
-                    image: viewModel.imageCache[question.id],
+                    image: viewModel.arenaImage(for: question),
                     imageFailed: viewModel.isArenaImageFailed(for: question),
                     correctAnswer: viewModel.lastCorrectCategory,
                     categories: categories,

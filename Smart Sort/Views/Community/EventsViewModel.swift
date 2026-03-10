@@ -18,9 +18,10 @@ final class EventsViewModel: ObservableObject {
     @Published var showOnlyJoinedCommunities = false
     @Published var errorMessage: String?
 
-    private var loadSequence = 0
-    private var lastLoadTime: Date?
-    private let minLoadInterval: TimeInterval = 0.5
+    private var scheduledRefreshTask: Task<Void, Never>?
+    private var activeLoadTask: Task<Void, Never>?
+    private var activeRequestID = UUID()
+    private let refreshDebounceNanoseconds: UInt64 = 250_000_000
 
     private var userSettings: UserSettings {
         UserSettings.shared
@@ -74,16 +75,30 @@ final class EventsViewModel: ObservableObject {
         }
     }
 
-    func loadEvents() async {
-        loadSequence += 1
-        let requestSequence = loadSequence
-
-        if let lastLoadTime, Date().timeIntervalSince(lastLoadTime) < minLoadInterval {
-            try? await Task.sleep(nanoseconds: UInt64(minLoadInterval * 1_000_000_000))
+    func scheduleRefresh(immediate: Bool = false) {
+        scheduledRefreshTask?.cancel()
+        scheduledRefreshTask = Task { [weak self] in
+            guard let self else { return }
+            if !immediate {
+                try? await Task.sleep(nanoseconds: refreshDebounceNanoseconds)
+            }
+            guard !Task.isCancelled else { return }
+            await self.performRefresh()
         }
+    }
 
+    func loadEvents() async {
+        scheduledRefreshTask?.cancel()
+        await performRefresh()
+    }
+
+    private func performRefresh() async {
+        scheduledRefreshTask = nil
+        activeLoadTask?.cancel()
         guard let currentCoordinates else {
             events = []
+            isLoading = false
+            errorMessage = nil
             return
         }
 
@@ -91,7 +106,8 @@ final class EventsViewModel: ObservableObject {
             isLoading = true
         }
         errorMessage = nil
-        lastLoadTime = Date()
+        let requestID = UUID()
+        activeRequestID = requestID
 
         let categoryParam = selectedCategory?.rawValue.lowercased()
         let sortByParam: String
@@ -100,30 +116,54 @@ final class EventsViewModel: ObservableObject {
         case .distance: sortByParam = "distance"
         case .participants: sortByParam = "popularity"
         }
+        let preciseLocation = userSettings.preciseLocation
+        let joinedOnly = showOnlyJoinedCommunities
 
-        do {
-            let response = try await eventService.getNearbyEvents(
-                latitude: currentCoordinates.latitude,
-                longitude: currentCoordinates.longitude,
-                maxDistanceKm: 50,
-                category: categoryParam,
-                onlyJoinedCommunities: showOnlyJoinedCommunities,
-                sortBy: sortByParam
-            )
+        let task = Task { [weak self] in
+            guard let self else { return }
 
-            guard !Task.isCancelled, requestSequence == loadSequence else { return }
-            events = response.map(CommunityEvent.init(from:))
-        } catch {
-            guard !Task.isCancelled, requestSequence == loadSequence else { return }
-            print("❌ Get nearby events error: \(error)")
-            errorMessage = error.localizedDescription
+            do {
+                let response = try await eventService.getNearbyEvents(
+                    latitude: currentCoordinates.latitude,
+                    longitude: currentCoordinates.longitude,
+                    maxDistanceKm: 50,
+                    category: categoryParam,
+                    onlyJoinedCommunities: joinedOnly,
+                    sortBy: sortByParam
+                )
+
+                guard !Task.isCancelled else { return }
+                let mappedEvents = response.map(CommunityEvent.init(from:))
+
+                await MainActor.run {
+                    guard self.activeRequestID == requestID else { return }
+                    self.events = mappedEvents
+                    if self.sortOption == .distance, preciseLocation != nil {
+                        self.sortEventsByPreciseDistance()
+                    }
+                    self.isLoading = false
+                    self.activeLoadTask = nil
+                }
+            } catch is CancellationError {
+                await MainActor.run {
+                    if self.activeRequestID == requestID {
+                        self.activeLoadTask = nil
+                    }
+                }
+            } catch {
+                guard !Task.isCancelled else { return }
+                await MainActor.run {
+                    guard self.activeRequestID == requestID else { return }
+                    print("❌ Get nearby events error: \(error)")
+                    self.errorMessage = error.localizedDescription
+                    self.isLoading = false
+                    self.activeLoadTask = nil
+                }
+            }
         }
 
-        if sortOption == .distance, userSettings.preciseLocation != nil {
-            sortEventsByPreciseDistance()
-        }
-
-        isLoading = false
+        activeLoadTask = task
+        await task.value
     }
 
     func registerForEvent(_ event: CommunityEvent) async -> Bool {

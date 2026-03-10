@@ -13,38 +13,48 @@ struct ArenaImageLoadHandle {
     let task: Task<Void, Never>
 }
 
+struct ArenaImageState {
+    var cachedImages: [UUID: UIImage] = [:]
+    var failedImageIDs: Set<UUID> = []
+    var loadHandles: [UUID: ArenaImageLoadHandle] = [:]
+
+    mutating func reset() {
+        cachedImages.removeAll()
+        failedImageIDs.removeAll()
+        loadHandles.removeAll()
+    }
+}
+
 @MainActor
 protocol ArenaImageManaging: AnyObject {
-    var imageCache: [UUID: UIImage] { get set }
-    var failedImageIDs: Set<UUID> { get set }
-    var imageLoadHandles: [UUID: ArenaImageLoadHandle] { get set }
+    var imageState: ArenaImageState { get set }
     var imageLogPrefix: String { get }
 }
 
 @MainActor
 extension ArenaImageManaging {
     func cancelArenaImageLoads() {
-        for handle in imageLoadHandles.values {
+        for handle in imageState.loadHandles.values {
             handle.task.cancel()
         }
-        imageLoadHandles.removeAll()
+        imageState.loadHandles.removeAll()
     }
 
     @discardableResult
     func loadArenaImage(for question: QuizQuestion, forceReload: Bool = false) async -> Bool {
         if !forceReload {
-            if imageCache[question.id] != nil {
+            if imageState.cachedImages[question.id] != nil {
                 return true
             }
-            if let existing = imageLoadHandles[question.id] {
+            if let existing = imageState.loadHandles[question.id] {
                 await existing.task.value
-                return imageCache[question.id] != nil
+                return imageState.cachedImages[question.id] != nil
             }
         } else {
-            imageLoadHandles[question.id]?.task.cancel()
-            imageLoadHandles[question.id] = nil
-            imageCache[question.id] = nil
-            failedImageIDs.remove(question.id)
+            imageState.loadHandles[question.id]?.task.cancel()
+            imageState.loadHandles[question.id] = nil
+            imageState.cachedImages[question.id] = nil
+            imageState.failedImageIDs.remove(question.id)
         }
 
         let token = UUID()
@@ -54,33 +64,33 @@ extension ArenaImageManaging {
             do {
                 let image = try await ArenaImageLoader.shared.loadImage(from: question.imageUrl)
                 guard !Task.isCancelled else { return }
-                self.imageCache[question.id] = image
-                self.failedImageIDs.remove(question.id)
+                self.imageState.cachedImages[question.id] = image
+                self.imageState.failedImageIDs.remove(question.id)
             } catch is CancellationError {
                 return
             } catch {
                 guard !Task.isCancelled else { return }
-                self.failedImageIDs.insert(question.id)
+                self.imageState.failedImageIDs.insert(question.id)
                 print(
                     "⚠️ [\(self.imageLogPrefix)] Failed to load image for \(question.id): \(error.localizedDescription)"
                 )
             }
 
-            if self.imageLoadHandles[question.id]?.token == token {
-                self.imageLoadHandles[question.id] = nil
+            if self.imageState.loadHandles[question.id]?.token == token {
+                self.imageState.loadHandles[question.id] = nil
             }
         }
 
-        imageLoadHandles[question.id] = ArenaImageLoadHandle(token: token, task: task)
+        imageState.loadHandles[question.id] = ArenaImageLoadHandle(token: token, task: task)
         await task.value
-        return imageCache[question.id] != nil
+        return imageState.cachedImages[question.id] != nil
     }
 
     func scheduleArenaImageLoad(for question: QuizQuestion, forceReload: Bool = false) {
         guard forceReload
-            || (imageCache[question.id] == nil
-                && !failedImageIDs.contains(question.id)
-                && imageLoadHandles[question.id] == nil)
+            || (imageState.cachedImages[question.id] == nil
+                && !imageState.failedImageIDs.contains(question.id)
+                && imageState.loadHandles[question.id] == nil)
         else {
             return
         }
@@ -123,6 +133,15 @@ extension ArenaImageManaging {
 
     func isArenaImageFailed(for question: QuizQuestion?) -> Bool {
         guard let question else { return false }
-        return failedImageIDs.contains(question.id)
+        return imageState.failedImageIDs.contains(question.id)
+    }
+
+    func arenaImage(for question: QuizQuestion?) -> UIImage? {
+        guard let question else { return nil }
+        return imageState.cachedImages[question.id]
+    }
+
+    func isArenaImageReady(for question: QuizQuestion?) -> Bool {
+        arenaImage(for: question) != nil
     }
 }

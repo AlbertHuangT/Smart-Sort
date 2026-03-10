@@ -11,6 +11,7 @@ import SwiftUI
 struct CreateEventFormSheet: View {
     @Binding var isPresented: Bool
     @ObservedObject var userSettings: UserSettings
+    @ObservedObject private var communityStore = CommunityMembershipStore.shared
     var onCreated: () -> Void
     @Environment(\.trashTheme) private var theme
 
@@ -67,7 +68,7 @@ struct CreateEventFormSheet: View {
                     )
 
                     if !isPersonalEvent {
-                        if userSettings.adminCommunities.isEmpty {
+                        if communityStore.adminCommunities.isEmpty {
                             messageCard(
                                 "You need to be a community admin to create community events",
                                 color: theme.semanticWarning,
@@ -78,7 +79,7 @@ struct CreateEventFormSheet: View {
                                 title: "Select Community",
                                 selection: $selectedCommunityId,
                                 options: [TrashOptionalPickerOption(value: nil, title: "Select...")]
-                                    + userSettings.adminCommunities.map {
+                                    + communityStore.adminCommunities.map {
                                         TrashOptionalPickerOption(value: $0.id, title: $0.name)
                                     }
                             )
@@ -203,8 +204,8 @@ struct CreateEventFormSheet: View {
                 .presentationBackground(theme.appBackground)
             }
             .task {
-                if userSettings.joinedCommunities.isEmpty {
-                    await userSettings.loadMyCommunities()
+                if communityStore.joinedCommunities.isEmpty {
+                    await communityStore.loadMyCommunities()
                 }
                 await loadCreationAllowance()
             }

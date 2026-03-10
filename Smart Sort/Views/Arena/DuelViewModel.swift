@@ -23,8 +23,7 @@ enum DuelPhase {
 class DuelViewModel: ObservableObject, ArenaImageManaging {
     @Published var phase: DuelPhase = .loading
     @Published var questions: [QuizQuestion] = []
-    @Published var imageCache: [UUID: UIImage] = [:]
-    @Published var failedImageIDs: Set<UUID> = []
+    @Published var imageState = ArenaImageState()
 
     // Session state
     @Published var currentQuestionIndex = 0
@@ -67,8 +66,16 @@ class DuelViewModel: ObservableObject, ArenaImageManaging {
     private var isLoadingQuestions = false
     private var hasMarkedReady = false
     private var isCompletingChallenge = false
-    var imageLoadHandles: [UUID: ArenaImageLoadHandle] = [:]
+    private var isSceneActive = true
     let imageLogPrefix = "Duel"
+
+    var imageCache: [UUID: UIImage] {
+        imageState.cachedImages
+    }
+
+    var failedImageIDs: Set<UUID> {
+        imageState.failedImageIDs
+    }
 
     var currentQuestion: QuizQuestion? {
         guard currentQuestionIndex < questions.count else { return nil }
@@ -96,6 +103,19 @@ class DuelViewModel: ObservableObject, ArenaImageManaging {
     var opponentDisplayName: String {
         if isChallenger { return opponentName ?? "Opponent" }
         return challengerName ?? "Opponent"
+    }
+
+    init() {
+        realtimeManager.onPlayerReady = { [weak self] _ in
+            guard let self else { return }
+            self.opponentReady = true
+            Task { await self.refreshDuelState() }
+        }
+        realtimeManager.onAnswerSubmitted = { [weak self] answer in
+            guard let self else { return }
+            self.opponentProgress = max(self.opponentProgress, answer.questionIndex + 1)
+            Task { await self.refreshDuelState() }
+        }
     }
 
     // MARK: - Start as Challenger (create challenge)
@@ -221,12 +241,50 @@ class DuelViewModel: ObservableObject, ArenaImageManaging {
     private var countdownTask: Task<Void, Never>?
 
     private func beginStateMonitoring() {
+        guard isSceneActive else { return }
+        guard shouldFallbackPoll else { return }
         duelStatePollingTask?.cancel()
         duelStatePollingTask = Task { [weak self] in
+            var isFirstIteration = true
             while let self, !Task.isCancelled {
+                guard self.isSceneActive, self.shouldFallbackPoll else { return }
+                if isFirstIteration {
+                    isFirstIteration = false
+                } else {
+                    try? await Task.sleep(nanoseconds: self.pollingInterval)
+                    guard !Task.isCancelled else { return }
+                }
                 await self.refreshDuelState()
-                try? await Task.sleep(nanoseconds: 1_000_000_000)
             }
+        }
+    }
+
+    private func stopStateMonitoring() {
+        duelStatePollingTask?.cancel()
+        duelStatePollingTask = nil
+    }
+
+    private var shouldFallbackPoll: Bool {
+        switch phase {
+        case .results, .error:
+            return false
+        case .loading, .lobby, .countdown, .playing, .waitingResult:
+            return true
+        }
+    }
+
+    private var pollingInterval: UInt64 {
+        switch phase {
+        case .loading:
+            return 3_000_000_000
+        case .lobby, .countdown:
+            return 6_000_000_000
+        case .playing:
+            return 8_000_000_000
+        case .waitingResult:
+            return 4_000_000_000
+        case .results, .error:
+            return 12_000_000_000
         }
     }
 
@@ -244,6 +302,7 @@ class DuelViewModel: ObservableObject, ArenaImageManaging {
                 return
             }
             phase = .error("Failed to sync duel state: \(error.localizedDescription)")
+            stopStateMonitoring()
         }
     }
 
@@ -280,6 +339,7 @@ class DuelViewModel: ObservableObject, ArenaImageManaging {
 
         if state.status == "expired" {
             phase = .error("Challenge has expired.")
+            stopStateMonitoring()
             return
         }
 
@@ -404,17 +464,35 @@ class DuelViewModel: ObservableObject, ArenaImageManaging {
             case "completed":
                 self.result = response
                 phase = .results
+                stopStateMonitoring()
             case "waiting_for_opponent":
                 phase = .waitingResult
             case "expired":
                 phase = .error(response.message ?? "Challenge has expired.")
+                stopStateMonitoring()
             case "inactive":
                 phase = .error(response.message ?? "Challenge is no longer active.")
+                stopStateMonitoring()
             default:
                 phase = .waitingResult
             }
         } catch {
             phase = .error("Failed to complete challenge: \(error.localizedDescription)")
+            stopStateMonitoring()
+        }
+    }
+
+    func handleScenePhaseChange(_ phase: ScenePhase) {
+        switch phase {
+        case .active:
+            isSceneActive = true
+            beginStateMonitoring()
+            Task { await refreshDuelState() }
+        case .inactive, .background:
+            isSceneActive = false
+            stopStateMonitoring()
+        @unknown default:
+            break
         }
     }
 
@@ -423,7 +501,7 @@ class DuelViewModel: ObservableObject, ArenaImageManaging {
     func cleanup() async {
         cancelArenaImageLoads()
         countdownTask?.cancel()
-        duelStatePollingTask?.cancel()
+        stopStateMonitoring()
         await realtimeManager.disconnect()
     }
 

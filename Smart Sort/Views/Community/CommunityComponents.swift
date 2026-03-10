@@ -64,23 +64,21 @@ struct LocationRowView: View {
 struct CommunityCardView: View {
     let community: Community
     var onCreateEvent: (() -> Void)? = nil
-    @ObservedObject private var userSettings = UserSettings.shared
-    @State private var isLoading = false
+    @ObservedObject private var communityStore = CommunityMembershipStore.shared
     @State private var showDetail = false
-    @State private var showApprovalAlert = false
     @State private var showAdminDashboard = false
     private let theme = TrashTheme()
 
     var isMember: Bool {
-        userSettings.isMember(of: community)
+        communityStore.isMember(of: community)
     }
 
     var isPending: Bool {
-        userSettings.isPending(of: community)
+        communityStore.isPending(of: community)
     }
 
     var isAdmin: Bool {
-        userSettings.isAdmin(of: community)
+        communityStore.isAdmin(of: community)
     }
 
     var body: some View {

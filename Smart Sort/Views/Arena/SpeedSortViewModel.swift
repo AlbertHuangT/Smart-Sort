@@ -11,62 +11,24 @@ import Supabase
 import SwiftUI
 
 @MainActor
-class SpeedSortViewModel: ObservableObject, ArenaImageManaging {
-    @Published var questions: [QuizQuestion] = []
-    @Published var isLoading = false
-    @Published var imageCache: [UUID: UIImage] = [:]
-    @Published var failedImageIDs: Set<UUID> = []
-
-    @Published var currentQuestionIndex = 0
-    @Published var sessionScore = 0
-    @Published var comboCount = 0
-    @Published var maxCombo = 0
-    @Published var correctCount = 0
-    @Published var sessionCompleted = false
-
+class SpeedSortViewModel: ComboSoloArenaSessionViewModel {
     @Published var timeRemaining: Double = 5.0
     let timePerQuestion: Double = 5.0
     private var timerCancellable: AnyCancellable?
     private var timeoutTask: Task<Void, Never>?
-    private var timerStartTask: Task<Void, Never>?
     private var questionStartedAt: Date?
 
     @Published var countdownValue: Int? = nil
     @Published var isCountingDown = false
 
-    @Published var showCorrectFeedback = false
-    @Published var showWrongFeedback = false
-    @Published var showComboAnimation = false
-    @Published var showComboBreak = false
-    @Published var isSubmitting = false
-
-    @Published var showError = false
-    @Published var errorMessage: String?
-    @Published var lastCorrectCategory: String?
     @Published var lastTimeBonus = 0
 
-    private let client = SupabaseManager.shared.client
-    private var sessionId: UUID?
-    var imageLoadHandles: [UUID: ArenaImageLoadHandle] = [:]
-    let imageLogPrefix = "SpeedSort"
-
-    var currentQuestion: QuizQuestion? {
-        guard currentQuestionIndex < questions.count else { return nil }
-        return questions[currentQuestionIndex]
+    init() {
+        super.init(imageLogPrefix: "SpeedSort")
     }
-
-    var progressText: String {
-        guard questions.count > 0 else { return "" }
-        return "\(min(currentQuestionIndex + 1, questions.count))/\(questions.count)"
-    }
-
-    init() {}
 
     func fetchQuestions() async {
-        isLoading = true
-        errorMessage = nil
-        showError = false
-        resetSession()
+        beginLoadingSession()
 
         do {
             let params = QuizQuestionsForModeParams(p_mode: "speed_sort", p_limit: 10)
@@ -75,15 +37,12 @@ class SpeedSortViewModel: ObservableObject, ArenaImageManaging {
                 .execute()
                 .value
 
-            sessionId = response.sessionId
-            questions = response.questions
-            _ = await primeArenaImages(for: response.questions)
+            await applySessionResponse(response)
             await startCountdown()
         } catch {
-            errorMessage = "Failed to load quiz: \(error.localizedDescription)"
-            showError = true
+            presentError("Failed to load quiz: \(error.localizedDescription)")
         }
-        isLoading = false
+        finishLoadingSession()
     }
 
     private func startCountdown() async {
@@ -102,7 +61,7 @@ class SpeedSortViewModel: ObservableObject, ArenaImageManaging {
             countdownValue = nil
             isCountingDown = false
         }
-        queueTimerStart()
+        await startTimerForCurrentQuestionIfReady()
     }
 
     private func startTimer() {
@@ -128,37 +87,25 @@ class SpeedSortViewModel: ObservableObject, ArenaImageManaging {
     func stopTimer() {
         timerCancellable?.cancel()
         timeoutTask?.cancel()
-        timerStartTask?.cancel()
     }
 
-    private func queueTimerStart() {
-        timerStartTask?.cancel()
-        timerStartTask = Task { @MainActor [weak self] in
-            guard let self else { return }
+    private func startTimerForCurrentQuestionIfReady(forceReload: Bool = false) async {
+        guard let question = currentQuestion else { return }
 
-            while !Task.isCancelled {
-                guard let question = self.currentQuestion else { return }
-
-                if self.imageCache[question.id] != nil {
-                    self.startTimer()
-                    return
-                }
-
-                if self.failedImageIDs.contains(question.id) {
-                    self.errorMessage = "Image unavailable. Retry the image to continue."
-                    self.showError = true
-                    return
-                }
-
-                try? await Task.sleep(nanoseconds: 100_000_000)
-            }
+        let imageReady = await loadArenaImage(for: question, forceReload: forceReload)
+        guard currentQuestion?.id == question.id else { return }
+        guard imageReady else {
+            errorMessage = "Image unavailable. Retry the image to continue."
+            showError = true
+            return
         }
+
+        startTimer()
     }
 
     func submitAnswer(selectedCategory: String) async {
         guard !isSubmitting else { return }
         guard currentQuestion != nil else { return }
-        guard let sessionId else { return }
 
         isSubmitting = true
         stopTimer()
@@ -169,71 +116,28 @@ class SpeedSortViewModel: ObservableObject, ArenaImageManaging {
             Int((Date().timeIntervalSince(questionStartedAt ?? Date())) * 1000)
         )
 
-        let answerResponse: SoloAnswerResponse
         do {
-            let params = SubmitSoloAnswerParams(
-                p_session_id: sessionId.uuidString,
-                p_question_index: currentQuestionIndex,
-                p_selected_category: selectedCategory,
-                p_answer_time_ms: elapsedMs
+            let answerResponse = try await submitAnswerRequest(
+                selectedCategory: selectedCategory,
+                answerTimeMs: elapsedMs,
+                missingSessionContext: "Speed Sort"
             )
-            answerResponse = try await client
-                .rpc("submit_solo_answer", params: params)
-                .execute()
-                .value
-        } catch {
-            errorMessage = "Failed to submit answer: \(error.localizedDescription)"
-            showError = true
-            return
-        }
-
-        let isCorrect = answerResponse.isCorrect
-        lastCorrectCategory = answerResponse.correctCategory
-
-        if isCorrect {
-            comboCount += 1
-            correctCount += 1
-            maxCombo = max(maxCombo, comboCount)
-
-            var pointsEarned = 20
-            if comboCount >= 3 {
-                pointsEarned += (comboCount - 2) * 5
-            }
-
             let timeBonus = Int(max(0, timeRemaining) * 4)
-            pointsEarned += timeBonus
-            lastTimeBonus = timeBonus
-            sessionScore += pointsEarned
-
-            withAnimation(.easeInOut(duration: 0.3)) {
-                showCorrectFeedback = true
-                if comboCount >= 3 {
-                    showComboAnimation = true
+            _ = await applyComboAnswer(
+                answerResponse,
+                bonusPoints: timeBonus,
+                onCorrect: { [self] _ in
+                    self.lastTimeBonus = timeBonus
+                },
+                onWrong: { [self] in
+                    self.lastTimeBonus = 0
                 }
-            }
-        } else {
-            let hadCombo = comboCount >= 3
-            comboCount = 0
-            lastTimeBonus = 0
+            )
 
-            withAnimation(.easeInOut(duration: 0.3)) {
-                showWrongFeedback = true
-                if hadCombo {
-                    showComboBreak = true
-                }
-            }
+            await advanceToNext()
+        } catch {
+            presentError("Failed to submit answer: \(error.localizedDescription)")
         }
-
-        try? await Task.sleep(nanoseconds: 800_000_000)
-
-        withAnimation(.easeOut(duration: 0.2)) {
-            showCorrectFeedback = false
-            showWrongFeedback = false
-            showComboAnimation = false
-            showComboBreak = false
-        }
-
-        await advanceToNext()
     }
 
     private func handleTimeout() async {
@@ -249,22 +153,13 @@ class SpeedSortViewModel: ObservableObject, ArenaImageManaging {
                 currentQuestionIndex += 1
             }
             scheduleUpcomingArenaImages(for: questions, startingAt: currentQuestionIndex)
-            queueTimerStart()
+            await startTimerForCurrentQuestionIfReady()
         }
     }
 
     private func completeSession() async {
-        guard let sessionId else {
-            errorMessage = "Speed Sort session missing"
-            showError = true
-            return
-        }
-
         do {
-            let result: SoloSessionCompletionResponse = try await client
-                .rpc("complete_speed_sort_session", params: ["p_session_id": sessionId.uuidString])
-                .execute()
-                .value
+            let result = try await completeSpeedSortSession()
 
             if let syncedScore = result.score {
                 sessionScore = syncedScore
@@ -280,34 +175,8 @@ class SpeedSortViewModel: ObservableObject, ArenaImageManaging {
                 sessionCompleted = true
             }
         } catch {
-            errorMessage = "Failed to finalize Speed Sort: \(error.localizedDescription)"
-            showError = true
+            presentError("Failed to finalize Speed Sort: \(error.localizedDescription)")
         }
-    }
-
-    private func resetSession() {
-        cancelArenaImageLoads()
-        currentQuestionIndex = 0
-        sessionScore = 0
-        comboCount = 0
-        maxCombo = 0
-        correctCount = 0
-        sessionCompleted = false
-        sessionId = nil
-        showCorrectFeedback = false
-        showWrongFeedback = false
-        showComboBreak = false
-        showComboAnimation = false
-        timeRemaining = timePerQuestion
-        lastTimeBonus = 0
-        lastCorrectCategory = nil
-        countdownValue = nil
-        isCountingDown = false
-        questionStartedAt = nil
-        imageCache.removeAll()
-        failedImageIDs.removeAll()
-        questions.removeAll()
-        stopTimer()
     }
 
     func startNewSession() async {
@@ -316,9 +185,25 @@ class SpeedSortViewModel: ObservableObject, ArenaImageManaging {
 
     func retryCurrentImage() {
         guard let question = currentQuestion else { return }
-        scheduleArenaImageLoad(for: question, forceReload: true)
-        if !isCountingDown {
-            queueTimerStart()
+        showError = false
+        errorMessage = nil
+        Task { [weak self] in
+            guard let self else { return }
+            if !self.isCountingDown {
+                await self.startTimerForCurrentQuestionIfReady(forceReload: true)
+            } else {
+                _ = await self.loadArenaImage(for: question, forceReload: true)
+            }
         }
+    }
+
+    override func resetModeState() {
+        super.resetModeState()
+        timeRemaining = timePerQuestion
+        lastTimeBonus = 0
+        countdownValue = nil
+        isCountingDown = false
+        questionStartedAt = nil
+        stopTimer()
     }
 }

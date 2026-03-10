@@ -7,25 +7,18 @@
 
 import SwiftUI
 
-private enum VerifyFlowPhase: Equatable {
-    case cameraClosed
-    case preview
-    case reviewingResult
-    case collectingFeedback
-    case submittingFeedback
-}
-
 struct VerifyView: View {
     @EnvironmentObject var viewModel: TrashViewModel
     @EnvironmentObject var authVM: AuthViewModel
+    @Environment(\.trashTheme) private var theme
     @StateObject private var cameraManager = CameraManager()
-    private let theme = TrashTheme()
 
     // UI State
     @State private var cardOffset: CGSize = .zero
-    @State private var flowPhase: VerifyFlowPhase = .cameraClosed
+    @State private var isCameraOpen = false
     @State private var isTorchOn = false
     @State private var pulseAnimation = false
+    @State private var reviewResult: TrashAnalysisResult?
     // showAccountSheet is managed by ContentView via environment
 
     // Form Data
@@ -34,11 +27,13 @@ struct VerifyView: View {
     @State private var swipeWarningTrigger = false
 
     var showFeedbackForm: Bool {
-        flowPhase == .collectingFeedback || flowPhase == .submittingFeedback
+        if case .collectingFeedback = viewModel.appState { return true }
+        if case .submittingFeedback = viewModel.appState { return true }
+        return false
     }
 
     var isPreviewState: Bool {
-        cameraManager.capturedImage == nil && flowPhase == .preview && viewModel.appState == .idle
+        cameraManager.capturedImage == nil && isCameraOpen && viewModel.appState == .idle
     }
 
     private var isEcoCameraCaptureMode: Bool {
@@ -46,11 +41,12 @@ struct VerifyView: View {
     }
 
     private var isCameraActive: Bool {
-        flowPhase != .cameraClosed
+        isCameraOpen
     }
 
     private var isSubmittingFeedback: Bool {
-        flowPhase == .submittingFeedback
+        if case .submittingFeedback = viewModel.appState { return true }
+        return false
     }
 
     private var isClassifierPreparing: Bool {
@@ -74,6 +70,19 @@ struct VerifyView: View {
             return "AI Ready"
         case .failed(let message):
             return message
+        }
+    }
+
+    private var displayedResult: TrashAnalysisResult? {
+        switch viewModel.appState {
+        case .finished(let result),
+                .collectingFeedback(let result),
+                .submittingFeedback(let result):
+            return result
+        case .error:
+            return reviewResult
+        case .idle, .analyzing:
+            return nil
         }
     }
 
@@ -116,10 +125,11 @@ struct VerifyView: View {
             }
         }
         .onDisappear {
-            flowPhase = .cameraClosed
+            isCameraOpen = false
             isTorchOn = false
             cameraManager.stop()
             viewModel.reset()
+            reviewResult = nil
         }
         .onReceive(cameraManager.$capturedImage) { img in
             if let img = img, viewModel.appState == .idle {
@@ -128,19 +138,11 @@ struct VerifyView: View {
         }
         .onChange(of: viewModel.appState) { state in
             switch state {
-            case .finished:
-                if flowPhase == .preview {
-                    flowPhase = .reviewingResult
-                }
-            case .collectingFeedback:
-                flowPhase = .collectingFeedback
-            case .submittingFeedback:
-                flowPhase = .submittingFeedback
-            case .error:
-                if flowPhase == .submittingFeedback {
-                    flowPhase = .reviewingResult
-                }
-            case .idle, .analyzing:
+            case .finished(let result),
+                    .collectingFeedback(let result),
+                    .submittingFeedback(let result):
+                reviewResult = result
+            case .idle, .analyzing, .error:
                 break
             }
         }
@@ -254,7 +256,7 @@ struct VerifyView: View {
     // MARK: - 🎨 Interaction Area
     private var interactionArea: some View {
         ZStack {
-            if case .finished(let result) = viewModel.appState, !showFeedbackForm {
+            if let result = displayedResult, !showFeedbackForm {
                 EnhancedSwipeableCard(result: result, offset: $cardOffset) { direction in
                     handleSwipe(direction: direction, result: result)
                 }
@@ -268,7 +270,6 @@ struct VerifyView: View {
             if case .error(let message) = viewModel.appState {
                 ErrorCard(message: message) {
                     finishFlowAndReset(closeCamera: false)
-                    flowPhase = .preview
                     cameraManager.start()
                 }
                 .transition(.scale.combined(with: .opacity))
@@ -454,12 +455,11 @@ struct VerifyView: View {
             withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                 cardOffset.width = -500
             }
-            viewModel.prepareForIncorrectFeedback(wrongResult: result)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                    self.flowPhase = .collectingFeedback
                     self.cardOffset = .zero
                 }
+                self.viewModel.prepareForIncorrectFeedback(wrongResult: result)
             }
         }
     }
@@ -472,7 +472,7 @@ struct VerifyView: View {
                 await viewModel.prepareClassifier()
             }
             withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                flowPhase = .preview
+                isCameraOpen = true
             }
             cameraManager.start()
         } else if isPreviewState {
@@ -490,7 +490,6 @@ struct VerifyView: View {
         guard case .collectingFeedback(let originalResult) = viewModel.appState,
             let currentImage = cameraManager.capturedImage
         else { return }
-        flowPhase = .submittingFeedback
         Task {
             await viewModel.submitCorrection(
                 image: currentImage,
@@ -501,7 +500,6 @@ struct VerifyView: View {
                 finishFlowAndReset(closeCamera: true)
             } else if case .error = viewModel.appState {
                 withAnimation {
-                    flowPhase = .reviewingResult
                     cardOffset = .zero
                 }
             }
@@ -510,9 +508,10 @@ struct VerifyView: View {
 
     private func finishFlowAndReset(closeCamera: Bool = true) {
         withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-            flowPhase = closeCamera ? .cameraClosed : .preview
+            isCameraOpen = !closeCamera
             cardOffset = .zero
             feedbackItemName = ""
+            reviewResult = nil
         }
 
         if closeCamera {
@@ -531,7 +530,7 @@ extension VerifyView {
     private var cameraAreaHeight: CGFloat {
         if showFeedbackForm || {
             if case .error = viewModel.appState { return true }
-            if case .finished = viewModel.appState { return true }
+            if displayedResult != nil { return true }
             return false
         }() {
             return 272

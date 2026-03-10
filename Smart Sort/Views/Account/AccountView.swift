@@ -8,24 +8,14 @@ import SwiftUI
 
 struct AccountView: View {
     @EnvironmentObject var authVM: AuthViewModel
+    @Environment(\.trashTheme) private var theme
     @StateObject private var profileVM = ProfileViewModel()
     @ObservedObject private var achievementService = AchievementService.shared
-    private let theme = TrashTheme()
 
-    @State private var showBindPhoneSheet = false
-    @State private var showBindEmailSheet = false
-    @State private var showEditNameAlert = false
-    @State private var newNameInput = ""
-    @State private var inputPhone = "+1"
-    @State private var inputEmail = ""
-    @State private var inputOTP = ""
-    @State private var showChangePasswordSheet = false
+    @State private var activeSheet: AccountSheetRoute?
+    @State private var sheetInputs = AccountSheetInputs()
     @State private var didTriggerUCSDCheck = false
-    @State private var showUpgradeSheet = false
-    @State private var upgradeEmail = ""
     @State private var scanDates: [Date] = []
-    @State private var upgradePassword = ""
-    @State private var upgradeConfirmPassword = ""
 
     var body: some View {
         NavigationStack {
@@ -68,48 +58,50 @@ struct AccountView: View {
                     scanDates = await profileVM.fetchScanActivity()
                 }
             }
-            .sheet(isPresented: $showBindPhoneSheet) {
-                BindPhoneSheet(
-                    inputPhone: $inputPhone,
-                    inputOTP: $inputOTP,
-                    authVM: authVM,
-                    isPresented: $showBindPhoneSheet
-                )
-            }
-            .sheet(isPresented: $showBindEmailSheet) {
-                BindEmailSheet(
-                    inputEmail: $inputEmail,
-                    authVM: authVM,
-                    isPresented: $showBindEmailSheet
-                )
-            }
-            .sheet(isPresented: $showChangePasswordSheet) {
-                ChangePasswordSheet(authVM: authVM, isPresented: $showChangePasswordSheet)
-            }
-            .sheet(isPresented: $showUpgradeSheet) {
-                UpgradeGuestSheet(
-                    authVM: authVM,
-                    email: $upgradeEmail,
-                    password: $upgradePassword,
-                    confirmPassword: $upgradeConfirmPassword,
-                    isPresented: $showUpgradeSheet
-                )
-            }
-            .sheet(isPresented: $showEditNameAlert) {
-                TrashTextInputSheet(
-                    title: "Change Username",
-                    message: "Pick a cool name to show to your friends!",
-                    placeholder: "Enter new name",
-                    text: $newNameInput,
-                    confirmTitle: "Save",
-                    onConfirm: { value in
-                        Task { await profileVM.updateUsername(value) }
-                        showEditNameAlert = false
-                    }
-                )
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
-                .presentationBackground(theme.appearance.sheetBackground)
+            .sheet(item: $activeSheet) { route in
+                switch route {
+                case .bindPhone:
+                    BindPhoneSheet(
+                        inputPhone: $sheetInputs.phone,
+                        inputOTP: $sheetInputs.otp,
+                        authVM: authVM,
+                        isPresented: routeBinding(.bindPhone)
+                    )
+                case .bindEmail:
+                    BindEmailSheet(
+                        inputEmail: $sheetInputs.email,
+                        authVM: authVM,
+                        isPresented: routeBinding(.bindEmail)
+                    )
+                case .changePassword:
+                    ChangePasswordSheet(
+                        authVM: authVM,
+                        isPresented: routeBinding(.changePassword)
+                    )
+                case .upgradeGuest:
+                    UpgradeGuestSheet(
+                        authVM: authVM,
+                        email: $sheetInputs.upgradeEmail,
+                        password: $sheetInputs.upgradePassword,
+                        confirmPassword: $sheetInputs.upgradeConfirmPassword,
+                        isPresented: routeBinding(.upgradeGuest)
+                    )
+                case .editUsername:
+                    TrashTextInputSheet(
+                        title: "Change Username",
+                        message: "Pick a cool name to show to your friends!",
+                        placeholder: "Enter new name",
+                        text: $sheetInputs.username,
+                        confirmTitle: "Save",
+                        onConfirm: { value in
+                            Task { await profileVM.updateUsername(value) }
+                            activeSheet = nil
+                        }
+                    )
+                    .presentationDetents([.medium, .large])
+                    .presentationDragIndicator(.visible)
+                    .presentationBackground(theme.appearance.sheetBackground)
+                }
             }
             .onAppear { evaluateUCSDGrant() }
         }
@@ -149,8 +141,8 @@ struct AccountView: View {
 
                 if !authVM.isAnonymous {
                     TrashIconButton(icon: "pencil") {
-                        newNameInput = profileVM.username
-                        showEditNameAlert = true
+                        sheetInputs.username = profileVM.username
+                        activeSheet = .editUsername
                     }
                     .accessibilityLabel("Edit Username")
                 }
@@ -211,7 +203,7 @@ struct AccountView: View {
                 }
 
                 TrashButton(baseColor: theme.accents.blue, action: {
-                    showUpgradeSheet = true
+                    activeSheet = .upgradeGuest
                 }) {
                     Text("Link Account")
                 }
@@ -469,6 +461,19 @@ struct AccountView: View {
         Divider()
             .padding(.leading, 68)
     }
+
+    private func routeBinding(_ route: AccountSheetRoute) -> Binding<Bool> {
+        Binding(
+            get: { activeSheet == route },
+            set: { isPresented in
+                if isPresented {
+                    activeSheet = route
+                } else if activeSheet == route {
+                    activeSheet = nil
+                }
+            }
+        )
+    }
 }
 
 extension AccountView {
@@ -524,7 +529,8 @@ extension AccountView {
 
     private func handleStatusTap() {
         if !hasLinkedEmail {
-            showBindEmailSheet = true
+            sheetInputs.email = authVM.session?.user.email ?? ""
+            activeSheet = .bindEmail
         } else if !emailVerified {
             Task { await authVM.resendEmailVerification() }
         }

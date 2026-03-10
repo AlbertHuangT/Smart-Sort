@@ -16,7 +16,7 @@ class CurrentUserViewModel: ObservableObject {
 
     private var lastFetchTime: Date?
     private let cacheValidDuration: TimeInterval = 30
-    private let client = SupabaseManager.shared.client
+    private let profileService = ProfileService.shared
 
     func fetchMyScore(forceRefresh: Bool = false) async {
         if !forceRefresh,
@@ -29,11 +29,7 @@ class CurrentUserViewModel: ObservableObject {
         guard SupabaseManager.shared.client.auth.currentUser?.id != nil else { return }
 
         do {
-            let profile: UserProfileDTO = try await client
-                .rpc("get_my_profile")
-                .single()
-                .execute()
-                .value
+            let profile = try await profileService.fetchMyProfile()
 
             self.myProfile = profile
             self.lastFetchTime = Date()
@@ -52,22 +48,7 @@ class CurrentUserViewModel: ObservableObject {
 
     private func fetchEquippedAchievementIcon(_ achievementId: UUID) async {
         do {
-            struct AchievementIconDTO: Decodable {
-                let iconName: String
-
-                enum CodingKeys: String, CodingKey {
-                    case iconName = "icon_name"
-                }
-            }
-
-            let info: AchievementIconDTO = try await client
-                .from("achievements")
-                .select("icon_name")
-                .eq("id", value: achievementId)
-                .single()
-                .execute()
-                .value
-
+            let info = try await profileService.fetchEquippedAchievement(achievementId: achievementId)
             self.equippedAchievementIcon = info.iconName
         } catch {
             self.equippedAchievementIcon = nil

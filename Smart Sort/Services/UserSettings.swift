@@ -28,41 +28,11 @@ class UserSettings: ObservableObject {
     private let locationKey = "selectedLocation"
     private let locationManager = LocationManager()
     private let communityStore = CommunityMembershipStore.shared
-    private var cancellables = Set<AnyCancellable>()
     private var locationRequestTimeoutTask: Task<Void, Never>?
 
     private init() {
         refreshForCurrentUser()
         setupLocationManager()
-        bindCommunityStore()
-    }
-
-    var joinedCommunityIds: Set<String> {
-        communityStore.joinedCommunityIds
-    }
-
-    var communitiesInCity: [Community] {
-        communityStore.communitiesInCity
-    }
-
-    var joinedCommunities: [Community] {
-        communityStore.joinedCommunities
-    }
-
-    var isLoadingCommunities: Bool {
-        communityStore.isLoadingCommunities
-    }
-
-    var adminCommunities: [Community] {
-        communityStore.adminCommunities
-    }
-
-    private func bindCommunityStore() {
-        communityStore.objectWillChange
-            .sink { [weak self] _ in
-                self?.objectWillChange.send()
-            }
-            .store(in: &cancellables)
     }
 
     // Configure the location manager callbacks
@@ -192,56 +162,22 @@ class UserSettings: ObservableObject {
         }
     }
 
-    // MARK: - Community Methods
+    // MARK: - Community Actions
 
-    /// Load communities for a specific city
     func loadCommunitiesForCity(_ city: String) async {
         await communityStore.loadCommunitiesForCity(city)
     }
 
-    /// Load the user's joined communities
     func loadMyCommunities() async {
         await communityStore.loadMyCommunities()
     }
 
-    /// Join a community, supporting approval flows, with optimistic UI
     func joinCommunity(_ community: Community) async -> (success: Bool, requiresApproval: Bool) {
         await communityStore.joinCommunity(community)
     }
 
-    /// Leave a community with optimistic UI updates
     func leaveCommunity(_ community: Community) async -> Bool {
         await communityStore.leaveCommunity(community)
-    }
-
-    /// Check whether the user is a member of the community
-    func isMember(of community: Community) -> Bool {
-        communityStore.isMember(of: community)
-    }
-
-    /// Check whether the user is an admin of the community
-    func isAdmin(of community: Community) -> Bool {
-        communityStore.isAdmin(of: community)
-    }
-
-    func isPending(of community: Community) -> Bool {
-        communityStore.isPending(of: community)
-    }
-
-    /// Return joined communities from local cache
-    func getJoinedCommunities() -> [Community] {
-        communityStore.getJoinedCommunities()
-    }
-
-    /// Return communities near the current city selection
-    func getCommunitiesNearLocation(_ location: UserLocation? = nil) -> [Community] {
-        communityStore.getCommunitiesNearLocation(location)
-    }
-
-    // MARK: - Local search
-
-    func searchCommunities(query: String, inCity: String? = nil) -> [Community] {
-        communityStore.searchCommunities(query: query, inCity: inCity)
     }
 
     private func scopedLocationKey() -> String {

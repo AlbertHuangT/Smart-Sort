@@ -11,7 +11,8 @@ struct DuelView: View {
     @StateObject private var viewModel = DuelViewModel()
     @EnvironmentObject var authViewModel: AuthViewModel
     @Environment(\.dismiss) private var dismiss
-    private let theme = TrashTheme()
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.trashTheme) private var theme
 
     let challengeId: UUID?
     let opponentId: UUID?
@@ -66,6 +67,9 @@ struct DuelView: View {
         .onDisappear {
             Task { await viewModel.cleanup() }
         }
+        .onChange(of: scenePhase) { newPhase in
+            viewModel.handleScenePhaseChange(newPhase)
+        }
         .navigationTitle("1v1 Duel")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -104,7 +108,7 @@ struct DuelView: View {
             if let question = viewModel.currentQuestion {
                 SharedQuizCard(
                     question: question,
-                    image: viewModel.imageCache[question.id],
+                    image: viewModel.arenaImage(for: question),
                     imageFailed: viewModel.isArenaImageFailed(for: question),
                     correctAnswer: viewModel.lastCorrectCategory,
                     categories: categories,

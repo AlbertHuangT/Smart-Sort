@@ -12,6 +12,8 @@ import SwiftUI
 struct ArenaHubView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @EnvironmentObject private var appRouter: AppRouter
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.trashTheme) private var theme
     // showAccountSheet managed by ContentView via environment
     @State private var navigationPath = NavigationPath()
     @State private var showChallengeList = false
@@ -21,7 +23,6 @@ struct ArenaHubView: View {
     @State private var activeOpponentId: UUID?
     @State private var pendingOpponentId: UUID?
     @State private var pendingBadgeCount = 0
-    private let theme = TrashTheme()
 
     // Polling timer for pending challenges
     @State private var pollTimer: AnyCancellable?
@@ -108,6 +109,11 @@ struct ArenaHubView: View {
         .sheet(isPresented: $showChallengeList) {
             ChallengeListView()
         }
+        .onChange(of: showChallengeList) { isPresented in
+            if !isPresented {
+                Task { await fetchPendingCount() }
+            }
+        }
         .sheet(isPresented: $showInviteSheet, onDismiss: handleInviteDismiss) {
             ChallengeInviteSheet { opponentId in
                 pendingOpponentId = opponentId
@@ -128,14 +134,25 @@ struct ArenaHubView: View {
             }
         }
         .onAppear {
-            startPolling()
+            startPollingIfNeeded()
         }
         .onDisappear {
-            pollTimer?.cancel()
+            stopPolling()
         }
         .onChange(of: appRouter.pendingChallengeId) { newValue in
             if newValue != nil {
                 showAcceptView = true
+                Task { await fetchPendingCount() }
+            }
+        }
+        .onChange(of: scenePhase) { newPhase in
+            switch newPhase {
+            case .active:
+                startPollingIfNeeded()
+            case .inactive, .background:
+                stopPolling()
+            @unknown default:
+                break
             }
         }
     }
@@ -145,25 +162,28 @@ struct ArenaHubView: View {
         pendingOpponentId = nil
         activeOpponentId = opponentId
         showDuel = true
+        Task { await fetchPendingCount() }
     }
 
     // MARK: - Polling
 
-    private func startPolling() {
+    private func startPollingIfNeeded() {
+        guard scenePhase == .active else { return }
         guard !authViewModel.isAnonymous else { return }
 
-        // Cancel any existing timer to prevent duplicates
-        pollTimer?.cancel()
-
-        // Initial fetch
+        stopPolling()
         Task { await fetchPendingCount() }
 
-        // Poll every 10 seconds (challenges expire after 1 minute)
-        pollTimer = Timer.publish(every: 10, on: .main, in: .common)
+        pollTimer = Timer.publish(every: 30, on: .main, in: .common)
             .autoconnect()
             .sink { _ in
                 Task { await fetchPendingCount() }
             }
+    }
+
+    private func stopPolling() {
+        pollTimer?.cancel()
+        pollTimer = nil
     }
 
     private func fetchPendingCount() async {

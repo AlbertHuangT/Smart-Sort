@@ -16,6 +16,11 @@ class DuelRealtimeManager {
     private let client = SupabaseManager.shared.client
 
     private var myUserId: String = ""
+    private var readyStreamTask: Task<Void, Never>?
+    private var answerStreamTask: Task<Void, Never>?
+
+    var onPlayerReady: ((DuelPlayerReady) -> Void)?
+    var onAnswerSubmitted: ((DuelAnswerSubmitted) -> Void)?
 
     // MARK: - Connect
 
@@ -29,6 +34,7 @@ class DuelRealtimeManager {
             $0.broadcast.receiveOwnBroadcasts = false
         }
         self.channel = ch
+        listenForBroadcasts(on: ch)
 
         do {
             try await ch.subscribeWithError()
@@ -64,9 +70,49 @@ class DuelRealtimeManager {
     // MARK: - Cleanup
 
     func disconnect() async {
+        readyStreamTask?.cancel()
+        answerStreamTask?.cancel()
+        readyStreamTask = nil
+        answerStreamTask = nil
         if let ch = channel {
             await client.realtimeV2.removeChannel(ch)
         }
         channel = nil
+    }
+
+    private func listenForBroadcasts(on channel: RealtimeChannelV2) {
+        readyStreamTask = Task { [weak self] in
+            guard let self else { return }
+            for await message in channel.broadcastStream(event: "player_ready") {
+                guard !Task.isCancelled else { break }
+                guard let payload = message["payload"],
+                    let ready = try? payload.decode(as: DuelPlayerReady.self),
+                    ready.userId != self.myUserId
+                else {
+                    continue
+                }
+
+                await MainActor.run {
+                    self.onPlayerReady?(ready)
+                }
+            }
+        }
+
+        answerStreamTask = Task { [weak self] in
+            guard let self else { return }
+            for await message in channel.broadcastStream(event: "answer_submitted") {
+                guard !Task.isCancelled else { break }
+                guard let payload = message["payload"],
+                    let answer = try? payload.decode(as: DuelAnswerSubmitted.self),
+                    answer.userId != self.myUserId
+                else {
+                    continue
+                }
+
+                await MainActor.run {
+                    self.onAnswerSubmitted?(answer)
+                }
+            }
+        }
     }
 }

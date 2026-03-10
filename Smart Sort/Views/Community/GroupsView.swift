@@ -24,6 +24,7 @@ enum CommunityTabSection: String, CaseIterable {
 
 struct GroupsView: View {
     @ObservedObject private var userSettings = UserSettings.shared
+    @ObservedObject private var communityStore = CommunityMembershipStore.shared
     @EnvironmentObject var authVM: AuthViewModel
     @EnvironmentObject private var appRouter: AppRouter
     @State private var selectedSection: CommunityTabSection = .nearby
@@ -55,8 +56,8 @@ struct GroupsView: View {
             LocationPickerSheet(isPresented: $showLocationPicker)
         }
         .task {
-            if userSettings.joinedCommunities.isEmpty {
-                await userSettings.loadMyCommunities()
+            if communityStore.joinedCommunities.isEmpty {
+                await communityStore.loadMyCommunities()
             }
         }
     }
@@ -126,18 +127,18 @@ struct GroupsView: View {
         VStack(spacing: 0) {
             if userSettings.selectedLocation == nil {
                 noLocationView
-            } else if userSettings.isLoadingCommunities {
+            } else if communityStore.isLoadingCommunities {
                 loadingView
-            } else if userSettings.communitiesInCity.isEmpty {
+            } else if communityStore.communitiesInCity.isEmpty {
                 emptyNearbyView
             } else {
                 nearbyCommunitiesList
             }
         }
         .task {
-            if let location = userSettings.selectedLocation, userSettings.communitiesInCity.isEmpty
+            if let location = userSettings.selectedLocation, communityStore.communitiesInCity.isEmpty
             {
-                await userSettings.loadCommunitiesForCity(location.city)
+                await communityStore.loadCommunitiesForCity(location.city)
             }
         }
     }
@@ -180,7 +181,7 @@ struct GroupsView: View {
     private var nearbyCommunitiesList: some View {
         ScrollView {
             LazyVStack(spacing: 12) {
-                ForEach(userSettings.communitiesInCity) { community in
+                ForEach(communityStore.communitiesInCity) { community in
                     CommunityCardView(
                         community: community,
                         onCreateEvent: { appRouter.presentCreateEvent() }
@@ -192,7 +193,7 @@ struct GroupsView: View {
         }
         .refreshable {
             if let location = userSettings.selectedLocation {
-                await userSettings.loadCommunitiesForCity(location.city)
+                await communityStore.loadCommunitiesForCity(location.city)
             }
         }
     }
@@ -201,9 +202,9 @@ struct GroupsView: View {
     @ViewBuilder
     private var joinedCommunitiesContent: some View {
         Group {
-            if userSettings.isLoadingCommunities && userSettings.joinedCommunities.isEmpty {
+            if communityStore.isLoadingCommunities && communityStore.joinedCommunities.isEmpty {
                 loadingView
-            } else if userSettings.joinedCommunities.isEmpty {
+            } else if communityStore.joinedCommunities.isEmpty {
                 emptyJoinedView
             } else {
                 joinedCommunitiesList
@@ -226,7 +227,7 @@ struct GroupsView: View {
     private var joinedCommunitiesList: some View {
         ScrollView {
             LazyVStack(spacing: 12) {
-                ForEach(userSettings.joinedCommunities) { community in
+                ForEach(communityStore.joinedCommunities) { community in
                     CommunityCardView(
                         community: community,
                         onCreateEvent: { appRouter.presentCreateEvent() }
@@ -237,7 +238,7 @@ struct GroupsView: View {
             .padding(.vertical, theme.layout.elementSpacing)
         }
         .refreshable {
-            await userSettings.loadMyCommunities()
+            await communityStore.loadMyCommunities()
         }
     }
 

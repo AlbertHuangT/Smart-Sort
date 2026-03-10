@@ -8,13 +8,9 @@ import Auth
 
 struct AccountSettingsView: View {
     @EnvironmentObject var authVM: AuthViewModel
-    private let theme = TrashTheme()
-    @State private var showBindPhoneSheet = false
-    @State private var showBindEmailSheet = false
-    @State private var showChangePasswordSheet = false
-    @State private var inputPhone = "+1"
-    @State private var inputEmail = ""
-    @State private var inputOTP = ""
+    @Environment(\.trashTheme) private var theme
+    @State private var activeSheet: AccountSheetRoute?
+    @State private var sheetInputs = AccountSheetInputs()
     
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -30,23 +26,29 @@ struct AccountSettingsView: View {
         .trashScreenBackground()
         .navigationTitle("Settings")
         .navigationBarTitleDisplayMode(.inline)
-        .sheet(isPresented: $showBindPhoneSheet) {
-            BindPhoneSheet(
-                inputPhone: $inputPhone,
-                inputOTP: $inputOTP,
-                authVM: authVM,
-                isPresented: $showBindPhoneSheet
-            )
-        }
-        .sheet(isPresented: $showBindEmailSheet) {
-            BindEmailSheet(
-                inputEmail: $inputEmail,
-                authVM: authVM,
-                isPresented: $showBindEmailSheet
-            )
-        }
-        .sheet(isPresented: $showChangePasswordSheet) {
-            ChangePasswordSheet(authVM: authVM, isPresented: $showChangePasswordSheet)
+        .sheet(item: $activeSheet) { route in
+            switch route {
+            case .bindPhone:
+                BindPhoneSheet(
+                    inputPhone: $sheetInputs.phone,
+                    inputOTP: $sheetInputs.otp,
+                    authVM: authVM,
+                    isPresented: routeBinding(.bindPhone)
+                )
+            case .bindEmail:
+                BindEmailSheet(
+                    inputEmail: $sheetInputs.email,
+                    authVM: authVM,
+                    isPresented: routeBinding(.bindEmail)
+                )
+            case .changePassword:
+                ChangePasswordSheet(
+                    authVM: authVM,
+                    isPresented: routeBinding(.changePassword)
+                )
+            case .upgradeGuest, .editUsername:
+                EmptyView()
+            }
         }
     }
 
@@ -54,13 +56,13 @@ struct AccountSettingsView: View {
         VStack(alignment: .leading, spacing: theme.layout.elementSpacing) {
             SectionHeader(title: "Identity")
             SettingsRow(icon: "envelope.fill", title: "Email", subtitle: authVM.session?.user.email ?? "Not linked") {
-                inputEmail = authVM.session?.user.email ?? ""
-                showBindEmailSheet = true
+                sheetInputs.email = authVM.session?.user.email ?? ""
+                activeSheet = .bindEmail
             }
             SettingsRow(icon: "phone.fill", title: "Phone", subtitle: authVM.session?.user.phone ?? "Not linked") {
-                inputPhone = authVM.session?.user.phone ?? "+1"
-                inputOTP = ""
-                showBindPhoneSheet = true
+                sheetInputs.phone = authVM.session?.user.phone ?? "+1"
+                sheetInputs.otp = ""
+                activeSheet = .bindPhone
             }
         }
     }
@@ -69,8 +71,21 @@ struct AccountSettingsView: View {
         VStack(alignment: .leading, spacing: theme.layout.elementSpacing) {
             SectionHeader(title: "Security")
             SettingsRow(icon: "key.fill", title: "Change Password") {
-                showChangePasswordSheet = true
+                activeSheet = .changePassword
             }
         }
+    }
+
+    private func routeBinding(_ route: AccountSheetRoute) -> Binding<Bool> {
+        Binding(
+            get: { activeSheet == route },
+            set: { isPresented in
+                if isPresented {
+                    activeSheet = route
+                } else if activeSheet == route {
+                    activeSheet = nil
+                }
+            }
+        )
     }
 }

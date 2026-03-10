@@ -11,7 +11,7 @@ struct SpeedSortView: View {
     @StateObject private var viewModel = SpeedSortViewModel()
     @EnvironmentObject var authViewModel: AuthViewModel
     @Environment(\.dismiss) private var dismiss
-    private let theme = TrashTheme()
+    @Environment(\.trashTheme) private var theme
     @State private var pulseAnimation = false
     // showAccountSheet managed by ContentView via environment
 
@@ -116,7 +116,7 @@ struct SpeedSortView: View {
             } else if let question = viewModel.currentQuestion {
                 SharedQuizCard(
                     question: question,
-                    image: viewModel.imageCache[question.id],
+                    image: viewModel.arenaImage(for: question),
                     imageFailed: viewModel.isArenaImageFailed(for: question),
                     correctAnswer: viewModel.lastCorrectCategory,
                     categories: categories,
