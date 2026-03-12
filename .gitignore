@@ -21,9 +21,8 @@ DerivedData/
 *.perspectivev3
 !default.perspectivev3
 
-# --- CoreML models (if you don't want to upload source models) ---
+# --- CoreML source models ---
 *.mlmodel
-*.mlpackage
 
 # --- Swift Package Manager ---
 .build/
@@ -35,7 +34,6 @@ Package.pins
 # Package.resolved
 
 # --- Custom Ignore (Sensitive Data) ---
-Secrets.swift
 TODO/
 AGENTS.md
 CLAUDE.md

@@ -121,7 +121,7 @@ docs/
 
 - Xcode 16+
 - A configured Supabase project
-- Local `Secrets.swift`
+- Committed `AppConfig.swift` with public Supabase client config
 - `MobileCLIPImage.mlpackage` present in `Smart Sort/`
 
 ### Build
@@ -218,6 +218,12 @@ See [UI Guidelines](docs/UI_GUIDELINES.md) for the full rules.
 - UI tokens and interaction metrics live in `TrashTheme`
 - Shared component primitives should be extended before creating one-off visual systems
 - App shell, state composition, and service boundaries are documented in [Architecture](docs/ARCHITECTURE.md)
+
+## Configuration Notes
+
+- `Smart Sort/Services/AppConfig.swift` is intentionally committed because it only contains the public Supabase URL and publishable anon key.
+- Do not place service-role keys, database passwords, or other private credentials in `AppConfig.swift`.
+- `MobileCLIPImage.mlpackage` is tracked in git and treated as a required app asset.
 
 ## License
 

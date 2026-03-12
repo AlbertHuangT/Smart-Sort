@@ -15,10 +15,10 @@ final class SupabaseManager: @unchecked Sendable {
     let baseURL: URL
     
     private init() {
-        self.baseURL = Secrets.supabaseUrl
+        self.baseURL = AppConfig.supabaseUrl
         self.client = SupabaseClient(
-            supabaseURL: Secrets.supabaseUrl,
-            supabaseKey: Secrets.supabaseAnonKey,
+            supabaseURL: AppConfig.supabaseUrl,
+            supabaseKey: AppConfig.supabaseAnonKey,
             options: SupabaseClientOptions(
                 auth: .init(
                     emitLocalSessionAsInitialSession: true

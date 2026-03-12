@@ -87,7 +87,7 @@ That is the current reality and should be documented explicitly rather than idea
 
 ### Backend Access
 
-`SupabaseManager` owns one shared `SupabaseClient` configured from `Secrets.swift`.
+`SupabaseManager` owns one shared `SupabaseClient` configured from `AppConfig.swift`.
 
 Feature services use that shared client for:
 
@@ -96,6 +96,13 @@ Feature services use that shared client for:
 - RPC calls
 - Storage
 - Realtime
+
+`AppConfig.swift` is committed on purpose because it only contains public client configuration:
+
+- Supabase project URL
+- publishable anon key
+
+Private backend credentials must never be placed in that file.
 
 Representative service boundaries:
 
